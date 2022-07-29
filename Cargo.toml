@@ -1,0 +1,18 @@
+[package]
+name = "hyprland"
+version = "0.1.0"
+edition = "2021"
+authors = ["yavko <yavornkolev@gmail.com>"]
+license = "GPL-3.0-or-later"
+keywords = ["hyprland", "ipc", "hypr", "wayland", "linux"]
+catagories = ["api-bindings"]
+readme = "README.md"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = {version = "1.0", features = ["derive"]}
+serde_json = "1.0"
+hex = "0.4"
+tokio = { version = "1.20", features = ["full"] }
+lazy_static = "1.4"
+regex = "1.6"
