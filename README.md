@@ -1,2 +1,2 @@
 # hyprland-rs
-A unoffical rust wrapper for hyprlands IPC
+A unoffical rust wrapper for hyprland's IPC
