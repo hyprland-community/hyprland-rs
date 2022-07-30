@@ -4,16 +4,22 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HyprAddress(String);
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct Address(String);
 
-impl HyprAddress {
+pub type WorkspaceId = u8;
+
+impl Address {
     pub fn as_vec(self) -> Vec<u8> {
-        let HyprAddress(value) = self;
+        let Address(value) = self;
         match hex::decode(value.trim_start_matches("0x")) {
             Ok(value) => value,
             Err(error) => panic!("A error has occured: {}", error),
         }
+    }
+    pub fn to_string(self) -> String {
+        let Address(value) = self;
+        value
     }
 }
 

@@ -1,6 +1,4 @@
-//mod shared;
-
-use crate::shared::{get_socket_path, write_to_socket, SocketType, HyprAddress};
+use crate::shared::{get_socket_path, write_to_socket, SocketType, Address};
 use std::io;
 
 use serde::{Deserialize, Serialize};
@@ -10,7 +8,7 @@ extern crate hex;
 use std::collections::HashMap;
 
 #[derive(Debug)]
-pub enum HyprCtlDataCommands {
+pub enum DataCommands {
     Monitors,
     Workspaces,
     Clients,
@@ -20,13 +18,13 @@ pub enum HyprCtlDataCommands {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprWorkspaceBasic {
+pub struct WorkspaceBasic {
     id: u8,
     name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprMonitor {
+pub struct Monitor {
     id: u8,
     name: String,
     width: u16,
@@ -36,17 +34,17 @@ pub struct HyprMonitor {
     x: i32,
     y: i32,
     #[serde(rename = "activeWorkspace")]
-    active_workspace: HyprWorkspaceBasic,
+    active_workspace: WorkspaceBasic,
     reserved: (u8, u8, u8, u8),
     scale: f32,
     transform: i16,
     active: String, // TODO make into bool somehow
 }
 
-pub type HyprMonitors = Vec<HyprMonitor>;
+pub type Monitors = Vec<Monitor>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprWorkspace {
+pub struct Workspace {
     id: u8,
     name: String,
     monitor: String,
@@ -54,14 +52,14 @@ pub struct HyprWorkspace {
     hasfullscreen: u8,
 }
 
-pub type HyprWorkspaces = Vec<HyprWorkspace>;
+pub type Workspaces = Vec<Workspace>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprClient {
-    address: HyprAddress,
+pub struct Client {
+    address: Address,
     at: (i16, i16),
     size: (u16, u16),
-    workspace: HyprWorkspaceBasic,
+    workspace: WorkspaceBasic,
     floating: u8,
     monitor: u8,
     class: String,
@@ -69,14 +67,14 @@ pub struct HyprClient {
     pid: u32,
 }
 
-pub type HyprClients = Vec<HyprClient>;
+pub type Clients = Vec<Client>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprActiveWindow {
-    address: HyprAddress,
+pub struct ActiveWindow {
+    address: Address,
     at: (i32, i32),
     size: (u16, u16),
-    workspace: HyprWorkspaceBasic,
+    workspace: WorkspaceBasic,
     floating: u8,
     monitor: u8,
     class: String,
@@ -85,8 +83,8 @@ pub struct HyprActiveWindow {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprLayerClient {
-    address: HyprAddress,
+pub struct LayerClient {
+    address: Address,
     x: i32,
     y: i32,
     w: u16,
@@ -95,21 +93,21 @@ pub struct HyprLayerClient {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprLayerDisplay {
-    levels: HashMap<String, Vec<HyprLayerClient>>,
+pub struct LayerDisplay {
+    levels: HashMap<String, Vec<LayerClient>>,
 }
 
-pub type HyprLayers = HashMap<String, HyprLayerDisplay>;
+pub type Layers = HashMap<String, LayerDisplay>;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprMouse {
-    address: HyprAddress,
+pub struct Mouse {
+    address: Address,
     name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprKeyboard {
-    address: HyprAddress,
+pub struct Keyboard {
+    address: Address,
     name: String,
     rules: String,
     model: String,
@@ -120,28 +118,28 @@ pub struct HyprKeyboard {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprTablet {
-    address: HyprAddress,
+pub struct Tablet {
+    address: Address,
     name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct HyprDevices {
-    mice: Vec<HyprMouse>,
-    keyboards: Vec<HyprKeyboard>,
-    tablets: Vec<HyprTablet>,
+pub struct Devices {
+    mice: Vec<Mouse>,
+    keyboards: Vec<Keyboard>,
+    tablets: Vec<Tablet>,
 }
 
-fn call_hyprctl_data_cmd(cmd: HyprCtlDataCommands) -> io::Result<String> {
+fn call_hyprctl_data_cmd(cmd: DataCommands) -> io::Result<String> {
     use tokio::runtime::Runtime;
 
     let cmd_string = match cmd {
-        HyprCtlDataCommands::Monitors => "monitors",
-        HyprCtlDataCommands::ActiveWindow => "activewindow",
-        HyprCtlDataCommands::Clients => "clients",
-        HyprCtlDataCommands::Devices => "devices",
-        HyprCtlDataCommands::Layers => "layers",
-        HyprCtlDataCommands::Workspaces => "workspaces",
+        DataCommands::Monitors => "monitors",
+        DataCommands::ActiveWindow => "activewindow",
+        DataCommands::Clients => "clients",
+        DataCommands::Devices => "devices",
+        DataCommands::Layers => "layers",
+        DataCommands::Workspaces => "workspaces",
     };
 
     let socket_path = get_socket_path(SocketType::Command);
@@ -154,74 +152,74 @@ fn call_hyprctl_data_cmd(cmd: HyprCtlDataCommands) -> io::Result<String> {
     ))
 }
 
-pub fn get_monitors() -> Result<HyprMonitors> {
-    let data = match call_hyprctl_data_cmd(HyprCtlDataCommands::Monitors) {
+pub fn get_monitors() -> Result<Monitors> {
+    let data = match call_hyprctl_data_cmd(DataCommands::Monitors) {
         Ok(data) => data,
         Err(e) => panic!(
             "A error occured while parsing the output from the hypr socket: {:?}",
             e
         ),
     };
-    let serialized: HyprMonitors = serde_json::from_str(&data)?;
+    let serialized: Monitors = serde_json::from_str(&data)?;
     Ok(serialized)
 }
 
-pub fn get_workspaces() -> Result<HyprWorkspaces> {
-    let data = match call_hyprctl_data_cmd(HyprCtlDataCommands::Workspaces) {
+pub fn get_workspaces() -> Result<Workspaces> {
+    let data = match call_hyprctl_data_cmd(DataCommands::Workspaces) {
         Ok(data) => data,
         Err(e) => panic!(
             "A error occured while parsing the output from the hypr socket: {:?}",
             e
         ),
     };
-    let serialized: HyprWorkspaces = serde_json::from_str(&data)?;
+    let serialized: Workspaces = serde_json::from_str(&data)?;
     Ok(serialized)
 }
 
-pub fn get_clients() -> Result<HyprClients> {
-    let data = match call_hyprctl_data_cmd(HyprCtlDataCommands::Clients) {
+pub fn get_clients() -> Result<Clients> {
+    let data = match call_hyprctl_data_cmd(DataCommands::Clients) {
         Ok(data) => data,
         Err(e) => panic!(
             "A error occured while parsing the output from the hypr socket: {:?}",
             e
         ),
     };
-    let serialized: HyprClients = serde_json::from_str(&data)?;
+    let serialized: Clients = serde_json::from_str(&data)?;
     Ok(serialized)
 }
 
-pub fn get_active_window() -> Result<HyprActiveWindow> {
-    let data = match call_hyprctl_data_cmd(HyprCtlDataCommands::ActiveWindow) {
+pub fn get_active_window() -> Result<ActiveWindow> {
+    let data = match call_hyprctl_data_cmd(DataCommands::ActiveWindow) {
         Ok(data) => data,
         Err(e) => panic!(
             "A error occured while parsing the output from the hypr socket: {:?}",
             e
         ),
     };
-    let serialized: HyprActiveWindow = serde_json::from_str(&data)?;
+    let serialized: ActiveWindow = serde_json::from_str(&data)?;
     Ok(serialized)
 }
 
-pub fn get_layers() -> Result<HyprLayers> {
-    let data = match call_hyprctl_data_cmd(HyprCtlDataCommands::Layers) {
+pub fn get_layers() -> Result<Layers> {
+    let data = match call_hyprctl_data_cmd(DataCommands::Layers) {
         Ok(data) => data,
         Err(e) => panic!(
             "A error occured while parsing the output from the hypr socket: {:?}",
             e
         ),
     };
-    let serialized: HyprLayers = serde_json::from_str(&data)?;
+    let serialized: Layers = serde_json::from_str(&data)?;
     Ok(serialized)
 }
 
-pub fn get_devices() -> Result<HyprDevices> {
-    let data = match call_hyprctl_data_cmd(HyprCtlDataCommands::Devices) {
+pub fn get_devices() -> Result<Devices> {
+    let data = match call_hyprctl_data_cmd(DataCommands::Devices) {
         Ok(data) => data,
         Err(e) => panic!(
             "A error occured while parsing the output from the hypr socket: {:?}",
             e
         ),
     };
-    let serialized: HyprDevices = serde_json::from_str(&data)?;
+    let serialized: Devices = serde_json::from_str(&data)?;
     Ok(serialized)
 }
