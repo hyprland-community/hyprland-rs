@@ -4,14 +4,27 @@ use std::io;
 use tokio::io::AsyncReadExt;
 use tokio::net::UnixStream;
 
+/// This tuple struct holds window event data
 #[derive(Debug)]
-pub struct WindowEventData(String, String);
+pub struct WindowEventData(
+    /// The window class
+    pub String,
+    /// The window title
+    pub String,
+);
 
+/// This tuple struct holds monitor event data
 #[derive(Debug)]
-pub struct MonitorEventData(String, WorkspaceId);
+pub struct MonitorEventData(
+    /// The monitor name
+    pub String,
+    /// The workspace
+    pub WorkspaceId,
+);
 
+/// This enum holds every event type
 #[derive(Debug)]
-pub enum Event {
+enum Event {
     WorkspaceChanged(WorkspaceId),
     WorkspaceDeleted(WorkspaceId),
     WorkspaceAdded(WorkspaceId),
@@ -22,6 +35,7 @@ pub enum Event {
     MonitorRemoved(String),
 }
 
+/// This internal function parses event strings
 fn event_parser(event: String) -> io::Result<Vec<Event>> {
     lazy_static! {
         static ref EVENT_SET: RegexSet = RegexSet::new(&[
@@ -124,6 +138,18 @@ fn event_parser(event: String) -> io::Result<Vec<Event>> {
     Ok(events)
 }
 
+///
+/// # The Event Listener
+///
+/// This struct holds what you need to create a event listener
+///
+/// ## Usage
+///
+/// ```rust
+/// let mut listener = EventListener::new(); // creates a new listener
+/// listener.add_insert_event_name_here_handler(&|data| do_something_with(data));
+/// listener.start_listener_blocking(); // or `.start_listener().await` if async
+/// ```
 pub struct EventListener<'a> {
     workspace_changed_events: Vec<&'a dyn Fn(WorkspaceId)>,
     workspace_added_events: Vec<&'a dyn Fn(WorkspaceId)>,
@@ -136,6 +162,11 @@ pub struct EventListener<'a> {
 }
 
 impl EventListener<'_> {
+    /// This method creates a new EventListener instance
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// ```
     pub fn new() -> EventListener<'static> {
         EventListener {
             workspace_changed_events: vec![],
@@ -148,36 +179,105 @@ impl EventListener<'_> {
             monitor_added_events: vec![],
         }
     }
-
+    /// This method adds a event to the listener which executes on workspace change
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_workspace_change_handler(&mut self, f: &'static dyn Fn(WorkspaceId)) {
         self.workspace_changed_events.push(f);
     }
 
+    /// This method add a event to the listener which executes when a new workspace is created
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_workspace_added_handler(&|id| println!("workspace {id} was added"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_workspace_added_handler(&mut self, f: &'static dyn Fn(WorkspaceId)) {
         self.workspace_added_events.push(f);
     }
+
+    /// This method add a event to the listener which executes when a new workspace is created
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_workspace_destroy_handler(&|id| println!("workspace {id} was destroyed"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_workspace_destroy_handler(&mut self, f: &'static dyn Fn(WorkspaceId)) {
         self.workspace_destroyed_events.push(f);
     }
+
+    /// This method add a event to the listener which executes when the active monitor is changed
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_active_monitor_change_handler(&|data| println!("Active Monitor changed: {data:#?}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_active_monitor_change_handler(&mut self, f: &'static dyn Fn(MonitorEventData)) {
         self.active_monitor_changed_events.push(f);
     }
+
+    /// This method add a event to the listener which executes when the active window is changed
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_active_window_change_handler(&|data| println!("Active window changed: {data:#?}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_active_window_change_handler(
         &mut self,
         f: &'static dyn Fn(Option<WindowEventData>),
     ) {
         self.active_window_changed_events.push(f);
     }
+
+    /// This method add a event to the listener which executes when the active monitor is changed
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_fullscreen_state_change_handler(&|state| println!("Fullscreen is on: {state}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_fullscreen_state_change_handler(&mut self, f: &'static dyn Fn(bool)) {
         self.fullscreen_state_changed_events.push(f);
     }
+
+    /// This method add a event to the listener which executes when a new monitor is added
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_monitor_added_handler(&|data| println!("Monitor added: {data}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_monitor_added_handler(&mut self, f: &'static dyn Fn(String)) {
         self.monitor_added_events.push(f);
     }
+
+    /// This method add a event to the listener which executes when a monitor is removed
+    ///
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_monitor_removed_handler(&|data| println!("Monitor removed: {data}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn add_monitor_removed_handler(&mut self, f: &'static dyn Fn(String)) {
         self.monitor_removed_events.push(f);
     }
 
+    /// This method starts the event listener (async)
+    ///
+    /// This should be ran after all of your handlers are defined
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id}"));
+    /// listener.start_listener().await
+    /// ```
     pub async fn start_listener(&self) -> io::Result<()> {
         let socket_path = get_socket_path(SocketType::Listener);
 
@@ -265,6 +365,15 @@ impl EventListener<'_> {
 
         Ok(())
     }
+
+    /// This method starts the event listener (blocking)
+    ///
+    /// This should be ran after all of your handlers are defined
+    /// ```rust
+    /// let mut listener = EventListener::new();
+    /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id}"));
+    /// listener.start_listener_blocking()
+    /// ```
     pub fn start_listener_blocking(self) -> io::Result<()> {
         use tokio::runtime::Runtime;
 

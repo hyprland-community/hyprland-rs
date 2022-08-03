@@ -1,14 +1,54 @@
+//! # Data module
+//! 
+//! This module provides functions for getting information on the compositor
+//!
+//! ## Usage
+//! 
+//! here is a example of every function in use!
+//! ```rust
+//! use hyprland::data::{
+//!     get_monitors,
+//!     get_workspaces,
+//!     get_clients,
+//!     get_active_window,
+//!     get_layers,
+//!     get_devices
+//! };
+//!
+//! fn main() -> std::io::Result<()> {
+//!     let monitors = get_monitors()?;
+//!     println!("{monitors:#?}");
+//!
+//!     let workspaces = get_workspaces()?;
+//!     println!("{workspaces:#?}");
+//!
+//!     let clients = get_clients()?;
+//!     println!("{clients:#?}");
+//!
+//!     let active_window = get_active_window()?;
+//!     println!("{active_window:#?}");
+//!
+//!     let layers = get_layers()?;
+//!     println!("{layers:#?}");
+//!
+//!     let devices = get_devices()?;
+//!     println!("{devices:#?}");
+//!
+//!     Ok(())
+//! }
+//! ````
+
 use crate::shared::{get_socket_path, write_to_socket, SocketType, Address};
 use std::io;
-
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-extern crate hex;
-
 use std::collections::HashMap;
 
+extern crate hex;
+
+/// This internal enum holds every socket command that returns data
 #[derive(Debug)]
-pub enum DataCommands {
+enum DataCommands {
     Monitors,
     Workspaces,
     Clients,
@@ -17,12 +57,14 @@ pub enum DataCommands {
     Devices,
 }
 
+/// This struct holds a basic identifier for a workspace often used in other structs
 #[derive(Serialize, Deserialize, Debug)]
 pub struct WorkspaceBasic {
     id: u8,
     name: String,
 }
 
+/// This struct holds information for a monitor
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Monitor {
     id: u8,
@@ -41,8 +83,10 @@ pub struct Monitor {
     active: String, // TODO make into bool somehow
 }
 
+/// This type provides a vector of monitors
 pub type Monitors = Vec<Monitor>;
 
+/// This struct holds information for a workspace
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Workspace {
     id: u8,
@@ -52,8 +96,10 @@ pub struct Workspace {
     hasfullscreen: u8,
 }
 
+/// This type provides a vector of workspaces
 pub type Workspaces = Vec<Workspace>;
 
+/// This struct holds information for a client/window
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Client {
     address: Address,
@@ -67,8 +113,10 @@ pub struct Client {
     pid: u32,
 }
 
+/// This type provides a vector of clients
 pub type Clients = Vec<Client>;
 
+/// This struct holds information about the active window/client 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ActiveWindow {
     address: Address,
@@ -82,6 +130,7 @@ pub struct ActiveWindow {
     pid: u32,
 }
 
+/// This struct holds information about a layer surface/client
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LayerClient {
     address: Address,
@@ -92,19 +141,23 @@ pub struct LayerClient {
     namespace: String,
 }
 
+/// This struct holds all the layer surfaces for a display
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LayerDisplay {
     levels: HashMap<String, Vec<LayerClient>>,
 }
 
+/// This type provides a hashmap of all current displays, and their layer surfaces
 pub type Layers = HashMap<String, LayerDisplay>;
 
+/// This struct holds information about a mouse device
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Mouse {
     address: Address,
     name: String,
 }
 
+/// This struct holds information about a keyboard device
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Keyboard {
     address: Address,
@@ -117,12 +170,14 @@ pub struct Keyboard {
     active_keymap: String,
 }
 
+/// This struct holds information about a tablet device
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Tablet {
     address: Address,
     name: String,
 }
 
+/// This struct holds all current devices
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Devices {
     mice: Vec<Mouse>,
@@ -130,6 +185,7 @@ pub struct Devices {
     tablets: Vec<Tablet>,
 }
 
+/// This internal function is to call socket commands
 fn call_hyprctl_data_cmd(cmd: DataCommands) -> io::Result<String> {
     use tokio::runtime::Runtime;
 
@@ -152,6 +208,7 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> io::Result<String> {
     ))
 }
 
+/// This function returns all monitors
 pub fn get_monitors() -> Result<Monitors> {
     let data = match call_hyprctl_data_cmd(DataCommands::Monitors) {
         Ok(data) => data,
@@ -164,6 +221,7 @@ pub fn get_monitors() -> Result<Monitors> {
     Ok(serialized)
 }
 
+/// This function returns all workspaces
 pub fn get_workspaces() -> Result<Workspaces> {
     let data = match call_hyprctl_data_cmd(DataCommands::Workspaces) {
         Ok(data) => data,
@@ -176,6 +234,7 @@ pub fn get_workspaces() -> Result<Workspaces> {
     Ok(serialized)
 }
 
+/// This function returns all clients/windows
 pub fn get_clients() -> Result<Clients> {
     let data = match call_hyprctl_data_cmd(DataCommands::Clients) {
         Ok(data) => data,
@@ -188,6 +247,7 @@ pub fn get_clients() -> Result<Clients> {
     Ok(serialized)
 }
 
+/// This function returns the active window
 pub fn get_active_window() -> Result<ActiveWindow> {
     let data = match call_hyprctl_data_cmd(DataCommands::ActiveWindow) {
         Ok(data) => data,
@@ -199,7 +259,7 @@ pub fn get_active_window() -> Result<ActiveWindow> {
     let serialized: ActiveWindow = serde_json::from_str(&data)?;
     Ok(serialized)
 }
-
+/// This function returns all layer surfaces
 pub fn get_layers() -> Result<Layers> {
     let data = match call_hyprctl_data_cmd(DataCommands::Layers) {
         Ok(data) => data,
@@ -212,6 +272,7 @@ pub fn get_layers() -> Result<Layers> {
     Ok(serialized)
 }
 
+/// This function returns all devices (mice, keyboards, tablets)
 pub fn get_devices() -> Result<Devices> {
     let data = match call_hyprctl_data_cmd(DataCommands::Devices) {
         Ok(data) => data,

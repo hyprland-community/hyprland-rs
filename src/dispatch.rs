@@ -1,21 +1,46 @@
+//! # Dispatch module
+//!
+//! This module is used for calling dispatchers and changing keywords
+//!
+//! ## Usage
+//!
+//! ```rust
+//! use hyprland::dispatch::{dispatch, DispatchType};
+//! fn main() -> std::io::Result<()> {
+//!    dispatch(DispatchType::Exec("kitty".to_string()))?;
+//!
+//!    Ok(())
+//! }
+//! ````
+
 use crate::shared::{get_socket_path, write_to_socket, Address, SocketType, WorkspaceId};
 use std::io;
 use tokio::runtime::Runtime;
 
+/// This enum is for identifying a window
 #[derive(Clone)]
 pub enum WindowIdentifier {
+    /// The address of a window
     Address(Address),
+    /// A Regular Expression to match the window class (handled by Hyprland)
     ClassRegularExpression(String),
+    /// The window title
     Title(String),
+    /// The window's process Id
     ProcessId(u32),
 }
 
+/// This enum holds the fullscreen types
 pub enum FullscreenType {
+    /// Fills the whole screen
     Real,
+    /// Maximizes the window
     Maximize,
 }
 
+/// This enum holds directions, typically used for moving
 #[derive(Clone)]
+#[allow(missing_docs)]
 pub enum Direction {
     Up,
     Down,
@@ -23,24 +48,35 @@ pub enum Direction {
     Left,
 }
 
+/// This enum is used for resizing and moving windows precisely
 #[derive(Clone)]
 pub enum Position {
+    /// A delta
     Delta(i16, i16),
-    Exact(u16, u16),
+    /// The exact size
+    Exact(i16, i16),
 }
 
+/// This enum holds a direction for cycling
+#[allow(missing_docs)]
 pub enum CycleDirection {
     Next,
     Previous,
 }
 
+/// This enum is used for identifying monitors
 #[derive(Clone)]
 pub enum MonitorIdentifier {
+    /// The monitor that is to the specified direction of the active one
     Direction(Direction),
+    /// The monitor id
     Id(u8),
+    /// The monitor name
     Name(String),
 }
 
+/// This enum holds corners
+#[allow(missing_docs)]
 pub enum Corner {
     TopRight,
     TopLeft,
@@ -48,62 +84,111 @@ pub enum Corner {
     BottomLeft,
 }
 
+/// This enum holds options that are applied to the current workspace
 pub enum WorkspaceOptions {
+    /// Makes all windows pseudo tiled
     AllPseudo,
+    /// Makes all windows float
     AllFloat,
 }
 
+/// This enum is for identifying workspaces that also includes the special workspace
 #[derive(Clone)]
 pub enum WorkspaceIdentifierWithSpecial {
+    /// The workspace Id
     Id(WorkspaceId),
+    /// The workspace relative to the current workspace (positive)
     PositiveRelative(u8),
+    /// The workspace relative to the current workspace (positive)
     NegativeRelative(u8),
+    /// The workspace on the monitor relative to the current monitor (positive)
     PositiveRelativeMonitor(u8),
+    /// The workspace on the monitor relative to the current monitor (negative)
     NegativeRelativeMonitor(u8),
+    /// The name of the workspace
     Name(String),
+    /// The special workspace
     Special,
 }
 
+/// This enum is for identifying workspaces
 #[derive(Clone)]
 pub enum WorkspaceIdentifier {
+    /// The workspace Id
     Id(WorkspaceId),
+    /// The workspace relative to the current workspace (positive)
     PositiveRelative(u8),
+    /// The workspace relative to the current workspace (positive)
     NegativeRelative(u8),
+    /// The workspace on the monitor relative to the current monitor (positive)
     PositiveRelativeMonitor(u8),
+    /// The workspace on the monitor relative to the current monitor (negative)
     NegativeRelativeMonitor(u8),
+    /// The name of the workspace
     Name(String),
 }
 
+/// This enum is the params to MoveWindow dispatcher
 pub enum WindowMove {
+    /// Moves the window to a specified monitor
     Monitor(MonitorIdentifier),
+    /// Moves the window in a specified direction
     Direction(Direction),
 }
 
+/// This enum holds every dispatcher
 pub enum DispatchType {
+    /// This dispatcher changes a keyword
     Keyword(String, String),
+    /// This dispatcher executes a program
     Exec(String),
+    /// This dispatcher kills the active window/client
     KillActiveWindow,
+    /// This dispatcher changes the current workspace
     Workspace(WorkspaceIdentifierWithSpecial),
+    /// This dispatcher moves the focused window to a specified workspace, and
+    /// changes the active workspace aswell
     MoveFocusedWindowToWorkspace(WorkspaceIdentifier),
+    /// This dispatcher moves the focused window to a specified workspace, and
+    /// does not change workspaces
     MoveFocusedWindowToWorkspaceSilent(WorkspaceIdentifier),
+    /// This dispatcher floats the current window
     ToggleFloating,
+    /// This toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
+    /// This dispatcher toggles pseudo tiling for the current window
     TogglePseudo,
+    /// This dispatcher moves the window focus in a specified direction
     MoveFocus(Direction),
+    /// This dispatcher moves the current window to a monitor or in a specified direction
     MoveWindow(WindowMove),
+    /// This dispatcher resizes the active window using a [`Position`][Position] enum
     ResizeActive(Position),
+    /// This dispatcher moves the active window using a [`Position`][Position] enum
     MoveActive(Position),
+    /// This dispatcher cycles windows using a specified direction
     CycleWindow(CycleDirection),
+    /// This dispatcher focuses a specified window
     FocusWindow(WindowIdentifier),
+    /// This dispatcher focuses a specified monitor
     FocusMonitor(MonitorIdentifier),
+    /// This dispatcher changed the split ratio
     ChangeSplitRatio(f32),
+    /// This dispatcher toggle opacity for the current window/client
     ToggleOpaque,
+    /// This dispatcher moves the cursor to a specified corner of a window
     MoveCursorToCorner(Corner),
+    /// This dispatcher applied a option to all windows in a workspace
     WorkspaceOption(WorkspaceOptions),
+    /// This exits Hyprland **(DANGEROUS)**
     Exit,
+    /// This dispatcher forces the renderer to reload
     ForceRendererReload,
+    /// This dispatcher moves the current workspace to a specified monitor
     MoveCurrentWorkspaceToMonitor(MonitorIdentifier),
+    /// This dispatcher moves a specified workspace to a specified monitor
     MoveWorkspaceToMonitor(WorkspaceIdentifier, MonitorIdentifier),
+    /// This toggles the special workspace (AKA scratchpad)
     ToggleSpecialWorkspace,
 }
 
@@ -272,7 +357,11 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
 
     Ok(output)
 }
-
+/// This function calls a specified dispatcher
+/// 
+/// ```rust
+/// dispatch(DispatchType::SomeDispatcher)
+/// ```
 pub fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
     let rt = Runtime::new()?;
     match rt.block_on(dispatch_cmd(dispatch_type)) {
