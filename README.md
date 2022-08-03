@@ -13,9 +13,9 @@ Right now the only way is to use a git submodule, this will be published to crat
 ### What this crate provides
 
 This crate provides 3 modules (+1 for shared things)
- - [`data`][crate::data] for getting information on the compositor
- - [`event_listener`][crate::event_listener] which provides the EventListener struct for listening for events
- - [`dispatch`][crate::dispatch] for calling dispatchers and changing keywords
+ - `data` for getting information on the compositor
+ - `event_listener` which provides the EventListener struct for listening for events
+ - `dispatch` for calling dispatchers and changing keywords
 
 ## Example Usage
 
