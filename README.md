@@ -1,5 +1,8 @@
 # Hyprland-rs
 
+![Crates.io](https://img.shields.io/crates/v/hyprland)
+![docs.rs](https://img.shields.io/docsrs/hyprland)
+
 A unoffical rust wrapper for Hyprland's IPC
 
 ## Getting started!
@@ -8,7 +11,11 @@ Lets get started with Hyprland-rs!
 
 ### Adding to your project
 
-Right now the only way is to use a git submodule, this will be published to crates.to shortly!
+Add the code below to the dependencies section of your Cargo.toml file!
+
+```toml
+hyprland = "0.1.1"
+```
 
 ### What this crate provides
 
