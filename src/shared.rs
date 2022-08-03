@@ -2,7 +2,7 @@
 //!
 //! This module provides shared private and public functions, structs, enum, and types
 use std::env::{var, VarError};
-use std::io;
+use std::{io,fmt};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 use serde::{Deserialize, Serialize};
@@ -16,19 +16,21 @@ pub struct Address(String);
 /// > its a type because it might change at some point
 pub type WorkspaceId = u8;
 
+
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl Address {
     /// This method returns a vector of bytes
     pub fn as_vec(self) -> Vec<u8> {
         let Address(value) = self;
         match hex::decode(value.trim_start_matches("0x")) {
             Ok(value) => value,
-            Err(error) => panic!("A error has occured: {}", error),
+            Err(error) => panic!("A error has occured while parsing string as hex: {}", error),
         }
-    }
-    /// This method returns it as a string, for use when interacting with dispatchers
-    pub fn to_string(self) -> String {
-        let Address(value) = self;
-        value
     }
 }
 
@@ -42,7 +44,7 @@ pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> io::Result<
     let response = &response[..num_read];
     Ok(match String::from_utf8(response.to_vec()) {
         Ok(str) => str,
-        Err(error) => panic!("an error has occured: {error:#?}"),
+        Err(error) => panic!("an error has occured while parsing bytes as utf8: {error:#?}"),
     })
 }
 /// This pub(crate) enum holds the different sockets that Hyprland has

@@ -5,9 +5,9 @@
 //! ## Usage
 //!
 //! ```rust
-//! use hyprland::dispatch::{dispatch, DispatchType};
+//! use hyprland::dispatch::{dispatch_blocking, DispatchType};
 //! fn main() -> std::io::Result<()> {
-//!    dispatch(DispatchType::Exec("kitty".to_string()))?;
+//!    dispatch_blocking(DispatchType::Exec("kitty".to_string()))?;
 //!
 //!    Ok(())
 //! }
@@ -242,9 +242,9 @@ fn position_to_string(pos: Position) -> String {
 
 fn match_window_identifier(iden: WindowIdentifier) -> String {
     match iden {
-        WindowIdentifier::Address(addr) => format!("address:{}", addr.to_string()),
-        WindowIdentifier::ProcessId(id) => format!("pid:{}", id.to_string()),
-        WindowIdentifier::ClassRegularExpression(regex) => format!("{}", regex),
+        WindowIdentifier::Address(addr) => format!("address:{}", addr),
+        WindowIdentifier::ProcessId(id) => format!("pid:{}", id),
+        WindowIdentifier::ClassRegularExpression(regex) => regex,
         WindowIdentifier::Title(title) => format!("title:{}", title),
     }
 }
@@ -277,7 +277,6 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
                 FullscreenType::Real => "0",
                 FullscreenType::Maximize => "1",
             }
-            .to_string()
         ),
         DispatchType::TogglePseudo => "pseudo".to_string(),
         DispatchType::MoveFocus(dir) => format!(
@@ -313,7 +312,7 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
         DispatchType::FocusMonitor(mon) => {
             format!("focusmonitor {}", match_mon_indentifier(mon.clone()))
         }
-        DispatchType::ChangeSplitRatio(ratio) => format!("splitratio {}", ratio.to_string()),
+        DispatchType::ChangeSplitRatio(ratio) => format!("splitratio {}", ratio),
         DispatchType::ToggleOpaque => "toggleopaque".to_string(),
         DispatchType::MoveCursorToCorner(corner) => format!(
             "movecursortocorner {}",
@@ -357,18 +356,38 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
 
     Ok(output)
 }
-/// This function calls a specified dispatcher
+
+/// This function calls a specified dispatcher (blocking)
 /// 
 /// ```rust
-/// dispatch(DispatchType::SomeDispatcher)
+/// dispatch_blocking(DispatchType::SomeDispatcher)
 /// ```
-pub fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
+pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
     let rt = Runtime::new()?;
     match rt.block_on(dispatch_cmd(dispatch_type)) {
         Ok(msg) => match msg.as_str() {
             "ok" => Ok(()),
-            msg => panic!("a error has occured {msg}"),
+            msg => panic!(
+                "Hyprland returned a non `ok` value to the dispatcher, this is usually a error, output:({msg})"
+            ),
         },
-        Err(error) => panic!("error: {error:#?}"),
+        Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
+    }
+}
+
+/// This function calls a specified dispatcher (async)
+/// 
+/// ```rust
+/// dispatch(DispatchType::SomeDispatcher).await
+/// ```
+pub async fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
+    match dispatch_cmd(dispatch_type).await {
+        Ok(msg) => match msg.as_str() {
+            "ok" => Ok(()),
+            msg => panic!(
+                "Hyprland returned a non `ok` value to the dispatcher, this is usually a error, output:({msg})"
+            ),
+        },
+        Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
     }
 }

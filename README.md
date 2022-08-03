@@ -23,20 +23,20 @@ here is an example of most of the provided features being utilized
 
 ```rust
 use hyprland::data::get_monitors;
-use hyprland::dispatch::{dispatch, Corner, DispatchType};
+use hyprland::dispatch::{dispatch_blocking, Corner, DispatchType};
 use hyprland::event_listener::EventListener;
 
 fn main() -> std::io::Result<()> {
 	// We can call dispatchers with the dispatch function!
 
 	// Here we are telling hyprland to open kitty!
-	dispatch(DispatchType::Exec("kitty".to_string()))?;
+	dispatch_blocking(DispatchType::Exec("kitty".to_string()))?;
 
 	// Here we are moving the cursor to the top left corner!
-	dispatch(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
+	dispatch_blocking(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
 	// Here we change a keyword, yes its a dispatcher don't complain
-	dispatch(DispatchType::Keyword(
+	dispatch_blocking(DispatchType::Keyword(
 		"general:border_size".to_string(),
 		"30".to_string(),
 	))?;

@@ -1,5 +1,5 @@
 use crate::shared::{get_socket_path, SocketType, WorkspaceId};
-use regex::{Regex, RegexSet};
+use regex::{Error as RegexError, Regex, RegexSet};
 use std::io;
 use tokio::io::AsyncReadExt;
 use tokio::net::UnixStream;
@@ -35,10 +35,32 @@ enum Event {
     MonitorRemoved(String),
 }
 
+fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
+    match val {
+        Ok(value) => value,
+        Err(RegexError::Syntax(str)) => panic!("syntax error: {str}"),
+        Err(RegexError::CompiledTooBig(size)) => {
+            panic!("The compiled regex size is too big ({size})")
+        }
+        Err(RegexError::__Nonexhaustive) => unreachable!(),
+    }
+}
+
+fn check_for_regex_set_error(val: Result<RegexSet, RegexError>) -> RegexSet {
+    match val {
+        Ok(value) => value,
+        Err(RegexError::Syntax(str)) => panic!("syntax error: {str}"),
+        Err(RegexError::CompiledTooBig(size)) => {
+            panic!("The compiled regex size is too big ({size})")
+        }
+        Err(RegexError::__Nonexhaustive) => unreachable!(),
+    }
+}
+
 /// This internal function parses event strings
 fn event_parser(event: String) -> io::Result<Vec<Event>> {
     lazy_static! {
-        static ref EVENT_SET: RegexSet = RegexSet::new(&[
+        static ref EVENT_SET: RegexSet = check_for_regex_set_error(RegexSet::new(&[
             r"\bworkspace>>(?P<workspace>[0-9]{1,2}|)",
             r"destroyworkspace>>(?P<workspace>[0-9]{1,2})",
             r"createworkspace>>(?P<workspace>[0-9]{1,2})",
@@ -47,12 +69,11 @@ fn event_parser(event: String) -> io::Result<Vec<Event>> {
             r"fullscreen>>(?P<state>0|1)",
             r"monitorremoved>>(?P<monitor>.*)",
             r"monitoradded>>(?P<monitor>.*)"
-        ])
-        .unwrap();
+        ]));
         static ref EVENT_REGEXES: Vec<Regex> = EVENT_SET
             .patterns()
             .iter()
-            .map(|pat| Regex::new(pat).unwrap())
+            .map(|pat| check_for_regex_error(Regex::new(pat)))
             .collect();
     }
 
@@ -64,7 +85,10 @@ fn event_parser(event: String) -> io::Result<Vec<Event>> {
         let matches = EVENT_SET.matches(item);
         let matches_event: Vec<_> = matches.into_iter().collect();
         let captures = if !EVENT_REGEXES.is_empty() && !matches_event.is_empty() {
-            EVENT_REGEXES[matches_event[0]].captures(item).unwrap()
+            match EVENT_REGEXES[matches_event[0]].captures(item) {
+                Some(captures) => captures,
+                None => panic!("Regex has no captures"),
+            }
         } else {
             panic!("something has went down -{:#?}-", matches_event)
         };
@@ -75,7 +99,10 @@ fn event_parser(event: String) -> io::Result<Vec<Event>> {
                     // WorkspaceChanged
                     let captured = &captures["workspace"];
                     let workspace = if !captured.is_empty() {
-                        captured.parse::<u8>().expect("Not a valid int")
+                        match captured.parse::<u8>() {
+                            Ok(num) => num,
+                            Err(e) => panic!("error parsing string as u8: {e}"),
+                        }
                     } else {
                         1_u8
                     };
@@ -83,18 +110,27 @@ fn event_parser(event: String) -> io::Result<Vec<Event>> {
                 }
                 1 => {
                     // destroyworkspace
-                    let workspace = captures["workspace"].parse::<u8>().unwrap();
+                    let workspace = match captures["workspace"].parse::<u8>() {
+                        Ok(num) => num,
+                        Err(e) => panic!("error parsing string as u8: {e}"),
+                    };
                     events.push(Event::WorkspaceDeleted(workspace));
                 }
                 2 => {
                     // WorkspaceAdded
-                    let workspace = captures["workspace"].parse::<u8>().unwrap();
+                    let workspace = match captures["workspace"].parse::<u8>() {
+                        Ok(num) => num,
+                        Err(e) => panic!("error parsing string as u8: {e}"),
+                    };
                     events.push(Event::WorkspaceAdded(workspace));
                 }
                 3 => {
                     // ActiveMonitorChanged
                     let monitor = &captures["monitor"];
-                    let workspace = captures["workspace"].parse::<u8>().unwrap();
+                    let workspace = match captures["workspace"].parse::<u8>() {
+                        Ok(num) => num,
+                        Err(e) => panic!("error parsing string as u8: {e}"),
+                    };
                     events.push(Event::ActiveMonitorChanged(MonitorEventData(
                         monitor.to_string(),
                         workspace,
@@ -179,6 +215,7 @@ impl EventListener<'_> {
             monitor_added_events: vec![],
         }
     }
+
     /// This method adds a event to the listener which executes on workspace change
     ///
     /// ```rust
