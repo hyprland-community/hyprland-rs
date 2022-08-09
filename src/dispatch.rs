@@ -36,6 +36,8 @@ pub enum FullscreenType {
     Real,
     /// Maximizes the window
     Maximize,
+    /// Passes no param
+    NoParam
 }
 
 /// This enum holds directions, typically used for moving
@@ -276,6 +278,7 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
             match fullscreen_type {
                 FullscreenType::Real => "0",
                 FullscreenType::Maximize => "1",
+                FullscreenType::NoParam => ""
             }
         ),
         DispatchType::TogglePseudo => "pseudo".to_string(),
@@ -358,13 +361,19 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
 }
 
 /// This function calls a specified dispatcher (blocking)
-/// 
+///
 /// ```rust
 /// dispatch_blocking(DispatchType::SomeDispatcher)
 /// ```
 pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
-    let rt = Runtime::new()?;
-    match rt.block_on(dispatch_cmd(dispatch_type)) {
+    lazy_static! {
+        static ref RT: Runtime = match Runtime::new() {
+            Ok(run) => run,
+            Err(e) => panic!("Error creating tokio runtime: {e}"),
+        };
+    }
+
+    match RT.block_on(dispatch_cmd(dispatch_type)) {
         Ok(msg) => match msg.as_str() {
             "ok" => Ok(()),
             msg => panic!(
@@ -376,7 +385,7 @@ pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
 }
 
 /// This function calls a specified dispatcher (async)
-/// 
+///
 /// ```rust
 /// dispatch(DispatchType::SomeDispatcher).await
 /// ```

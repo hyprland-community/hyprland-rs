@@ -1,11 +1,11 @@
 //! # The Shared Module
 //!
 //! This module provides shared private and public functions, structs, enum, and types
+use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
-use std::{io,fmt};
+use std::{fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
-use serde::{Deserialize, Serialize};
 
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
@@ -15,7 +15,6 @@ pub struct Address(String);
 /// This type provides the id used to identify workspaces
 /// > its a type because it might change at some point
 pub type WorkspaceId = u8;
-
 
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

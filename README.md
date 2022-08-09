@@ -1,9 +1,13 @@
 # Hyprland-rs
 
-![Crates.io](https://img.shields.io/crates/v/hyprland)
-![docs.rs](https://img.shields.io/docsrs/hyprland)
+[![Crates.io](https://img.shields.io/crates/v/hyprland)](https://crates.io/crates/hyprland)
+[![docs.rs](https://img.shields.io/docsrs/hyprland)](https://docs.rs/hyprland)
 
 A unoffical rust wrapper for Hyprland's IPC
+
+## Disclaimer
+If something doesn't work, doesn't matter what,
+make sure you are on the latest commit of Hyprland before making an issue!
 
 ## Getting started!
 
@@ -14,7 +18,7 @@ Lets get started with Hyprland-rs!
 Add the code below to the dependencies section of your Cargo.toml file!
 
 ```toml
-hyprland = "0.1.1"
+hyprland = "0.2.0"
 ```
 
 ### What this crate provides
@@ -58,7 +62,7 @@ fn main() -> std::io::Result<()> {
 	let mut event_listener = EventListener::new();
 
 	// add event, yes functions and closures both work!
-	event_listener.add_workspace_change_handler(&|id| println!("workspace changed to {id:#?}"));
+	event_listener.add_workspace_change_handler(|id| println!("workspace changed to {id:#?}"));
 
 	// and execute the function
 	// here we are using the blocking variant
