@@ -1,7 +1,10 @@
 # Hyprland-rs
 
 [![Crates.io](https://img.shields.io/crates/v/hyprland)](https://crates.io/crates/hyprland)
+![Crates.io](https://img.shields.io/crates/d/hyprland)
+[![Crates.io](https://img.shields.io/crates/l/hyprland)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![docs.rs](https://img.shields.io/docsrs/hyprland)](https://docs.rs/hyprland)
+[![Hyprland](https://img.shields.io/badge/Made%20for-Hyprland-blue)](https://github.com/hyprwm/Hyprland)
 
 A unoffical rust wrapper for Hyprland's IPC
 

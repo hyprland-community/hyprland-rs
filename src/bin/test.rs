@@ -28,20 +28,16 @@ fn main() -> std::io::Result<()> {
     let mut event_listener = EventListener::new();
 
     event_listener.add_workspace_change_handler(|id, state| {
-        let mut state = match state {
-            Some(state) => state,
-            None => panic!("sus")
-        };
         println!("This function is being ran! and the id is {id}");
-        if id == 5 {
-            state.active_workspace = 2;
-            println!("Changing workspace back to 2, the state is {state:#?}");
+        if id == 2 {
+            state.active_workspace = 5;
+            println!("Changing workspace back to 5, the state is {state:#?}");
         }
     });
 
 
     // add event, yes functions and closures both work!
-    //event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
+    event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
 
     // Waybar example
     // event_listener.add_active_window_change_handler(|data| {

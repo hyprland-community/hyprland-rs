@@ -2,9 +2,16 @@ use regex::{Error as RegexError, Regex, RegexSet};
 use crate::shared::WorkspaceId;
 use std::io;
 
+pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
+    MutableState(Box<U>),
+    Regular(Box<T>)
+}
+
+pub(crate) type Closures<T> = Vec<EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>>;
+
 #[allow(clippy::type_complexity)]
 pub(crate) struct Events {
-    pub(crate) workspace_changed_events: Vec<Box<dyn Fn(WorkspaceId, Option<&mut State>)>>,
+    pub(crate) workspace_changed_events: Closures<WorkspaceId>,
     pub(crate) workspace_added_events: Vec<Box<dyn Fn(WorkspaceId)>>,
     pub(crate) workspace_destroyed_events:  Vec<Box<dyn Fn(WorkspaceId)>>,
     pub(crate) active_monitor_changed_events: Vec<Box<dyn Fn(MonitorEventData)>>,
@@ -30,11 +37,13 @@ impl State {
     pub async fn execute_state<T: Sized>(
         self,
         old: State,
-        mut cb: impl FnMut(Self, T),
+        cb: Option<impl FnMut(&mut Self, T)>,
         value: Option<T>
     ) -> io::Result<Self> {
-        let state = self.clone();
+        let mut state = self.clone();
+        println!("Executing state");
         if self != old {
+            println!("State has been mutated!");
             use crate::dispatch::{dispatch, DispatchType};
             if old.fullscreen_state != state.fullscreen_state {
                 use crate::dispatch::FullscreenType;
@@ -50,10 +59,15 @@ impl State {
                 dispatch(DispatchType::FocusMonitor(MonitorIdentifier::Name(state.active_monitor.clone()))).await?;
             };
         } else {
-            match value {
-                Some(val) => cb(state.clone(), val),
+            println!("State has not been mutated!");
+            match cb {
+                Some(mut fun) => match value {
+                    Some(val) => fun(&mut state, val),
+                    None => ()
+                },
                 None => ()
             }
+            
         }
         Ok(state)
     }

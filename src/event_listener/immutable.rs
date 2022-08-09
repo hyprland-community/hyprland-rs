@@ -55,8 +55,8 @@ impl EventListener {
     /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id}"));
     /// listener.start_listener_blocking()
     /// ```
-    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceId, Option<&mut State>) + 'static) {
-        self.events.workspace_changed_events.push(Box::new(f));
+    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceId) + 'static) {
+        self.events.workspace_changed_events.push(EventTypes::Regular(Box::new(f)));
     }
 
     /// This method add a event to the listener which executes when a new workspace is created
@@ -177,7 +177,10 @@ impl EventListener {
                     Event::WorkspaceChanged(id) => {
                         let events = &self.events.workspace_changed_events;
                         for item in events.iter() {
-                            item(*id, None)
+                            match item {
+                                EventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+                                EventTypes::Regular(fun) => fun(*id),
+                            }
                         }
                     }
                     Event::WorkspaceAdded(id) => {

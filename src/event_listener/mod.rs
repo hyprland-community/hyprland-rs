@@ -1,7 +1,7 @@
 mod shared;
 pub use crate::event_listener::shared::*;
-/// placeholder
-pub mod mutable;
+
+mod mutable;
 pub use crate::event_listener::immutable::EventListener;
 
 mod immutable;

@@ -101,11 +101,10 @@ impl EventListener {
     /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id}"));
     /// listener.start_listener_blocking()
     /// ```
-    pub fn add_workspace_change_handler(
-        &mut self,
-        f: impl Fn(WorkspaceId, Option<&mut State>) + 'static,
-    ) {
-        self.events.workspace_changed_events.push(Box::new(f));
+    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceId, &mut State) + 'static) {
+        self.events
+            .workspace_changed_events
+            .push(EventTypes::MutableState(Box::new(f)));
     }
 
     /// This method add a event to the listener which executes when a new workspace is created
@@ -228,17 +227,20 @@ impl EventListener {
                     Event::WorkspaceChanged(id) => {
                         let handlers = &self.events.workspace_changed_events;
                         for item in handlers.iter() {
-                            let old_state = &self.state.clone();
+                            let old_state = self.state.clone();
                             let mut new_state = self.state.clone();
-                            item(*id, Some(&mut new_state));
+                            match item {
+                                EventTypes::MutableState(fun) => fun(*id, &mut new_state),
+                                EventTypes::Regular(fun) => fun(*id),
+                            }
 
                             let new_state = new_state
                                 .execute_state(
-                                    old_state.clone(),
-                                    |mut state, data| {
+                                    old_state,
+                                    Some(|state: &mut State, data| {
                                         state.active_workspace = data;
                                         println!("Workspace state updated to {data}")
-                                    },
+                                    }),
                                     Some(*id),
                                 )
                                 .await?;
