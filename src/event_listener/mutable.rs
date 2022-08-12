@@ -189,6 +189,172 @@ impl EventListener {
             .push(EventTypes::MutableState(Box::new(f)));
     }
 
+    async fn event_executor(&mut self, event: &Event) -> io::Result<()> {
+        match event {
+            Event::WorkspaceChanged(id) => {
+                let handlers = &self.events.workspace_changed_events;
+                self.state.active_workspace = *id;
+                for item in handlers.iter() {
+                    let new_state = execute_closure_mut(self.state.clone(), item, *id).await?;
+                    self.state = new_state;
+                }
+            }
+            Event::WorkspaceAdded(id) => {
+                let events = &self.events.workspace_added_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut(self.state.clone(), item, *id).await?;
+                    self.state = new_state;
+                }
+            }
+            Event::WorkspaceDeleted(id) => {
+                let events = &self.events.workspace_destroyed_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut(self.state.clone(), item, *id).await?;
+                    self.state = new_state;
+                }
+            }
+            Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
+                let events = &self.events.active_monitor_changed_events;
+                self.state.active_monitor = monitor.clone();
+                for item in events.iter() {
+                    let new_state = execute_closure_mut(
+                        self.state.clone(),
+                        item,
+                        MonitorEventData(monitor.clone(), *id),
+                    )
+                    .await?;
+                    self.state = new_state;
+                }
+            }
+            Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
+                let events = &self.events.active_window_changed_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut(
+                        self.state.clone(),
+                        item,
+                        Some(WindowEventData(class.clone(), title.clone())),
+                    )
+                    .await?;
+                    self.state = new_state;
+                }
+            }
+            Event::ActiveWindowChanged(None) => {
+                let events = &self.events.active_window_changed_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut(self.state.clone(), item, None).await?;
+                    self.state = new_state;
+                }
+            }
+            Event::FullscreenStateChanged(bool) => {
+                let events = &self.events.fullscreen_state_changed_events;
+                self.state.fullscreen_state = *bool;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut(self.state.clone(), item, *bool).await?;
+                    self.state = new_state;
+                }
+            }
+            Event::MonitorAdded(monitor) => {
+                let events = &self.events.monitor_added_events;
+                for item in events.iter() {
+                    let new_state =
+                        execute_closure_mut(self.state.clone(), item, monitor.clone()).await?;
+                    self.state = new_state;
+                }
+            }
+            Event::MonitorRemoved(monitor) => {
+                let events = &self.events.monitor_removed_events;
+                for item in events.iter() {
+                    let new_state =
+                        execute_closure_mut(self.state.clone(), item, monitor.clone()).await?;
+                    self.state = new_state;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn event_executor_sync(&mut self, event: &Event) -> io::Result<()> {
+        match event {
+            Event::WorkspaceChanged(id) => {
+                let handlers = &self.events.workspace_changed_events;
+                self.state.active_workspace = *id;
+                for item in handlers.iter() {
+                    let new_state = execute_closure_mut_sync(self.state.clone(), item, *id)?;
+                    self.state = new_state;
+                }
+            }
+            Event::WorkspaceAdded(id) => {
+                let events = &self.events.workspace_added_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut_sync(self.state.clone(), item, *id)?;
+                    self.state = new_state;
+                }
+            }
+            Event::WorkspaceDeleted(id) => {
+                let events = &self.events.workspace_destroyed_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut_sync(self.state.clone(), item, *id)?;
+                    self.state = new_state;
+                }
+            }
+            Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
+                let events = &self.events.active_monitor_changed_events;
+                self.state.active_monitor = monitor.clone();
+                for item in events.iter() {
+                    let new_state = execute_closure_mut_sync(
+                        self.state.clone(),
+                        item,
+                        MonitorEventData(monitor.clone(), *id),
+                    )?;
+                    self.state = new_state;
+                }
+            }
+            Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
+                let events = &self.events.active_window_changed_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut_sync(
+                        self.state.clone(),
+                        item,
+                        Some(WindowEventData(class.clone(), title.clone())),
+                    )?;
+                    self.state = new_state;
+                }
+            }
+            Event::ActiveWindowChanged(None) => {
+                let events = &self.events.active_window_changed_events;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut_sync(self.state.clone(), item, None)?;
+                    self.state = new_state;
+                }
+            }
+            Event::FullscreenStateChanged(bool) => {
+                let events = &self.events.fullscreen_state_changed_events;
+                self.state.fullscreen_state = *bool;
+                for item in events.iter() {
+                    let new_state = execute_closure_mut_sync(self.state.clone(), item, *bool)?;
+                    self.state = new_state;
+                }
+            }
+            Event::MonitorAdded(monitor) => {
+                let events = &self.events.monitor_added_events;
+                for item in events.iter() {
+                    let new_state =
+                        execute_closure_mut_sync(self.state.clone(), item, monitor.clone())?;
+                    self.state = new_state;
+                }
+            }
+            Event::MonitorRemoved(monitor) => {
+                let events = &self.events.monitor_removed_events;
+                for item in events.iter() {
+                    let new_state =
+                        execute_closure_mut_sync(self.state.clone(), item, monitor.clone())?;
+                    self.state = new_state;
+                }
+            }
+        }
+        Ok(())
+    }
+
     /// This method starts the event listener (async)
     ///
     /// This should be ran after all of your handlers are defined
@@ -227,93 +393,7 @@ impl EventListener {
             };
 
             for event in parsed.iter() {
-                match event {
-                    Event::WorkspaceChanged(id) => {
-                        let handlers = &self.events.workspace_changed_events;
-                        self.state.active_workspace = *id;
-                        for item in handlers.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, *id).await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::WorkspaceAdded(id) => {
-                        let events = &self.events.workspace_added_events;
-                        for item in events.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, *id).await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::WorkspaceDeleted(id) => {
-                        let events = &self.events.workspace_destroyed_events;
-                        for item in events.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, *id).await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
-                        let events = &self.events.active_monitor_changed_events;
-                        self.state.active_monitor = monitor.clone();
-                        for item in events.iter() {
-                            let new_state = execute_closure_mut(
-                                self.state.clone(),
-                                item,
-                                MonitorEventData(monitor.clone(), *id),
-                            )
-                            .await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
-                        let events = &self.events.active_window_changed_events;
-                        for item in events.iter() {
-                            let new_state = execute_closure_mut(
-                                self.state.clone(),
-                                item,
-                                Some(WindowEventData(class.clone(), title.clone())),
-                            )
-                            .await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::ActiveWindowChanged(None) => {
-                        let events = &self.events.active_window_changed_events;
-                        for item in events.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, None).await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::FullscreenStateChanged(bool) => {
-                        let events = &self.events.fullscreen_state_changed_events;
-                        self.state.fullscreen_state = *bool;
-                        for item in events.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, *bool).await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::MonitorAdded(monitor) => {
-                        let events = &self.events.monitor_added_events;
-                        for item in events.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, monitor.clone())
-                                    .await?;
-                            self.state = new_state;
-                        }
-                    }
-                    Event::MonitorRemoved(monitor) => {
-                        let events = &self.events.monitor_removed_events;
-                        for item in events.iter() {
-                            let new_state =
-                                execute_closure_mut(self.state.clone(), item, monitor.clone())
-                                    .await?;
-                            self.state = new_state;
-                        }
-                    }
-                }
+                self.event_executor(event).await?;
             }
         }
 
@@ -330,15 +410,49 @@ impl EventListener {
     /// listener.start_listener_blocking();
     /// ```
     pub fn start_listener_blocking(mut self) -> io::Result<()> {
-        use tokio::runtime::Runtime;
+        use io::prelude::*;
+        use std::os::unix::net::UnixStream;
 
-        lazy_static! {
-            static ref RT: Runtime = match Runtime::new() {
-                Ok(run) => run,
-                Err(e) => panic!("Error creating tokio runtime: {e}"),
+        let socket_path = get_socket_path(SocketType::Listener);
+
+        let mut stream = UnixStream::connect(socket_path)?;
+
+        let mut buf = [0; 4096];
+
+        loop {
+            //stream.readable()?;
+            let num_read = stream.read(&mut buf)?;
+            if num_read == 0 {
+                break;
+            }
+            let buf = &buf[..num_read];
+
+            let string = match String::from_utf8(buf.to_vec()) {
+                Ok(str) => str,
+                Err(error) => panic!("a error has occured {error:#?}"),
             };
+
+            let parsed: Vec<Event> = match event_parser(string) {
+                Ok(vec) => vec,
+                Err(error) => panic!("a error has occured {error:#?}"),
+            };
+
+            for event in parsed.iter() {
+                self.event_executor_sync(event)?;
+            }
         }
 
-        RT.block_on(self.start_listener())
+        Ok(())
+
+        // use tokio::runtime::Runtime;
+        //
+        // lazy_static! {
+        //     static ref RT: Runtime = match Runtime::new() {
+        //         Ok(run) => run,
+        //         Err(e) => panic!("Error creating tokio runtime: {e}"),
+        //     };
+        // }
+        //
+        // RT.block_on(self.start_listener())
     }
 }

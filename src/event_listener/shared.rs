@@ -60,6 +60,30 @@ impl State {
         }
         Ok(state)
     }
+    /// Execute changes in state
+    pub fn execute_state_sync(self, old: State) -> io::Result<Self> {
+        let state = self.clone();
+        if self != old {
+            use crate::dispatch::{dispatch_blocking, DispatchType};
+            if old.fullscreen_state != state.fullscreen_state {
+                use crate::dispatch::FullscreenType;
+                dispatch_blocking(DispatchType::ToggleFullscreen(FullscreenType::NoParam))?;
+            }
+            if old.active_workspace != state.active_workspace {
+                use crate::dispatch::WorkspaceIdentifierWithSpecial;
+                dispatch_blocking(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(
+                    state.active_workspace,
+                )))?;
+            }
+            if old.active_monitor != state.active_monitor {
+                use crate::dispatch::MonitorIdentifier;
+                dispatch_blocking(DispatchType::FocusMonitor(MonitorIdentifier::Name(
+                    state.active_monitor.clone(),
+                )))?;
+            };
+        }
+        Ok(state)
+    }
 }
 
 pub(crate) fn execute_closure<T>(f: &Closure<T>, val: T) {
@@ -82,6 +106,23 @@ pub(crate) async fn execute_closure_mut<T>(
     }
 
     let new_state = new_state.execute_state(old_state).await?;
+    Ok(new_state)
+}
+
+#[allow(clippy::redundant_clone)]
+pub(crate) fn execute_closure_mut_sync<T>(
+    state: State,
+    f: &Closure<T>,
+    val: T,
+) -> io::Result<State> {
+    let old_state = state.clone();
+    let mut new_state = state.clone();
+    match f {
+        EventTypes::MutableState(fun) => fun(val, &mut new_state),
+        EventTypes::Regular(fun) => fun(val),
+    }
+
+    let new_state = new_state.execute_state_sync(old_state)?;
     Ok(new_state)
 }
 

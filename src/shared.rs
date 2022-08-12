@@ -4,8 +4,6 @@
 use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::{fmt, io};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::UnixStream;
 
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
@@ -35,6 +33,8 @@ impl Address {
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
 pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> io::Result<String> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::UnixStream;
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(content).await?;
@@ -46,6 +46,23 @@ pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> io::Result<
         Err(error) => panic!("an error has occured while parsing bytes as utf8: {error:#?}"),
     })
 }
+
+/// This pub(crate) function is used to write a value to a socket and to get the response
+pub(crate) fn write_to_socket_sync(path: String, content: &[u8]) -> io::Result<String> {
+    use io::prelude::*;
+    use std::os::unix::net::UnixStream;
+    let mut stream = UnixStream::connect(path)?;
+
+    stream.write_all(content)?;
+    let mut response = [0; 4096];
+    let num_read = stream.read(&mut response)?;
+    let response = &response[..num_read];
+    Ok(match String::from_utf8(response.to_vec()) {
+        Ok(str) => str,
+        Err(error) => panic!("an error has occured while parsing bytes as utf8: {error:#?}"),
+    })
+}
+
 /// This pub(crate) enum holds the different sockets that Hyprland has
 pub(crate) enum SocketType {
     /// The socket used to send commands to Hyprland (AKA `.socket.sock`)

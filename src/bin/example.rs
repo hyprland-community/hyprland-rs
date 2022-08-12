@@ -26,17 +26,20 @@ fn main() -> std::io::Result<()> {
     // Create a event listener
     let mut event_listener = EventListener::new();
 
+    // This changes the workspace to 5 if the workspace is switched to 9
+    // this is a performance and mutable state test
     event_listener.add_workspace_change_handler(|id, state| {
-        if id == 2 {
-            state.active_workspace = 5;
+        if id == 9 {
+            state.active_workspace = 2;
         }
     });
+    // This makes it so you can't turn on fullscreen lol
     event_listener.add_fullscreen_state_change_handler(|fstate, state| {
         if fstate {
             state.fullscreen_state = false;
         }
     });
-
+    // Makes a monitor unfocusable
     event_listener.add_active_monitor_change_handler(|data, state| {
         let hyprland::event_listener::MonitorEventData(monitor, _) = data;
 

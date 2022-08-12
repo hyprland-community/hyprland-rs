@@ -13,9 +13,10 @@
 //! }
 //! ````
 
-use crate::shared::{get_socket_path, write_to_socket, Address, SocketType, WorkspaceId};
+use crate::shared::{
+    get_socket_path, write_to_socket, write_to_socket_sync, Address, SocketType, WorkspaceId,
+};
 use std::io;
-use tokio::runtime::Runtime;
 
 /// This enum is for identifying a window
 #[derive(Clone)]
@@ -263,8 +264,7 @@ fn match_window_identifier(iden: WindowIdentifier) -> String {
     }
 }
 
-async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
-    let socket_path = get_socket_path(SocketType::Command);
+fn gen_dispatch_str(cmd: DispatchType) -> io::Result<String> {
     let string_to_pass = match &cmd {
         DispatchType::Exec(sh) => format!("exec {sh}"),
         DispatchType::KillActiveWindow => "killactive".to_string(),
@@ -366,19 +366,13 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
             format!("{theme} {size}", theme = theme.clone(), size = *size)
         }
     };
-    let output = if let DispatchType::Keyword(_, _) = cmd {
-        write_to_socket(socket_path, format!("keyword {string_to_pass}").as_bytes()).await?
+    if let DispatchType::Keyword(_, _) = cmd {
+        Ok(format!("keyword {string_to_pass}"))
     } else if let DispatchType::SetCursor(_, _) = cmd {
-        write_to_socket(
-            socket_path,
-            format!("setcursor {string_to_pass}").as_bytes(),
-        )
-        .await?
+        Ok(format!("setcursor {string_to_pass}"))
     } else {
-        write_to_socket(socket_path, format!("dispatch {string_to_pass}").as_bytes()).await?
-    };
-
-    Ok(output)
+        Ok(format!("dispatch {string_to_pass}"))
+    }
 }
 
 /// This function calls a specified dispatcher (blocking)
@@ -391,14 +385,10 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
 /// # }
 /// ```
 pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
-    lazy_static! {
-        static ref RT: Runtime = match Runtime::new() {
-            Ok(run) => run,
-            Err(e) => panic!("Error creating tokio runtime: {e}"),
-        };
-    }
+    let socket_path = get_socket_path(SocketType::Command);
+    let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes());
 
-    match RT.block_on(dispatch_cmd(dispatch_type)) {
+    match output {
         Ok(msg) => match msg.as_str() {
             "ok" => Ok(()),
             msg => panic!(
@@ -420,7 +410,10 @@ pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
 /// # }
 /// ```
 pub async fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
-    match dispatch_cmd(dispatch_type).await {
+    let socket_path = get_socket_path(SocketType::Command);
+    let output = write_to_socket(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes()).await;
+
+    match output {
         Ok(msg) => match msg.as_str() {
             "ok" => Ok(()),
             msg => panic!(

@@ -1,7 +1,5 @@
 use crate::shared::{get_socket_path, SocketType, WorkspaceId};
 use std::io;
-use tokio::io::AsyncReadExt;
-use tokio::net::UnixStream;
 
 use crate::event_listener::shared::*;
 
@@ -166,6 +164,65 @@ impl EventListener {
             .push(EventTypes::Regular(Box::new(f)));
     }
 
+    fn event_executor(&self, event: &Event) {
+        match event {
+            Event::WorkspaceChanged(id) => {
+                let events = &self.events.workspace_changed_events;
+                for item in events.iter() {
+                    execute_closure(item, *id);
+                }
+            }
+            Event::WorkspaceAdded(id) => {
+                let events = &self.events.workspace_added_events;
+                for item in events.iter() {
+                    execute_closure(item, *id);
+                }
+            }
+            Event::WorkspaceDeleted(id) => {
+                let events = &self.events.workspace_destroyed_events;
+                for item in events.iter() {
+                    execute_closure(item, *id);
+                }
+            }
+            Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
+                let events = &self.events.active_monitor_changed_events;
+                for item in events.iter() {
+                    execute_closure(item, MonitorEventData(monitor.clone(), *id));
+                }
+            }
+            Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
+                let events = &self.events.active_window_changed_events;
+                for item in events.iter() {
+                    execute_closure(item, Some(WindowEventData(class.clone(), title.clone())));
+                }
+            }
+            Event::ActiveWindowChanged(None) => {
+                let events = &self.events.active_window_changed_events;
+                for item in events.iter() {
+                    execute_closure(item, None);
+                }
+            }
+            Event::FullscreenStateChanged(bool) => {
+                let events = &self.events.fullscreen_state_changed_events;
+                for item in events.iter() {
+                    execute_closure(item, *bool);
+                }
+            }
+            Event::MonitorAdded(monitor) => {
+                let events = &self.events.monitor_added_events;
+                for item in events.iter() {
+                    execute_closure(item, monitor.clone());
+                }
+            }
+            Event::MonitorRemoved(monitor) => {
+                let events = &self.events.monitor_removed_events;
+                for item in events.iter() {
+                    execute_closure(item, monitor.clone());
+                }
+            }
+        }
+    }
+
     /// This method starts the event listener (async)
     ///
     /// This should be ran after all of your handlers are defined
@@ -179,6 +236,9 @@ impl EventListener {
     /// # }
     /// ```
     pub async fn start_listener(&self) -> io::Result<()> {
+        use tokio::io::AsyncReadExt;
+        use tokio::net::UnixStream;
+
         let socket_path = get_socket_path(SocketType::Listener);
 
         let mut stream = UnixStream::connect(socket_path).await?;
@@ -204,65 +264,7 @@ impl EventListener {
             };
 
             for event in parsed.iter() {
-                match event {
-                    Event::WorkspaceChanged(id) => {
-                        let events = &self.events.workspace_changed_events;
-                        for item in events.iter() {
-                            execute_closure(item, *id);
-                        }
-                    }
-                    Event::WorkspaceAdded(id) => {
-                        let events = &self.events.workspace_added_events;
-                        for item in events.iter() {
-                            execute_closure(item, *id);
-                        }
-                    }
-                    Event::WorkspaceDeleted(id) => {
-                        let events = &self.events.workspace_destroyed_events;
-                        for item in events.iter() {
-                            execute_closure(item, *id);
-                        }
-                    }
-                    Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
-                        let events = &self.events.active_monitor_changed_events;
-                        for item in events.iter() {
-                            execute_closure(item, MonitorEventData(monitor.clone(), *id));
-                        }
-                    }
-                    Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
-                        let events = &self.events.active_window_changed_events;
-                        for item in events.iter() {
-                            execute_closure(
-                                item,
-                                Some(WindowEventData(class.clone(), title.clone())),
-                            );
-                        }
-                    }
-                    Event::ActiveWindowChanged(None) => {
-                        let events = &self.events.active_window_changed_events;
-                        for item in events.iter() {
-                            execute_closure(item, None);
-                        }
-                    }
-                    Event::FullscreenStateChanged(bool) => {
-                        let events = &self.events.fullscreen_state_changed_events;
-                        for item in events.iter() {
-                            execute_closure(item, *bool);
-                        }
-                    }
-                    Event::MonitorAdded(monitor) => {
-                        let events = &self.events.monitor_added_events;
-                        for item in events.iter() {
-                            execute_closure(item, monitor.clone());
-                        }
-                    }
-                    Event::MonitorRemoved(monitor) => {
-                        let events = &self.events.monitor_removed_events;
-                        for item in events.iter() {
-                            execute_closure(item, monitor.clone());
-                        }
-                    }
-                }
+                self.event_executor(event);
             }
         }
 
@@ -279,15 +281,48 @@ impl EventListener {
     /// listener.start_listener_blocking();
     /// ```
     pub fn start_listener_blocking(self) -> io::Result<()> {
-        use tokio::runtime::Runtime;
+        use io::prelude::*;
+        use std::os::unix::net::UnixStream;
 
-        lazy_static! {
-            static ref RT: Runtime = match Runtime::new() {
-                Ok(run) => run,
-                Err(e) => panic!("Error creating tokio runtime: {e}"),
+        let socket_path = get_socket_path(SocketType::Listener);
+
+        let mut stream = UnixStream::connect(socket_path)?;
+
+        let mut buf = [0; 4096];
+
+        loop {
+            //stream.readable()?;
+            let num_read = stream.read(&mut buf)?;
+            if num_read == 0 {
+                break;
+            }
+            let buf = &buf[..num_read];
+
+            let string = match String::from_utf8(buf.to_vec()) {
+                Ok(str) => str,
+                Err(error) => panic!("a error has occured {error:#?}"),
             };
+
+            let parsed: Vec<Event> = match event_parser(string) {
+                Ok(vec) => vec,
+                Err(error) => panic!("a error has occured {error:#?}"),
+            };
+
+            for event in parsed.iter() {
+                self.event_executor(event);
+            }
         }
 
-        RT.block_on(self.start_listener())
+        Ok(())
+        // use tokio::runtime::Runtime;
+        //
+        // lazy_static! {
+        //     static ref RT: Runtime = match Runtime::new() {
+        //         Ok(run) => run,
+        //         Err(e) => panic!("Error creating tokio runtime: {e}"),
+        //     };
+        // }
+        //
+        // RT.block_on(self.start_listener())
     }
 }
