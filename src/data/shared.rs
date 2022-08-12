@@ -13,7 +13,7 @@ pub(crate) enum DataCommands {
     Layers,
     Devices,
     Version,
-    Keyword(String)
+    Keyword(String),
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
@@ -247,7 +247,7 @@ pub struct Version {
     /// The git commit message
     pub commit_message: String,
     /// The flags that Hyprland was built with
-    pub flags: Vec<String>
+    pub flags: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -255,7 +255,7 @@ pub(crate) struct OptionRaw {
     pub option: String,
     pub int: i64,
     pub float: f64,
-    pub str: String
+    pub str: String,
 }
 
 /// This enum holds the possible values of a keyword/option
@@ -266,7 +266,7 @@ pub enum OptionValue {
     /// A floating point (64-point)
     Float(f64),
     /// A string
-    String(String)
+    String(String),
 }
 
 /// This struct holds a keyword
@@ -275,5 +275,5 @@ pub struct Keyword {
     /// The identifier (or name) of the keyword
     pub option: String,
     /// The value of the keyword/option
-    pub value: OptionValue
+    pub value: OptionValue,
 }

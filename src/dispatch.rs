@@ -145,14 +145,14 @@ pub enum DispatchType {
         /// The keyword key
         String,
         /// The value to set the keyword to
-        String
+        String,
     ),
     /// This dispatcher changes the current cursor
     SetCursor(
         /// The cursor theme
         String,
         /// The size
-        u16
+        u16,
     ),
     /// This dispatcher executes a program
     Exec(String),
@@ -361,15 +361,19 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
         DispatchType::ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
         DispatchType::Keyword(key, val) => {
             format!("{key} {val}", key = key.clone(), val = val.clone())
-        },
+        }
         DispatchType::SetCursor(theme, size) => {
             format!("{theme} {size}", theme = theme.clone(), size = *size)
-        },
+        }
     };
     let output = if let DispatchType::Keyword(_, _) = cmd {
         write_to_socket(socket_path, format!("keyword {string_to_pass}").as_bytes()).await?
     } else if let DispatchType::SetCursor(_, _) = cmd {
-        write_to_socket(socket_path, format!("setcursor {string_to_pass}").as_bytes()).await?
+        write_to_socket(
+            socket_path,
+            format!("setcursor {string_to_pass}").as_bytes(),
+        )
+        .await?
     } else {
         write_to_socket(socket_path, format!("dispatch {string_to_pass}").as_bytes()).await?
     };

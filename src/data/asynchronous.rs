@@ -14,7 +14,7 @@ async fn call_hyprctl_data_cmd(cmd: DataCommands) -> io::Result<String> {
         DataCommands::Layers => "layers".to_string(),
         DataCommands::Workspaces => "workspaces".to_string(),
         DataCommands::Version => "version".to_string(),
-        DataCommands::Keyword(key) => format!("getoption {key}")
+        DataCommands::Keyword(key) => format!("getoption {key}"),
     };
 
     let socket_path = get_socket_path(SocketType::Command);
@@ -133,12 +133,10 @@ pub async fn get_keyword(key: String) -> Result<Keyword> {
             OptionValue::String(deserialized.str)
         } else {
             panic!("The option returned data that was unrecognized: {dc:#?}")
-        }
+        },
     };
     Ok(keyword)
 }
-
-
 
 /// A helper function to get the current workspace
 pub async fn get_active_workspace() -> Result<Workspace> {
