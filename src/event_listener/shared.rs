@@ -1,27 +1,28 @@
-use regex::{Error as RegexError, Regex, RegexSet};
 use crate::shared::WorkspaceId;
+use regex::{Error as RegexError, Regex, RegexSet};
 use std::io;
 
 pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
     MutableState(Box<U>),
-    Regular(Box<T>)
+    Regular(Box<T>),
 }
 
-pub(crate) type Closures<T> = Vec<EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>>;
+pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
+pub(crate) type Closures<T> = Vec<Closure<T>>;
 
 #[allow(clippy::type_complexity)]
 pub(crate) struct Events {
     pub(crate) workspace_changed_events: Closures<WorkspaceId>,
-    pub(crate) workspace_added_events: Vec<Box<dyn Fn(WorkspaceId)>>,
-    pub(crate) workspace_destroyed_events:  Vec<Box<dyn Fn(WorkspaceId)>>,
-    pub(crate) active_monitor_changed_events: Vec<Box<dyn Fn(MonitorEventData)>>,
-    pub(crate) active_window_changed_events: Vec<Box<dyn Fn(Option<WindowEventData>)>>,
-    pub(crate) fullscreen_state_changed_events: Vec<Box<dyn Fn(bool)>>,
-    pub(crate) monitor_removed_events: Vec<Box<dyn Fn(String)>>,
-    pub(crate) monitor_added_events: Vec<Box<dyn Fn(String)>>,
+    pub(crate) workspace_added_events: Closures<WorkspaceId>,
+    pub(crate) workspace_destroyed_events: Closures<WorkspaceId>,
+    pub(crate) active_monitor_changed_events: Closures<MonitorEventData>,
+    pub(crate) active_window_changed_events: Closures<Option<WindowEventData>>,
+    pub(crate) fullscreen_state_changed_events: Closures<bool>,
+    pub(crate) monitor_removed_events: Closures<String>,
+    pub(crate) monitor_added_events: Closures<String>,
 }
 
-/// The mutable state available to Closures 
+/// The mutable state available to Closures
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct State {
     /// The active workspace
@@ -29,21 +30,14 @@ pub struct State {
     /// The active monitor
     pub active_monitor: String,
     /// The fullscreen state
-    pub fullscreen_state: bool
+    pub fullscreen_state: bool,
 }
 
 impl State {
     /// Execute changes in state
-    pub async fn execute_state<T: Sized>(
-        self,
-        old: State,
-        cb: Option<impl FnMut(&mut Self, T)>,
-        value: Option<T>
-    ) -> io::Result<Self> {
-        let mut state = self.clone();
-        println!("Executing state");
+    pub async fn execute_state(self, old: State) -> io::Result<Self> {
+        let state = self.clone();
         if self != old {
-            println!("State has been mutated!");
             use crate::dispatch::{dispatch, DispatchType};
             if old.fullscreen_state != state.fullscreen_state {
                 use crate::dispatch::FullscreenType;
@@ -51,30 +45,48 @@ impl State {
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                println!("Executing dispatcher: {state:#?}");
-                dispatch(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(state.active_workspace))).await?;
+                dispatch(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(
+                    state.active_workspace,
+                )))
+                .await?;
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
-                dispatch(DispatchType::FocusMonitor(MonitorIdentifier::Name(state.active_monitor.clone()))).await?;
+                dispatch(DispatchType::FocusMonitor(MonitorIdentifier::Name(
+                    state.active_monitor.clone(),
+                )))
+                .await?;
             };
-        } else {
-            println!("State has not been mutated!");
-            match cb {
-                Some(mut fun) => match value {
-                    Some(val) => fun(&mut state, val),
-                    None => ()
-                },
-                None => ()
-            }
-            
         }
         Ok(state)
     }
 }
 
+pub(crate) fn execute_closure<T>(f: &Closure<T>, val: T) {
+    match f {
+        EventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+        EventTypes::Regular(fun) => fun(val),
+    }
+}
+
+pub(crate) async fn execute_closure_mut<T>(
+    state: State,
+    f: &Closure<T>,
+    val: T,
+) -> io::Result<State> {
+    let old_state = state.clone();
+    let mut new_state = state.clone();
+    match f {
+        EventTypes::MutableState(fun) => fun(val, &mut new_state),
+        EventTypes::Regular(fun) => fun(val),
+    }
+
+    let new_state = new_state.execute_state(old_state).await?;
+    Ok(new_state)
+}
+
 /// This tuple struct holds window event data
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WindowEventData(
     /// The window class
     pub String,
@@ -83,7 +95,7 @@ pub struct WindowEventData(
 );
 
 /// This tuple struct holds monitor event data
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MonitorEventData(
     /// The monitor name
     pub String,
@@ -92,7 +104,7 @@ pub struct MonitorEventData(
 );
 
 /// This enum holds every event type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum Event {
     WorkspaceChanged(WorkspaceId),
     WorkspaceDeleted(WorkspaceId),
@@ -133,7 +145,7 @@ pub(crate) fn event_parser(event: String) -> io::Result<Vec<Event>> {
             r"\bworkspace>>(?P<workspace>[0-9]{1,2}|)",
             r"destroyworkspace>>(?P<workspace>[0-9]{1,2})",
             r"createworkspace>>(?P<workspace>[0-9]{1,2})",
-            r"activemon>>(?P<monitor>.*),(?P<workspace>[0-9]{1,2})",
+            r"focusedmon>>(?P<monitor>.*),(?P<workspace>[0-9]{1,2})",
             r"activewindow>>(?P<class>.*),(?P<title>.*)",
             r"fullscreen>>(?P<state>0|1)",
             r"monitorremoved>>(?P<monitor>.*)",
@@ -220,7 +232,7 @@ pub(crate) fn event_parser(event: String) -> io::Result<Vec<Event>> {
                 }
                 5 => {
                     // FullscreenStateChanged
-                    let state = &captures["state"] == "0";
+                    let state = &captures["state"] != "0";
                     events.push(Event::FullscreenStateChanged(state))
                 }
                 6 => {

@@ -37,7 +37,7 @@ pub enum FullscreenType {
     /// Maximizes the window
     Maximize,
     /// Passes no param
-    NoParam
+    NoParam,
 }
 
 /// This enum holds directions, typically used for moving
@@ -141,7 +141,19 @@ pub enum WindowMove {
 /// This enum holds every dispatcher
 pub enum DispatchType {
     /// This dispatcher changes a keyword
-    Keyword(String, String),
+    Keyword(
+        /// The keyword key
+        String,
+        /// The value to set the keyword to
+        String
+    ),
+    /// This dispatcher changes the current cursor
+    SetCursor(
+        /// The cursor theme
+        String,
+        /// The size
+        u16
+    ),
     /// This dispatcher executes a program
     Exec(String),
     /// This dispatcher kills the active window/client
@@ -278,7 +290,7 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
             match fullscreen_type {
                 FullscreenType::Real => "0",
                 FullscreenType::Maximize => "1",
-                FullscreenType::NoParam => ""
+                FullscreenType::NoParam => "",
             }
         ),
         DispatchType::TogglePseudo => "pseudo".to_string(),
@@ -349,10 +361,15 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
         DispatchType::ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
         DispatchType::Keyword(key, val) => {
             format!("{key} {val}", key = key.clone(), val = val.clone())
-        }
+        },
+        DispatchType::SetCursor(theme, size) => {
+            format!("{theme} {size}", theme = theme.clone(), size = *size)
+        },
     };
     let output = if let DispatchType::Keyword(_, _) = cmd {
         write_to_socket(socket_path, format!("keyword {string_to_pass}").as_bytes()).await?
+    } else if let DispatchType::SetCursor(_, _) = cmd {
+        write_to_socket(socket_path, format!("setcursor {string_to_pass}").as_bytes()).await?
     } else {
         write_to_socket(socket_path, format!("dispatch {string_to_pass}").as_bytes()).await?
     };
@@ -363,7 +380,11 @@ async fn dispatch_cmd(cmd: DispatchType) -> io::Result<String> {
 /// This function calls a specified dispatcher (blocking)
 ///
 /// ```rust
-/// dispatch_blocking(DispatchType::SomeDispatcher)
+/// # fn main() -> std::io::Result<()> {
+/// use hyprland::dispatch::{DispatchType,dispatch_blocking};
+/// // This is an example of just one dispatcher, there are many more!
+/// dispatch_blocking(DispatchType::Exec("something".to_string()))
+/// # }
 /// ```
 pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
     lazy_static! {
@@ -387,7 +408,12 @@ pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
 /// This function calls a specified dispatcher (async)
 ///
 /// ```rust
-/// dispatch(DispatchType::SomeDispatcher).await
+/// # async fn function() -> std::io::Result<()> {
+/// use hyprland::dispatch::{DispatchType,dispatch};
+/// // This is an example of just one dispatcher, there are many more!
+/// dispatch(DispatchType::Exec("kitty".to_string())).await?;
+/// # Ok(())
+/// # }
 /// ```
 pub async fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
     match dispatch_cmd(dispatch_type).await {

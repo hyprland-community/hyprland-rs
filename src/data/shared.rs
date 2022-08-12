@@ -12,10 +12,12 @@ pub(crate) enum DataCommands {
     ActiveWindow,
     Layers,
     Devices,
+    Version,
+    Keyword(String)
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkspaceBasic {
     /// The workspace Id
     pub id: u8,
@@ -24,7 +26,7 @@ pub struct WorkspaceBasic {
 }
 
 /// This enum provides the different monitor transforms
-#[derive(Serialize_repr, Deserialize_repr, Debug)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
 #[repr(u8)]
 pub enum Transforms {
     /// No transform
@@ -46,7 +48,7 @@ pub enum Transforms {
 }
 
 /// This struct holds information for a monitor
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Monitor {
     /// The monitor id
     pub id: u8,
@@ -73,14 +75,14 @@ pub struct Monitor {
     /// idk what this is lol
     pub transform: Transforms,
     /// a string that identifies if the display is active
-    pub active: bool,
+    pub focused: bool,
 }
 
 /// This type provides a vector of monitors
 pub type Monitors = Vec<Monitor>;
 
 /// This struct holds information for a workspace
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Workspace {
     /// The workspace Id
     pub id: u8,
@@ -98,7 +100,7 @@ pub struct Workspace {
 pub type Workspaces = Vec<Workspace>;
 
 /// This struct holds information for a client/window
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Client {
     /// The client's [`Address`][crate::shared::Address]
     pub address: Address,
@@ -126,7 +128,7 @@ pub struct Client {
 pub type Clients = Vec<Client>;
 
 /// This struct holds information about a layer surface/client
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LayerClient {
     /// The layer's [`Address`][crate::shared::Address]
     pub address: Address,
@@ -143,7 +145,7 @@ pub struct LayerClient {
 }
 
 /// This struct holds all the layer surfaces for a display
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LayerDisplay {
     /// The different levels of layers
     pub levels: HashMap<String, Vec<LayerClient>>,
@@ -153,7 +155,7 @@ pub struct LayerDisplay {
 pub type Layers = HashMap<String, LayerDisplay>;
 
 /// This struct holds information about a mouse device
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Mouse {
     /// The mouse's address
     pub address: Address,
@@ -162,7 +164,7 @@ pub struct Mouse {
 }
 
 /// This struct holds information about a keyboard device
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Keyboard {
     /// The keyboard's address
     pub address: Address,
@@ -183,7 +185,7 @@ pub struct Keyboard {
 }
 
 /// A enum that holds the types of tablets
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TabletType {
     /// The TabletPad type of tablet
     #[serde(rename = "tabletPad")]
@@ -194,7 +196,7 @@ pub enum TabletType {
 }
 
 /// A enum to match what the tablet belongs to
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum TabletBelongsTo {
     /// The belongsTo data if the tablet is of type TabletPad
     TabletPad {
@@ -208,7 +210,7 @@ pub enum TabletBelongsTo {
 }
 
 /// This struct holds information about a tablet device
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Tablet {
     /// The tablet's address
     pub address: Address,
@@ -223,7 +225,7 @@ pub struct Tablet {
 }
 
 /// This struct holds all current devices
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Devices {
     /// All the mice
     pub mice: Vec<Mouse>,
@@ -231,4 +233,47 @@ pub struct Devices {
     pub keyboards: Vec<Keyboard>,
     /// All the tablets
     pub tablets: Vec<Tablet>,
+}
+
+/// This struct holds version information
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Version {
+    /// The git branch Hyprland was built on
+    pub branch: String,
+    /// The git commit Hyprland was built on
+    pub commit: String,
+    /// This is true if there were unstaged changed when Hyprland was built
+    pub dirty: bool,
+    /// The git commit message
+    pub commit_message: String,
+    /// The flags that Hyprland was built with
+    pub flags: Vec<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(crate) struct OptionRaw {
+    pub option: String,
+    pub int: i64,
+    pub float: f64,
+    pub str: String
+}
+
+/// This enum holds the possible values of a keyword/option
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum OptionValue {
+    /// A integer (64-bit)
+    Int(i64),
+    /// A floating point (64-point)
+    Float(f64),
+    /// A string
+    String(String)
+}
+
+/// This struct holds a keyword
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Keyword {
+    /// The identifier (or name) of the keyword
+    pub option: String,
+    /// The value of the keyword/option
+    pub value: OptionValue
 }
