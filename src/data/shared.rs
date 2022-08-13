@@ -155,7 +155,7 @@ pub enum ActiveWindow {
         xwayland: bool,
     },
     /// If there isn't a active window
-    None {}
+    None {},
 }
 
 /// This struct holds information about a layer surface/client

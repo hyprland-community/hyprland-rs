@@ -1,4 +1,4 @@
-use hyprland::data::blocking::{get_monitors,get_active_window};
+use hyprland::data::blocking::{get_active_window, get_monitors};
 use hyprland::dispatch::{dispatch_blocking, Corner, DispatchType};
 use hyprland::event_listener::EventListenerMutable as EventListener;
 
