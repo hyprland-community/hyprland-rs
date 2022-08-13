@@ -1,4 +1,4 @@
-use hyprland::data::blocking::get_monitors;
+use hyprland::data::blocking::{get_monitors,get_active_window};
 use hyprland::dispatch::{dispatch_blocking, Corner, DispatchType};
 use hyprland::event_listener::EventListenerMutable as EventListener;
 
@@ -20,8 +20,11 @@ fn main() -> std::io::Result<()> {
     // get all monitors
     let monitors = get_monitors();
 
+    // and the active window
+    let win = get_active_window();
+
     // and printing them all out!
-    println!("{monitors:#?}");
+    println!("monitors: {monitors:#?},\nactive window: {win:#?}");
 
     // Create a event listener
     let mut event_listener = EventListener::new();

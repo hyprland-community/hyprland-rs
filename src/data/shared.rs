@@ -127,6 +127,37 @@ pub struct Client {
 /// This type provides a vector of clients
 pub type Clients = Vec<Client>;
 
+/// This enum holds the information for the active window
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ActiveWindow {
+    /// If there is a active window
+    Some {
+        /// The client's [`Address`][crate::shared::Address]
+        address: Address,
+        /// The window location
+        at: (i16, i16),
+        /// The window size
+        size: (u16, u16),
+        /// The workspace its on
+        workspace: WorkspaceBasic,
+        /// Is this window floating?
+        floating: bool,
+        /// The monitor the window is on
+        monitor: u8,
+        /// The window class
+        class: String,
+        /// The window title
+        title: String,
+        /// The process Id of the client
+        pid: u32,
+        /// Is this window running under XWayland?
+        xwayland: bool,
+    },
+    /// If there isn't a active window
+    None {}
+}
+
 /// This struct holds information about a layer surface/client
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LayerClient {

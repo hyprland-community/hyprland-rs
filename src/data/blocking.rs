@@ -61,7 +61,7 @@ pub fn get_clients() -> Result<Clients> {
 }
 
 /// This function returns the active window
-pub fn get_active_window() -> Result<Client> {
+pub fn get_active_window() -> Result<ActiveWindow> {
     let data = match call_hyprctl_data_cmd(DataCommands::ActiveWindow) {
         Ok(data) => data,
         Err(e) => panic!(
@@ -69,7 +69,7 @@ pub fn get_active_window() -> Result<Client> {
             e
         ),
     };
-    let deserialized: Client = serde_json::from_str(&data)?;
+    let deserialized: ActiveWindow = serde_json::from_str(&data)?;
     Ok(deserialized)
 }
 /// This function returns all layer surfaces
@@ -139,8 +139,8 @@ pub fn get_keyword(key: String) -> Result<Keyword> {
 
 /// A helper function to get the current workspace
 pub fn get_active_workspace() -> Result<Workspace> {
-    let window = get_active_window()?;
-    let workspace_id = window.workspace.id;
+    let monitor = get_active_monitor()?;
+    let workspace_id = monitor.active_workspace.id;
     let workspaces = get_workspaces()?;
 
     if let Some(work) = workspaces.iter().find(|item| item.id == workspace_id) {
@@ -162,12 +162,6 @@ pub fn get_active_monitor() -> Result<Monitor> {
 
 /// A helper function to get the current fullscreen state
 pub fn get_fullscreen_state() -> Result<bool> {
-    let window = get_active_window()?;
-    let workspace_id = window.workspace.id;
-    let workspaces = get_workspaces()?;
-    if let Some(work) = workspaces.iter().find(|item| item.id == workspace_id) {
-        Ok(work.hasfullscreen)
-    } else {
-        panic!("No active workspace?")
-    }
+    let work = get_active_workspace()?;
+    Ok(work.hasfullscreen)
 }
