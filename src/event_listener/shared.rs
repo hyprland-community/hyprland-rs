@@ -1,4 +1,4 @@
-use crate::shared::WorkspaceId;
+use crate::shared::*;
 use regex::{Error as RegexError, Regex, RegexSet};
 use std::io;
 
@@ -12,9 +12,9 @@ pub(crate) type Closures<T> = Vec<Closure<T>>;
 
 #[allow(clippy::type_complexity)]
 pub(crate) struct Events {
-    pub(crate) workspace_changed_events: Closures<WorkspaceId>,
-    pub(crate) workspace_added_events: Closures<WorkspaceId>,
-    pub(crate) workspace_destroyed_events: Closures<WorkspaceId>,
+    pub(crate) workspace_changed_events: Closures<WorkspaceType>,
+    pub(crate) workspace_added_events: Closures<WorkspaceType>,
+    pub(crate) workspace_destroyed_events: Closures<WorkspaceType>,
     pub(crate) active_monitor_changed_events: Closures<MonitorEventData>,
     pub(crate) active_window_changed_events: Closures<Option<WindowEventData>>,
     pub(crate) fullscreen_state_changed_events: Closures<bool>,
@@ -26,7 +26,7 @@ pub(crate) struct Events {
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct State {
     /// The active workspace
-    pub active_workspace: WorkspaceId,
+    pub active_workspace: WorkspaceType,
     /// The active monitor
     pub active_monitor: String,
     /// The fullscreen state
@@ -45,9 +45,10 @@ impl State {
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                dispatch(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(
-                    state.active_workspace,
-                )))
+                dispatch(DispatchType::Workspace(match state.active_workspace {
+                    WorkspaceType::Regular(id) => WorkspaceIdentifierWithSpecial::Id(id),
+                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special
+                }))
                 .await?;
             }
             if old.active_monitor != state.active_monitor {
@@ -71,9 +72,10 @@ impl State {
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                dispatch_blocking(DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Id(
-                    state.active_workspace,
-                )))?;
+                dispatch_blocking(DispatchType::Workspace(match state.active_workspace {
+                    WorkspaceType::Regular(id) => WorkspaceIdentifierWithSpecial::Id(id),
+                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special
+                }))?;
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
@@ -141,15 +143,15 @@ pub struct MonitorEventData(
     /// The monitor name
     pub String,
     /// The workspace
-    pub WorkspaceId,
+    pub WorkspaceType,
 );
 
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
-    WorkspaceChanged(WorkspaceId),
-    WorkspaceDeleted(WorkspaceId),
-    WorkspaceAdded(WorkspaceId),
+    WorkspaceChanged(WorkspaceType),
+    WorkspaceDeleted(WorkspaceType),
+    WorkspaceAdded(WorkspaceType),
     ActiveWindowChanged(Option<WindowEventData>),
     ActiveMonitorChanged(MonitorEventData),
     FullscreenStateChanged(bool),
@@ -179,13 +181,24 @@ fn check_for_regex_set_error(val: Result<RegexSet, RegexError>) -> RegexSet {
     }
 }
 
+fn parse_string_as_work(str: String) -> WorkspaceType {
+    if str == "special" {
+        WorkspaceType::Special
+    } else {
+         match str.parse::<i8>() {
+            Ok(num) => WorkspaceType::from(num),
+            Err(e) => panic!("error parsing string as u8:\nthe string:{str}\nerror message: {e}"),
+        }
+    }
+}
+
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> io::Result<Vec<Event>> {
     lazy_static! {
         static ref EVENT_SET: RegexSet = check_for_regex_set_error(RegexSet::new(&[
-            r"\bworkspace>>(?P<workspace>[0-9]{1,2}|)",
-            r"destroyworkspace>>(?P<workspace>[0-9]{1,2})",
-            r"createworkspace>>(?P<workspace>[0-9]{1,2})",
+            r"\bworkspace>>(?P<workspace>special|[0-9]{1,2}|)",
+            r"destroyworkspace>>(?P<workspace>special|[0-9]{1,2})",
+            r"createworkspace>>(?P<workspace>special|[0-9]{1,2})",
             r"focusedmon>>(?P<monitor>.*),(?P<workspace>[0-9]{1,2})",
             r"activewindow>>(?P<class>.*),(?P<title>.*)",
             r"fullscreen>>(?P<state>0|1)",
@@ -221,41 +234,32 @@ pub(crate) fn event_parser(event: String) -> io::Result<Vec<Event>> {
                     // WorkspaceChanged
                     let captured = &captures["workspace"];
                     let workspace = if !captured.is_empty() {
-                        match captured.parse::<u8>() {
-                            Ok(num) => num,
-                            Err(e) => panic!("error parsing string as u8: {e}"),
-                        }
+                        parse_string_as_work(captured.to_string())
                     } else {
-                        1_u8
+                        WorkspaceType::Regular(1)
                     };
                     events.push(Event::WorkspaceChanged(workspace));
                 }
                 1 => {
                     // destroyworkspace
-                    let workspace = match captures["workspace"].parse::<u8>() {
-                        Ok(num) => num,
-                        Err(e) => panic!("error parsing string as u8: {e}"),
-                    };
+                    let workspace = parse_string_as_work(captures["workspace"].to_string());
                     events.push(Event::WorkspaceDeleted(workspace));
                 }
                 2 => {
                     // WorkspaceAdded
-                    let workspace = match captures["workspace"].parse::<u8>() {
-                        Ok(num) => num,
-                        Err(e) => panic!("error parsing string as u8: {e}"),
-                    };
+                    let workspace = parse_string_as_work(captures["workspace"].to_string());
                     events.push(Event::WorkspaceAdded(workspace));
                 }
                 3 => {
                     // ActiveMonitorChanged
                     let monitor = &captures["monitor"];
-                    let workspace = match captures["workspace"].parse::<u8>() {
+                    let workspace = match captures["workspace"].parse::<i8>() {
                         Ok(num) => num,
                         Err(e) => panic!("error parsing string as u8: {e}"),
                     };
                     events.push(Event::ActiveMonitorChanged(MonitorEventData(
                         monitor.to_string(),
-                        workspace,
+                        WorkspaceType::from(workspace),
                     )));
                 }
                 4 => {

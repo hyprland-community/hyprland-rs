@@ -1,4 +1,4 @@
-use crate::shared::{get_socket_path, write_to_socket, SocketType};
+use crate::shared::*;
 use serde_json::Result;
 use std::io;
 
@@ -44,8 +44,11 @@ pub async fn get_workspaces() -> Result<Workspaces> {
             e
         ),
     };
-    let deserialized: Workspaces = serde_json::from_str(&data)?;
-    Ok(deserialized)
+    let deserialized: WorkspacesRaw = serde_json::from_str(&data)?;
+    let new = deserialized
+        .iter()
+        .map(|work| Workspace::from(work.clone()));
+    Ok(new.collect())
 }
 
 /// This function returns all clients/windows
@@ -164,5 +167,5 @@ pub async fn get_active_monitor() -> Result<Monitor> {
 /// A helper function to get the current fullscreen state
 pub async fn get_fullscreen_state() -> Result<bool> {
     let work = get_active_workspace().await?;
-    Ok(work.hasfullscreen)
+    Ok(work.fullscreen)
 }

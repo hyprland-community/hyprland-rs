@@ -1,6 +1,8 @@
-use hyprland::data::blocking::{get_active_window, get_monitors};
+use hyprland::data::blocking::{get_active_window, get_monitors, get_clients, get_keyword};
+use hyprland::data::OptionValue;
 use hyprland::dispatch::{dispatch_blocking, Corner, DispatchType};
 use hyprland::event_listener::EventListenerMutable as EventListener;
+use hyprland::shared::WorkspaceType;
 
 fn main() -> std::io::Result<()> {
     // We can call dispatchers with the dispatch function!
@@ -11,10 +13,15 @@ fn main() -> std::io::Result<()> {
     // Here we are moving the cursor to the top left corner!
     dispatch_blocking(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
+    let border_size = match get_keyword("general:border_size".to_string())?.value {
+        OptionValue::Int(i) => i,
+        _ => panic!("border size can only be a int")
+    };
+
     // Here we change a keyword, yes its a dispatcher don't complain
     dispatch_blocking(DispatchType::Keyword(
         "general:border_size".to_string(),
-        "30".to_string(),
+        border_size.to_string(),
     ))?;
 
     // get all monitors
@@ -22,9 +29,12 @@ fn main() -> std::io::Result<()> {
 
     // and the active window
     let win = get_active_window();
+    
+    // and all open windows
+    let clients = get_clients();
 
     // and printing them all out!
-    println!("monitors: {monitors:#?},\nactive window: {win:#?}");
+    println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}");
 
     // Create a event listener
     let mut event_listener = EventListener::new();
@@ -32,8 +42,8 @@ fn main() -> std::io::Result<()> {
     // This changes the workspace to 5 if the workspace is switched to 9
     // this is a performance and mutable state test
     event_listener.add_workspace_change_handler(|id, state| {
-        if id == 9 {
-            state.active_workspace = 2;
+        if id == WorkspaceType::Regular(9) {
+            state.active_workspace = WorkspaceType::Regular(2);
         }
     });
     // This makes it so you can't turn on fullscreen lol

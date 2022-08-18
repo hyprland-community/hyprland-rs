@@ -1,4 +1,4 @@
-use crate::shared::{get_socket_path, SocketType, WorkspaceId};
+use crate::shared::*;
 use std::io;
 
 use crate::event_listener::shared::*;
@@ -54,10 +54,10 @@ impl EventListener {
     /// ```rust, no_run
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id}"));
+    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));
     /// listener.start_listener_blocking();
     /// ```
-    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceId) + 'static) {
+    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceType) + 'static) {
         self.events
             .workspace_changed_events
             .push(EventTypes::Regular(Box::new(f)));
@@ -68,10 +68,10 @@ impl EventListener {
     /// ```rust, no_run
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_added_handler(|id| println!("workspace {id} was added"));
+    /// listener.add_workspace_added_handler(|id| println!("workspace {id:?} was added"));
     /// listener.start_listener_blocking();
     /// ```
-    pub fn add_workspace_added_handler(&mut self, f: impl Fn(WorkspaceId) + 'static) {
+    pub fn add_workspace_added_handler(&mut self, f: impl Fn(WorkspaceType) + 'static) {
         self.events
             .workspace_added_events
             .push(EventTypes::Regular(Box::new(f)));
@@ -82,10 +82,10 @@ impl EventListener {
     /// ```rust, no_run
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_destroy_handler(|id| println!("workspace {id} was destroyed"));
+    /// listener.add_workspace_destroy_handler(|id| println!("workspace {id:?} was destroyed"));
     /// listener.start_listener_blocking();
     /// ```
-    pub fn add_workspace_destroy_handler(&mut self, f: impl Fn(WorkspaceId) + 'static) {
+    pub fn add_workspace_destroy_handler(&mut self, f: impl Fn(WorkspaceType) + 'static) {
         self.events
             .workspace_destroyed_events
             .push(EventTypes::Regular(Box::new(f)));
@@ -169,25 +169,25 @@ impl EventListener {
             Event::WorkspaceChanged(id) => {
                 let events = &self.events.workspace_changed_events;
                 for item in events.iter() {
-                    execute_closure(item, *id);
+                    execute_closure(item, id.clone());
                 }
             }
             Event::WorkspaceAdded(id) => {
                 let events = &self.events.workspace_added_events;
                 for item in events.iter() {
-                    execute_closure(item, *id);
+                    execute_closure(item, id.clone());
                 }
             }
             Event::WorkspaceDeleted(id) => {
                 let events = &self.events.workspace_destroyed_events;
                 for item in events.iter() {
-                    execute_closure(item, *id);
+                    execute_closure(item, id.clone());
                 }
             }
             Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
                 let events = &self.events.active_monitor_changed_events;
                 for item in events.iter() {
-                    execute_closure(item, MonitorEventData(monitor.clone(), *id));
+                    execute_closure(item, MonitorEventData(monitor.clone(), id.clone()));
                 }
             }
             Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
@@ -230,7 +230,7 @@ impl EventListener {
     /// # async fn function() -> std::io::Result<()> {
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id}"));
+    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));
     /// listener.start_listener().await;
     /// # Ok(())
     /// # }
@@ -243,10 +243,9 @@ impl EventListener {
 
         let mut stream = UnixStream::connect(socket_path).await?;
 
-        let mut buf = [0; 4096];
-
         loop {
-            stream.readable().await?;
+            let mut buf = [0; 2048];
+
             let num_read = stream.read(&mut buf).await?;
             if num_read == 0 {
                 break;
@@ -277,7 +276,7 @@ impl EventListener {
     /// ```rust, no_run
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id}"));
+    /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id:?}"));
     /// listener.start_listener_blocking();
     /// ```
     pub fn start_listener_blocking(self) -> io::Result<()> {
@@ -288,10 +287,9 @@ impl EventListener {
 
         let mut stream = UnixStream::connect(socket_path)?;
 
-        let mut buf = [0; 4096];
-
         loop {
-            //stream.readable()?;
+            let mut buf = [0; 2048];
+
             let num_read = stream.read(&mut buf)?;
             if num_read == 0 {
                 break;
@@ -314,15 +312,5 @@ impl EventListener {
         }
 
         Ok(())
-        // use tokio::runtime::Runtime;
-        //
-        // lazy_static! {
-        //     static ref RT: Runtime = match Runtime::new() {
-        //         Ok(run) => run,
-        //         Err(e) => panic!("Error creating tokio runtime: {e}"),
-        //     };
-        // }
-        //
-        // RT.block_on(self.start_listener())
     }
 }

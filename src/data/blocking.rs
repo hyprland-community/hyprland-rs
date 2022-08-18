@@ -43,8 +43,9 @@ pub fn get_workspaces() -> Result<Workspaces> {
             e
         ),
     };
-    let deserialized: Workspaces = serde_json::from_str(&data)?;
-    Ok(deserialized)
+    let deserialized: WorkspacesRaw = serde_json::from_str(&data)?;
+    let new = deserialized.iter().map(|work| Workspace::from(work.clone()));
+    Ok(new.collect())
 }
 
 /// This function returns all clients/windows
@@ -163,5 +164,5 @@ pub fn get_active_monitor() -> Result<Monitor> {
 /// A helper function to get the current fullscreen state
 pub fn get_fullscreen_state() -> Result<bool> {
     let work = get_active_workspace()?;
-    Ok(work.hasfullscreen)
+    Ok(work.fullscreen)
 }

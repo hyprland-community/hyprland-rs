@@ -1,4 +1,4 @@
-use crate::shared::Address;
+use crate::shared::*;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::collections::HashMap;
@@ -20,7 +20,8 @@ pub(crate) enum DataCommands {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkspaceBasic {
     /// The workspace Id
-    pub id: u8,
+    #[serde(deserialize_with = "de_work_id")]
+    pub id: WorkspaceType,
     /// The workspace's name
     pub name: String,
 }
@@ -81,11 +82,10 @@ pub struct Monitor {
 /// This type provides a vector of monitors
 pub type Monitors = Vec<Monitor>;
 
-/// This struct holds information for a workspace
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Workspace {
+pub(crate) struct WorkspaceRaw {
     /// The workspace Id
-    pub id: u8,
+    pub id: i8,
     /// The workspace's name
     pub name: String,
     /// The monitor the workspace is on
@@ -93,11 +93,50 @@ pub struct Workspace {
     /// The amount of windows in the workspace
     pub windows: u8,
     /// A bool that shoes if there is a fullscreen window in the workspace
-    pub hasfullscreen: bool,
+    #[serde(rename = "hasfullscreen")]
+    pub fullscreen: bool,
+}
+
+/// This struct holds information for a workspace
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Workspace {
+    /// The workspace Id
+    pub id: WorkspaceType,
+    /// The workspace's name
+    pub name: String,
+    /// The monitor the workspace is on
+    pub monitor: String,
+    /// The amount of windows in the workspace
+    pub windows: u8,
+    /// A bool that shoes if there is a fullscreen window in the workspace
+    #[serde(rename = "hasfullscreen")]
+    pub fullscreen: bool,
+}
+
+impl From<WorkspaceRaw> for Workspace {
+    fn from(raw: WorkspaceRaw) -> Self {
+        Workspace {
+            id: match raw.id {
+                -99 => WorkspaceType::Special,
+                0.. => WorkspaceType::Regular(match raw.id.try_into() {
+                    Ok(num) => num,
+                    Err(e) => panic!("Issue with parsing id (i8) as u8: {e}")
+                }),
+                _ => panic!("Unrecognised id")
+            },
+            name: raw.name,
+            monitor: raw.monitor,
+            windows: raw.windows,
+            fullscreen: raw.fullscreen
+        }
+    }
 }
 
 /// This type provides a vector of workspaces
 pub type Workspaces = Vec<Workspace>;
+
+/// This type provides a vector of raw workspaces
+pub(crate) type WorkspacesRaw = Vec<WorkspaceRaw>;
 
 /// This struct holds information for a client/window
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -129,34 +168,11 @@ pub type Clients = Vec<Client>;
 
 /// This enum holds the information for the active window
 #[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum ActiveWindow {
-    /// If there is a active window
-    Some {
-        /// The client's [`Address`][crate::shared::Address]
-        address: Address,
-        /// The window location
-        at: (i16, i16),
-        /// The window size
-        size: (u16, u16),
-        /// The workspace its on
-        workspace: WorkspaceBasic,
-        /// Is this window floating?
-        floating: bool,
-        /// The monitor the window is on
-        monitor: u8,
-        /// The window class
-        class: String,
-        /// The window title
-        title: String,
-        /// The process Id of the client
-        pid: u32,
-        /// Is this window running under XWayland?
-        xwayland: bool,
-    },
-    /// If there isn't a active window
-    None {},
-}
+pub struct ActiveWindow(
+    /// The client data
+    #[serde(deserialize_with = "object_empty_as_none")]
+    Option<Client>
+);
 
 /// This struct holds information about a layer surface/client
 #[derive(Serialize, Deserialize, Debug, Clone)]
