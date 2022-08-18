@@ -142,8 +142,8 @@ where
     #[derive(Deserialize, Debug)]
     #[serde(untagged)]
     enum Aux {
-        Special(i8),
         Reg(u8),
+        Special(i8),
     }
 
     match Deserialize::deserialize(deserializer)? {
