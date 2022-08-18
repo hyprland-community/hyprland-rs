@@ -1,4 +1,4 @@
-use hyprland::data::blocking::{get_active_window, get_monitors, get_clients, get_keyword};
+use hyprland::data::blocking::{get_active_window, get_clients, get_keyword, get_monitors};
 use hyprland::data::OptionValue;
 use hyprland::dispatch::{dispatch_blocking, Corner, DispatchType};
 use hyprland::event_listener::EventListenerMutable as EventListener;
@@ -15,7 +15,7 @@ fn main() -> std::io::Result<()> {
 
     let border_size = match get_keyword("general:border_size".to_string())?.value {
         OptionValue::Int(i) => i,
-        _ => panic!("border size can only be a int")
+        _ => panic!("border size can only be a int"),
     };
 
     // Here we change a keyword, yes its a dispatcher don't complain
@@ -29,7 +29,7 @@ fn main() -> std::io::Result<()> {
 
     // and the active window
     let win = get_active_window();
-    
+
     // and all open windows
     let clients = get_clients();
 

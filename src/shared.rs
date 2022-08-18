@@ -21,22 +21,22 @@ pub enum WorkspaceType {
     /// A regular workspace
     Regular(
         /// The workspace id
-        WorkspaceId
+        WorkspaceId,
     ),
     /// The special workspace
-    Special
+    Special,
 }
 
 impl From<i8> for WorkspaceType {
     fn from(int: i8) -> Self {
         match int {
-                -99 => WorkspaceType::Special,
-                0.. => WorkspaceType::Regular(match int.try_into() {
-                    Ok(num) => num,
-                    Err(e) => panic!("Issue with parsing id (i8) as u8: {e}")
-                }),
-                _ => panic!("Unrecognised id")
-            }
+            -99 => WorkspaceType::Special,
+            0.. => WorkspaceType::Regular(match int.try_into() {
+                Ok(num) => num,
+                Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
+            }),
+            _ => panic!("Unrecognised id"),
+        }
     }
 }
 
@@ -136,18 +136,18 @@ where
 }
 
 pub(crate) fn de_work_id<'de, D>(deserializer: D) -> Result<WorkspaceType, D::Error>
-    where
-        D: Deserializer<'de>
+where
+    D: Deserializer<'de>,
 {
     #[derive(Deserialize, Debug)]
     #[serde(untagged)]
     enum Aux {
         Special(i8),
-        Reg(u8)
+        Reg(u8),
     }
 
     match Deserialize::deserialize(deserializer)? {
         Aux::Special(_) => Ok(WorkspaceType::Special),
-        Aux::Reg(int) => Ok(WorkspaceType::Regular(int)) 
+        Aux::Reg(int) => Ok(WorkspaceType::Regular(int)),
     }
 }

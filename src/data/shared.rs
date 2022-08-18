@@ -120,14 +120,14 @@ impl From<WorkspaceRaw> for Workspace {
                 -99 => WorkspaceType::Special,
                 0.. => WorkspaceType::Regular(match raw.id.try_into() {
                     Ok(num) => num,
-                    Err(e) => panic!("Issue with parsing id (i8) as u8: {e}")
+                    Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
                 }),
-                _ => panic!("Unrecognised id")
+                _ => panic!("Unrecognised id"),
             },
             name: raw.name,
             monitor: raw.monitor,
             windows: raw.windows,
-            fullscreen: raw.fullscreen
+            fullscreen: raw.fullscreen,
         }
     }
 }
@@ -171,7 +171,7 @@ pub type Clients = Vec<Client>;
 pub struct ActiveWindow(
     /// The client data
     #[serde(deserialize_with = "object_empty_as_none")]
-    Option<Client>
+    Option<Client>,
 );
 
 /// This struct holds information about a layer surface/client

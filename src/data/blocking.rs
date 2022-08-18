@@ -44,7 +44,9 @@ pub fn get_workspaces() -> Result<Workspaces> {
         ),
     };
     let deserialized: WorkspacesRaw = serde_json::from_str(&data)?;
-    let new = deserialized.iter().map(|work| Workspace::from(work.clone()));
+    let new = deserialized
+        .iter()
+        .map(|work| Workspace::from(work.clone()));
     Ok(new.collect())
 }
 

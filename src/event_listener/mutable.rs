@@ -79,7 +79,10 @@ impl EventListener {
     /// listener.add_workspace_change_handler(|id, _| println!("changed workspace to {id:?}"));
     /// listener.start_listener_blocking();
     /// ```
-    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceType, &mut State) + 'static) {
+    pub fn add_workspace_change_handler(
+        &mut self,
+        f: impl Fn(WorkspaceType, &mut State) + 'static,
+    ) {
         self.events
             .workspace_changed_events
             .push(EventTypes::MutableState(Box::new(f)));
@@ -107,7 +110,10 @@ impl EventListener {
     /// listener.add_workspace_destroy_handler(|id, _| println!("workspace {id:?} was destroyed"));
     /// listener.start_listener_blocking();
     /// ```
-    pub fn add_workspace_destroy_handler(&mut self, f: impl Fn(WorkspaceType, &mut State) + 'static) {
+    pub fn add_workspace_destroy_handler(
+        &mut self,
+        f: impl Fn(WorkspaceType, &mut State) + 'static,
+    ) {
         self.events
             .workspace_destroyed_events
             .push(EventTypes::MutableState(Box::new(f)));
@@ -195,21 +201,24 @@ impl EventListener {
                 let handlers = &self.events.workspace_changed_events;
                 self.state.active_workspace = id.clone();
                 for item in handlers.iter() {
-                    let new_state = execute_closure_mut(self.state.clone(), item, id.clone()).await?;
+                    let new_state =
+                        execute_closure_mut(self.state.clone(), item, id.clone()).await?;
                     self.state = new_state;
                 }
             }
             Event::WorkspaceAdded(id) => {
                 let events = &self.events.workspace_added_events;
                 for item in events.iter() {
-                    let new_state = execute_closure_mut(self.state.clone(), item, id.clone()).await?;
+                    let new_state =
+                        execute_closure_mut(self.state.clone(), item, id.clone()).await?;
                     self.state = new_state;
                 }
             }
             Event::WorkspaceDeleted(id) => {
                 let events = &self.events.workspace_destroyed_events;
                 for item in events.iter() {
-                    let new_state = execute_closure_mut(self.state.clone(), item, id.clone()).await?;
+                    let new_state =
+                        execute_closure_mut(self.state.clone(), item, id.clone()).await?;
                     self.state = new_state;
                 }
             }

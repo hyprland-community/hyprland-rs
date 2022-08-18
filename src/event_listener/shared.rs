@@ -47,7 +47,7 @@ impl State {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
                 dispatch(DispatchType::Workspace(match state.active_workspace {
                     WorkspaceType::Regular(id) => WorkspaceIdentifierWithSpecial::Id(id),
-                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special
+                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special,
                 }))
                 .await?;
             }
@@ -74,7 +74,7 @@ impl State {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
                 dispatch_blocking(DispatchType::Workspace(match state.active_workspace {
                     WorkspaceType::Regular(id) => WorkspaceIdentifierWithSpecial::Id(id),
-                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special
+                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special,
                 }))?;
             }
             if old.active_monitor != state.active_monitor {
@@ -185,7 +185,7 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
     if str == "special" {
         WorkspaceType::Special
     } else {
-         match str.parse::<i8>() {
+        match str.parse::<i8>() {
             Ok(num) => WorkspaceType::from(num),
             Err(e) => panic!("error parsing string as u8:\nthe string:{str}\nerror message: {e}"),
         }
