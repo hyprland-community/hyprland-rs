@@ -92,7 +92,7 @@ pub(crate) struct WorkspaceRaw {
     pub monitor: String,
     /// The amount of windows in the workspace
     pub windows: u8,
-    /// A bool that shoes if there is a fullscreen window in the workspace
+    /// A bool that shows if there is a fullscreen window in the workspace
     #[serde(rename = "hasfullscreen")]
     pub fullscreen: bool,
 }
@@ -108,7 +108,7 @@ pub struct Workspace {
     pub monitor: String,
     /// The amount of windows in the workspace
     pub windows: u8,
-    /// A bool that shoes if there is a fullscreen window in the workspace
+    /// A bool that shows if there is a fullscreen window in the workspace
     #[serde(rename = "hasfullscreen")]
     pub fullscreen: bool,
 }
