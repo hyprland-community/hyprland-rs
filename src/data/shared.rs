@@ -171,7 +171,7 @@ pub type Clients = Vec<Client>;
 pub struct ActiveWindow(
     /// The client data
     #[serde(deserialize_with = "object_empty_as_none")]
-    Option<Client>,
+    pub Option<Client>,
 );
 
 /// This struct holds information about a layer surface/client
