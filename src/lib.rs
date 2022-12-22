@@ -13,7 +13,16 @@ pub mod shared;
 pub mod data;
 
 /// This module provides the EventListener struct for listening and acting upon for events
+#[cfg(feature = "listener")]
 pub mod event_listener;
 
 /// This module is for calling dispatchers and changing keywords
 pub mod dispatch;
+
+/// This module provides the stuff needed to mutate, and read Hyprland config values
+pub mod keyword;
+
+/// The prelude module, this is to import all traits
+pub mod prelude {
+    pub use crate::shared::{HyprData, HyprDataActive, HyprDataVec};
+}

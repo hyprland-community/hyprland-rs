@@ -1,6 +1,6 @@
 [package]
 name = "hyprland"
-version = "0.2.4"
+version = "0.3.0"
 edition = "2021"
 authors = ["yavko <yavornkolev@gmail.com>"]
 license = "GPL-3.0-or-later"
@@ -11,6 +11,16 @@ description = "A unoffical rust wrapper for hyprland's IPC"
 homepage = "https://github.com/yavko/hyprland-rs"
 repository = "https://github.com/yavko/hyprland-rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[package.metadata.nix]
+#app = true
+build = true
+#library = true
+#systems = [
+#    "aarch64-linux",
+#    "i686-linux",
+#    "x86_64-linux",
+#]
 
 [profile.release]
 opt-level = "z"
@@ -28,3 +38,12 @@ hex = "0.4"
 tokio = { version = "1.20", features = ["full"] }
 lazy_static = "1.4"
 regex = "1.6"
+async-trait = "0.1"
+
+[features]
+default = ["listener", "dispatch", "data", "keyword"]
+dispatch = []
+data = []
+keyword = []
+listener = ["data", "dispatch"]
+

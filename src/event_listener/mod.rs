@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 mod shared;
 pub use crate::event_listener::shared::*;
 

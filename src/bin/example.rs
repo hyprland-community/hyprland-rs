@@ -1,37 +1,39 @@
-use hyprland::data::blocking::{get_active_window, get_clients, get_keyword, get_monitors};
-use hyprland::data::OptionValue;
-use hyprland::dispatch::{dispatch_blocking, Corner, DispatchType};
+//use hyprland::data::blocking::{get_active_window, get_clients, get_keyword, get_monitors};
+use hyprland::data::{ActiveWindow, Clients, Monitors};
+use hyprland::dispatch::{Corner, Dispatch, DispatchType};
 use hyprland::event_listener::EventListenerMutable as EventListener;
+use hyprland::keyword::*;
+use hyprland::prelude::*;
 use hyprland::shared::WorkspaceType;
 
-fn main() -> std::io::Result<()> {
+fn main() -> hyprland::shared::HResult<()> {
     // We can call dispatchers with the dispatch function!
 
     // Here we are telling hyprland to open kitty!
-    dispatch_blocking(DispatchType::Exec("kitty".to_string()))?;
+    Dispatch::call(DispatchType::Exec("kitty".to_string()))?;
 
     // Here we are moving the cursor to the top left corner!
-    dispatch_blocking(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
+    Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
-    let border_size = match get_keyword("general:border_size".to_string())?.value {
+    let border_size = match Keyword::get("general:border_size".to_string())?.value {
         OptionValue::Int(i) => i,
         _ => panic!("border size can only be a int"),
     };
 
     // Here we change a keyword, yes its a dispatcher don't complain
-    dispatch_blocking(DispatchType::Keyword(
+    Dispatch::call(DispatchType::Keyword(
         "general:border_size".to_string(),
         border_size.to_string(),
     ))?;
 
     // get all monitors
-    let monitors = get_monitors();
+    let monitors = Monitors::get();
 
     // and the active window
-    let win = get_active_window();
+    let win = ActiveWindow::get();
 
     // and all open windows
-    let clients = get_clients();
+    let clients = Clients::get();
 
     // and printing them all out!
     println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}");
@@ -42,8 +44,8 @@ fn main() -> std::io::Result<()> {
     // This changes the workspace to 5 if the workspace is switched to 9
     // this is a performance and mutable state test
     event_listener.add_workspace_change_handler(|id, state| {
-        if id == WorkspaceType::Regular(9) {
-            state.active_workspace = WorkspaceType::Regular(2);
+        if id == WorkspaceType::Unnamed(9) {
+            state.active_workspace = WorkspaceType::Unnamed(2);
         }
     });
     // This makes it so you can't turn on fullscreen lol
@@ -63,7 +65,6 @@ fn main() -> std::io::Result<()> {
 
     // add event, yes functions and closures both work!
     event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
-
     // Waybar example
     // event_listener.add_active_window_change_handler(|data| {
     //     use hyprland::event_listener::WindowEventData;
@@ -77,5 +78,5 @@ fn main() -> std::io::Result<()> {
     // and execute the function
     // here we are using the blocking variant
     // but there is a async version too
-    event_listener.start_listener_blocking()
+    event_listener.start_listener()
 }

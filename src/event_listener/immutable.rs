@@ -15,7 +15,7 @@ use crate::event_listener::shared::*;
 /// let mut listener = EventListener::new(); // creates a new listener
 /// // add a event handler which will be ran when this event happens
 /// listener.add_workspace_change_handler(|data| println!("{:#?}", data));
-/// listener.start_listener_blocking(); // or `.start_listener().await` if async
+/// listener.start_listener(); // or `.start_listener_async().await` if async
 /// ```
 pub struct EventListener {
     pub(crate) events: Events,
@@ -40,185 +40,188 @@ impl EventListener {
                 workspace_changed_events: vec![],
                 workspace_added_events: vec![],
                 workspace_destroyed_events: vec![],
+                workspace_moved_events: vec![],
                 active_monitor_changed_events: vec![],
                 active_window_changed_events: vec![],
                 fullscreen_state_changed_events: vec![],
                 monitor_removed_events: vec![],
                 monitor_added_events: vec![],
+                window_open_events: vec![],
+                window_close_events: vec![],
+                window_moved_events: vec![],
+                keyboard_layout_change_events: vec![],
+                sub_map_changed_events: vec![],
+                layer_open_events: vec![],
+                layer_closed_events: vec![],
             },
         }
     }
 
-    /// This method adds a event to the listener which executes on workspace change
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_workspace_change_handler(&mut self, f: impl Fn(WorkspaceType) + 'static) {
-        self.events
-            .workspace_changed_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_workspace_change_handler,
+        workspace_changed_events,
+        WorkspaceType,
+        "This method adds a event to the listener which executes on workspace change",
+        r#"listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));"#
+    );
 
-    /// This method add a event to the listener which executes when a new workspace is created
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_workspace_added_handler(|id| println!("workspace {id:?} was added"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_workspace_added_handler(&mut self, f: impl Fn(WorkspaceType) + 'static) {
-        self.events
-            .workspace_added_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_workspace_added_handler,
+        workspace_added_events,
+        WorkspaceType,
+        "This method add a event to the listener which executes when a new workspace is created",
+        r#"listener.add_workspace_added_handler(|id| println!("workspace {id:?} was added"));"#
+    );
 
-    /// This method add a event to the listener which executes when a new workspace is created
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_workspace_destroy_handler(|id| println!("workspace {id:?} was destroyed"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_workspace_destroy_handler(&mut self, f: impl Fn(WorkspaceType) + 'static) {
-        self.events
-            .workspace_destroyed_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_workspace_destroy_handler,
+        workspace_destroyed_events,
+        WorkspaceType,
+        "This method to add a event to the listener which executes when a workspace is destroyed",
+        r#"listener.add_workspace_destroy_handler(|id| println!("workspace {id:?} was destroyed"));"#
+    );
 
-    /// This method add a event to the listener which executes when the active monitor is changed
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_active_monitor_change_handler(|data| println!("Active Monitor changed: {data:#?}"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_active_monitor_change_handler(&mut self, f: impl Fn(MonitorEventData) + 'static) {
-        self.events
-            .active_monitor_changed_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_workspace_moved_handler,
+        workspace_moved_events,
+        MonitorEventData,
+        "This method to add a event to the listener which executes when a workspace is moved",
+        r#"listener.add_workspace_moved_handler(|id| println!("workspace {id:?} was moved"));"#
+    );
 
-    /// This method add a event to the listener which executes when the active window is changed
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_active_window_change_handler(|data| println!("Active window changed: {data:#?}"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_active_window_change_handler(
-        &mut self,
-        f: impl Fn(Option<WindowEventData>) + 'static,
-    ) {
-        self.events
-            .active_window_changed_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_active_monitor_change_handler,
+        active_monitor_changed_events,
+        MonitorEventData,
+        "This method add a event to the listener which executes when the active monitor is changed",
+        r#"listener.add_active_monitor_change_handler(|data| println!("Active monitor changed to {data:#?}"));"#
+    );
 
-    /// This method add a event to the listener which executes when the active monitor is changed
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_fullscreen_state_change_handler(|state| println!("Fullscreen is on: {state}"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_fullscreen_state_change_handler(&mut self, f: impl Fn(bool) + 'static) {
-        self.events
-            .fullscreen_state_changed_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_active_window_change_handler,
+        active_window_changed_events,
+        Option<WindowEventData>,
+        "This method add a event to the listener which executes when the active window is changed",
+        r#"listener.add_active_window_change_handler(|data| println!("Active window changed: {data:#?}"));"#
+    );
 
-    /// This method add a event to the listener which executes when a new monitor is added
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_monitor_added_handler(|data| println!("Monitor added: {data}"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_monitor_added_handler(&mut self, f: impl Fn(String) + 'static) {
-        self.events
-            .monitor_added_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_fullscreen_state_change_handler,
+        fullscreen_state_changed_events,
+        bool,
+        "This method adds an event to the listener which executes when the active monitor is changed",
+        r#"listener.add_fullscreen_state_change_handler(|state| println!("Fullscreen is on: {state}"));"#
+    );
 
-    /// This method add a event to the listener which executes when a monitor is removed
-    ///
-    /// ```rust, no_run
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// listener.add_monitor_removed_handler(|data| println!("Monitor removed: {data}"));
-    /// listener.start_listener_blocking();
-    /// ```
-    pub fn add_monitor_removed_handler(&mut self, f: impl Fn(String) + 'static) {
-        self.events
-            .monitor_removed_events
-            .push(EventTypes::Regular(Box::new(f)));
-    }
+    add_listener!(
+        reg add_monitor_added_handler,
+        monitor_added_events,
+        String,
+        "This method adds an event to the listener which executes when a new monitor is added",
+        r#"listener.add_monitor_added_handler(|data| println!("Monitor added: {data}"));"#
+    );
+
+    add_listener!(
+        reg add_monitor_removed_handler,
+        monitor_removed_events,
+        String,
+        "This method adds an event to the listener which executes when a monitor is removed",
+        r#"listener.add_monitor_removed_handler(|data| println!("Monitor removed: {data}"));"#
+    );
+
+    add_listener!(
+        reg add_window_open_handler,
+        window_open_events,
+        WindowOpenEvent,
+        "This method adds an event to the listener which executes when a window is opened",
+        r#"listener.add_window_open_handler(|data| println!("Window opened: {data:#?}"));"#
+    );
+
+    add_listener!(
+        reg add_window_close_handler,
+        window_close_events,
+        Address,
+        "This method adds an event to the listener which executes when a window is closed",
+        r#"listener.add_window_close_handler(|data| println!("Window closed: {data}"));"#
+    );
+
+    add_listener!(
+        reg add_window_moved_handler,
+        window_moved_events,
+        WindowMoveEvent,
+        "This method adds an event to the listener which executes when a window is moved",
+        r#"listener.add_window_moved_handler(|data| println!("Window moved: {data:#?}"));"#
+    );
+
+    add_listener!(
+        reg add_keyboard_layout_change_handler,
+        keyboard_layout_change_events,
+        LayoutEvent,
+        "This method adds an event to the listener which executes when the keyboard layout is changed",
+        r#"listener.add_keyboard_layout_change_handler(|data| println!("Layout changed: {data:#?}"));"#
+    );
+
+    add_listener!(
+        reg add_sub_map_change_handler,
+        sub_map_changed_events,
+        String,
+        "This method adds an event to the listener which executes when the sub map is changed",
+        r#"listener.add_sub_map_change_handler(|data| println!("Submap changed: {data}"));"#
+    );
+
+    add_listener!(
+        reg add_layer_open_handler,
+        layer_open_events,
+        String,
+        "This method adds an event to the listener which executes when a new layer is opened",
+        r#"listener.add_layer_open_handler(|data| println!("Layer opened: {data}"));"#
+    );
+
+    add_listener!(
+        reg add_layer_closed_handler,
+        layer_closed_events,
+        String,
+        "This method adds an event to the listener which executes when a layer is closed",
+        r#"listener.add_layer_closed_handler(|data| println!("Layer closed: {data}"));"#
+    );
 
     fn event_executor(&self, event: &Event) {
         match event {
-            Event::WorkspaceChanged(id) => {
-                let events = &self.events.workspace_changed_events;
-                for item in events.iter() {
-                    execute_closure(item, id.clone());
-                }
+            Event::WorkspaceChanged(id) => arm_sync!(id.clone(), workspace_changed_events, self),
+            Event::WorkspaceAdded(id) => arm_sync!(id.clone(), workspace_added_events, self),
+            Event::WorkspaceDeleted(id) => arm_sync!(id.clone(), workspace_destroyed_events, self),
+            Event::WorkspaceMoved(evend) => arm_sync!(evend.clone(), workspace_moved_events, self),
+            Event::ActiveMonitorChanged(evend) => {
+                arm_sync!(evend.clone(), active_monitor_changed_events, self)
             }
-            Event::WorkspaceAdded(id) => {
-                let events = &self.events.workspace_added_events;
-                for item in events.iter() {
-                    execute_closure(item, id.clone());
-                }
-            }
-            Event::WorkspaceDeleted(id) => {
-                let events = &self.events.workspace_destroyed_events;
-                for item in events.iter() {
-                    execute_closure(item, id.clone());
-                }
-            }
-            Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
-                let events = &self.events.active_monitor_changed_events;
-                for item in events.iter() {
-                    execute_closure(item, MonitorEventData(monitor.clone(), id.clone()));
-                }
-            }
-            Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
-                let events = &self.events.active_window_changed_events;
-                for item in events.iter() {
-                    execute_closure(item, Some(WindowEventData(class.clone(), title.clone())));
-                }
-            }
-            Event::ActiveWindowChanged(None) => {
-                let events = &self.events.active_window_changed_events;
-                for item in events.iter() {
-                    execute_closure(item, None);
-                }
-            }
+            Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => arm_sync!(
+                Some(WindowEventData(class.clone(), title.clone())),
+                active_window_changed_events,
+                self
+            ),
+            Event::ActiveWindowChanged(None) => arm_sync!(None, active_window_changed_events, self),
             Event::FullscreenStateChanged(bool) => {
-                let events = &self.events.fullscreen_state_changed_events;
-                for item in events.iter() {
-                    execute_closure(item, *bool);
-                }
+                arm_sync!(*bool, fullscreen_state_changed_events, self)
             }
-            Event::MonitorAdded(monitor) => {
-                let events = &self.events.monitor_added_events;
-                for item in events.iter() {
-                    execute_closure(item, monitor.clone());
-                }
-            }
+            Event::MonitorAdded(monitor) => arm_sync!(monitor.clone(), monitor_added_events, self),
             Event::MonitorRemoved(monitor) => {
-                let events = &self.events.monitor_removed_events;
+                arm_sync!(monitor.clone(), monitor_removed_events, self)
+            }
+            Event::WindowClosed(addr) => arm_sync!(addr.clone(), window_close_events, self),
+            Event::WindowMoved(even) => arm_sync!(even.clone(), window_moved_events, self),
+            Event::WindowOpened(even) => arm_sync!(even.clone(), window_open_events, self),
+            Event::LayoutChanged(even) => {
+                arm_sync!(even.clone(), keyboard_layout_change_events, self)
+            }
+            Event::SubMapChanged(map) => {
+                let events = &self.events.sub_map_changed_events;
                 for item in events.iter() {
-                    execute_closure(item, monitor.clone());
+                    execute_closure(item, map.clone())
                 }
+            }
+            Event::LayerOpened(namespace) => arm_sync!(namespace.clone(), layer_open_events, self),
+            Event::LayerClosed(namespace) => {
+                arm_sync!(namespace.clone(), layer_closed_events, self)
             }
         }
     }
@@ -231,11 +234,11 @@ impl EventListener {
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
     /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));
-    /// listener.start_listener().await;
+    /// listener.start_listener_async().await;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener(&self) -> io::Result<()> {
+    pub async fn start_listener_async(&self) -> HResult<()> {
         use tokio::io::AsyncReadExt;
         use tokio::net::UnixStream;
 
@@ -277,9 +280,9 @@ impl EventListener {
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
     /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id:?}"));
-    /// listener.start_listener_blocking();
+    /// listener.start_listener();
     /// ```
-    pub fn start_listener_blocking(self) -> io::Result<()> {
+    pub fn start_listener(self) -> HResult<()> {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 

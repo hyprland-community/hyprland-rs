@@ -1,7 +1,53 @@
-use crate::shared::*;
+use super::*;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use std::collections::HashMap;
+
+/// This private function is to call socket commands
+async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
+    let cmd_string = match cmd {
+        DataCommands::Monitors => "monitors".to_string(),
+        DataCommands::ActiveWindow => "activewindow".to_string(),
+        DataCommands::Clients => "clients".to_string(),
+        DataCommands::Devices => "devices".to_string(),
+        DataCommands::Layers => "layers".to_string(),
+        DataCommands::Workspaces => "workspaces".to_string(),
+        DataCommands::Version => "version".to_string(),
+        //DataCommands::Keyword(key) => format!("getoption {key}"),
+    };
+
+    let socket_path = get_socket_path(SocketType::Command);
+
+    match write_to_socket(socket_path, format!("j/{cmd_string}").as_bytes()).await {
+        Ok(data) => data,
+        Err(e) => panic!(
+            "A error occured while parsing the output from the hypr socket: {:?}",
+            e
+        ),
+    }
+}
+
+fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
+    let cmd_string = match cmd {
+        DataCommands::Monitors => "monitors".to_string(),
+        DataCommands::ActiveWindow => "activewindow".to_string(),
+        DataCommands::Clients => "clients".to_string(),
+        DataCommands::Devices => "devices".to_string(),
+        DataCommands::Layers => "layers".to_string(),
+        DataCommands::Workspaces => "workspaces".to_string(),
+        DataCommands::Version => "version".to_string(),
+        //DataCommands::Keyword(key) => format!("getoption {key}"),
+    };
+
+    let socket_path = get_socket_path(SocketType::Command);
+
+    match write_to_socket_sync(socket_path, format!("j/{cmd_string}").as_bytes()) {
+        Ok(data) => data,
+        Err(e) => panic!(
+            "A error occured while parsing the output from the hypr socket: {:?}",
+            e
+        ),
+    }
+}
 
 /// This pub(crate) enum holds every socket command that returns data
 #[derive(Debug)]
@@ -13,7 +59,7 @@ pub(crate) enum DataCommands {
     Layers,
     Devices,
     Version,
-    Keyword(String),
+    //Keyword(String),
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
@@ -79,8 +125,32 @@ pub struct Monitor {
     pub focused: bool,
 }
 
-/// This type provides a vector of monitors
-pub type Monitors = Vec<Monitor>;
+#[async_trait]
+impl HyprDataActive for Monitor {
+    fn get_active() -> HResult<Self> {
+        let all = Monitors::get()?;
+        if let Some(it) = all.vec().iter().find(|item| item.focused) {
+            Ok(it.clone())
+        } else {
+            panic!("No active monitor?")
+        }
+    }
+    async fn get_active_async() -> HResult<Self> {
+        let all = Monitors::get_async().await?;
+        if let Some(it) = all.vec().iter().find(|item| item.focused) {
+            Ok(it.clone())
+        } else {
+            panic!("No active monitor?")
+        }
+    }
+}
+
+create_data_struct!(
+    vec Monitors,
+    DataCommands::Monitors,
+    Monitor,
+    "This struct holds a vector of monitors"
+);
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct WorkspaceRaw {
@@ -118,7 +188,7 @@ impl From<WorkspaceRaw> for Workspace {
         Workspace {
             id: match raw.id {
                 -99 => WorkspaceType::Special,
-                0.. => WorkspaceType::Regular(match raw.id.try_into() {
+                0.. => WorkspaceType::Unnamed(match raw.id.try_into() {
                     Ok(num) => num,
                     Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
                 }),
@@ -132,11 +202,53 @@ impl From<WorkspaceRaw> for Workspace {
     }
 }
 
-/// This type provides a vector of workspaces
-pub type Workspaces = Vec<Workspace>;
+#[async_trait]
+impl HyprDataActive for Workspace {
+    fn get_active() -> HResult<Self> {
+        let all = Workspaces::get()?;
+        let mon = Monitor::get_active()?;
 
-/// This type provides a vector of raw workspaces
-pub(crate) type WorkspacesRaw = Vec<WorkspaceRaw>;
+        if let Some(it) = all
+            .vec()
+            .iter()
+            .find(|item| item.id == mon.active_workspace.id)
+        {
+            Ok(it.clone())
+        } else {
+            panic!("No active monitor?")
+        }
+    }
+    async fn get_active_async() -> HResult<Self> {
+        let all = Workspaces::get_async().await?;
+        let mon = Monitor::get_active_async().await?;
+
+        if let Some(it) = all
+            .vec()
+            .iter()
+            .find(|item| item.id == mon.active_workspace.id)
+        {
+            Ok(it.clone())
+        } else {
+            panic!("No active monitor?")
+        }
+    }
+}
+
+fn parse_works(data: String) -> HResult<Vec<Workspace>> {
+    let deserialized: Vec<WorkspaceRaw> = serde_json::from_str(&data)?;
+    let new = deserialized
+        .iter()
+        .map(|work| Workspace::from(work.clone()));
+    Ok(new.collect())
+}
+
+create_data_struct!(
+    vecp Workspaces,
+    DataCommands::Workspaces,
+    parse_works,
+    Workspace,
+    "This type provides a vector of workspaces"
+);
 
 /// This struct holds information for a client/window
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -163,8 +275,24 @@ pub struct Client {
     pub xwayland: bool,
 }
 
-/// This type provides a vector of clients
-pub type Clients = Vec<Client>;
+//impl_on!();
+
+// #[async_trait]
+// impl HyprDataActive for Client {
+//     fn get_active() -> HResult<Self> {
+//
+//     }
+//     async fn get_active_async() -> HResult<Self> {}
+// }
+
+create_data_struct!(
+    vec Clients,
+    DataCommands::Clients,
+    Client,
+    "This struct holds a vector of clients"
+);
+
+//pub type Clients = Vec<Client>;
 
 /// This enum holds the information for the active window
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -173,6 +301,8 @@ pub struct ActiveWindow(
     #[serde(deserialize_with = "object_empty_as_none")]
     Option<Client>,
 );
+
+impl_on!(ActiveWindow, DataCommands::ActiveWindow);
 
 /// This struct holds information about a layer surface/client
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -198,8 +328,12 @@ pub struct LayerDisplay {
     pub levels: HashMap<String, Vec<LayerClient>>,
 }
 
-/// This type provides a hashmap of all current displays, and their layer surfaces
-pub type Layers = HashMap<String, LayerDisplay>;
+create_data_struct!(
+    sing Layers,
+    DataCommands::Layers,
+    HashMap<String, LayerDisplay>,
+    "This struct holds a hashmap of all current displays, and their layer surfaces"
+);
 
 /// This struct holds information about a mouse device
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -281,6 +415,7 @@ pub struct Devices {
     /// All the tablets
     pub tablets: Vec<Tablet>,
 }
+impl_on!(Devices, DataCommands::Devices);
 
 /// This struct holds version information
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -296,31 +431,4 @@ pub struct Version {
     /// The flags that Hyprland was built with
     pub flags: Vec<String>,
 }
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct OptionRaw {
-    pub option: String,
-    pub int: i64,
-    pub float: f64,
-    pub str: String,
-}
-
-/// This enum holds the possible values of a keyword/option
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub enum OptionValue {
-    /// A integer (64-bit)
-    Int(i64),
-    /// A floating point (64-point)
-    Float(f64),
-    /// A string
-    String(String),
-}
-
-/// This struct holds a keyword
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Keyword {
-    /// The identifier (or name) of the keyword
-    pub option: String,
-    /// The value of the keyword/option
-    pub value: OptionValue,
-}
+impl_on!(Version, DataCommands::Version);

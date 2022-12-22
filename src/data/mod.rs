@@ -6,44 +6,57 @@
 //!
 //! here is a example of every function in use! (blocking)
 //! ```rust
-//! use hyprland::data::blocking::{
-//!     get_monitors,
-//!     get_workspaces,
-//!     get_clients,
-//!     get_active_window,
-//!     get_layers,
-//!     get_devices
+//! use hyprland::data::{
+//!     Monitors,
+//!     Workspaces,
+//!     Clients,
+//!     ActiveWindow,
+//!     Layers,
+//!     Devices
 //! };
+//! use hyprland::prelude::*;
+//! use hyprland::shared::HResult;
 //!
-//! fn main() -> std::io::Result<()> {
-//!     let monitors = get_monitors()?;
+//! fn main() -> HResult<()> {
+//!     let monitors = Monitors::get()?.vec();
 //!     println!("{monitors:#?}");
 //!
-//!     let workspaces = get_workspaces()?;
+//!     let workspaces = Workspaces::get()?.vec();
 //!     println!("{workspaces:#?}");
 //!
-//!     let clients = get_clients()?;
+//!     let clients = Clients::get()?.vec();
 //!     println!("{clients:#?}");
 //!
-//!     let active_window = get_active_window()?;
+//!     let active_window = ActiveWindow::get()?;
 //!     println!("{active_window:#?}");
 //!
-//!     let layers = get_layers()?;
+//!     let layers = Layers::get()?;
 //!     println!("{layers:#?}");
 //!
-//!     let devices = get_devices()?;
+//!     let devices = Devices::get()?;
 //!     println!("{devices:#?}");
 //!
 //!     Ok(())
 //! }
 //! ```
 
-mod shared;
+#[macro_use]
+mod macros;
 
-pub use crate::data::shared::*;
+use crate::shared::*;
+use std::collections::HashMap;
 
-/// This module provides async function calls
-pub mod asynchronous;
+mod regular;
 
-/// This module provides blocking function calls
-pub mod blocking;
+/// Helpers data commands, these use other hyprctl commands to create new ones!
+mod helpers;
+
+pub use crate::data::helpers::*;
+
+pub use crate::data::regular::*;
+
+//// This module provides async function calls
+//pub mod asynchronous;
+
+//// This module provides blocking function calls
+//pub mod blocking;

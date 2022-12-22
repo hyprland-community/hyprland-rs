@@ -5,18 +5,16 @@
 //! ## Usage
 //!
 //! ```rust
-//! use hyprland::dispatch::{dispatch_blocking, DispatchType};
-//! fn main() -> std::io::Result<()> {
-//!    dispatch_blocking(DispatchType::Exec("kitty".to_string()))?;
+//! use hyprland::shared::HResult;
+//! use hyprland::dispatch::{Dispatch, DispatchType};
+//! fn main() -> HResult<()> {
+//!    Dispatch::call(DispatchType::Exec("kitty".to_string()))?;
 //!
 //!    Ok(())
 //! }
 //! ````
 
-use crate::shared::{
-    get_socket_path, write_to_socket, write_to_socket_sync, Address, SocketType, WorkspaceId,
-};
-use std::io;
+use crate::shared::*;
 
 /// This enum is for identifying a window
 #[derive(Clone)]
@@ -264,7 +262,7 @@ fn match_window_identifier(iden: WindowIdentifier) -> String {
     }
 }
 
-fn gen_dispatch_str(cmd: DispatchType) -> io::Result<String> {
+fn gen_dispatch_str(cmd: DispatchType) -> HResult<String> {
     let string_to_pass = match &cmd {
         DispatchType::Exec(sh) => format!("exec {sh}"),
         DispatchType::KillActiveWindow => "killactive".to_string(),
@@ -375,20 +373,25 @@ fn gen_dispatch_str(cmd: DispatchType) -> io::Result<String> {
     }
 }
 
-/// This function calls a specified dispatcher (blocking)
-///
-/// ```rust
-/// # fn main() -> std::io::Result<()> {
-/// use hyprland::dispatch::{DispatchType,dispatch_blocking};
-/// // This is an example of just one dispatcher, there are many more!
-/// dispatch_blocking(DispatchType::Exec("something".to_string()))
-/// # }
-/// ```
-pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
-    let socket_path = get_socket_path(SocketType::Command);
-    let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes());
+/// The struct that provides all dispatching methods
+pub struct Dispatch;
 
-    match output {
+impl Dispatch {
+    /// This function calls a specified dispatcher (blocking)
+    ///
+    /// ```rust
+    /// # use hyprland::shared::HResult;
+    /// # fn main() -> HResult<()> {
+    /// use hyprland::dispatch::{DispatchType,Dispatch};
+    /// // This is an example of just one dispatcher, there are many more!
+    /// Dispatch::call(DispatchType::Exec("something".to_string()))
+    /// # }
+    /// ```
+    pub fn call(dispatch_type: DispatchType) -> HResult<()> {
+        let socket_path = get_socket_path(SocketType::Command);
+        let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes());
+
+        match output {
         Ok(msg) => match msg.as_str() {
             "ok" => Ok(()),
             msg => panic!(
@@ -397,23 +400,25 @@ pub fn dispatch_blocking(dispatch_type: DispatchType) -> io::Result<()> {
         },
         Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
     }
-}
+    }
 
-/// This function calls a specified dispatcher (async)
-///
-/// ```rust
-/// # async fn function() -> std::io::Result<()> {
-/// use hyprland::dispatch::{DispatchType,dispatch};
-/// // This is an example of just one dispatcher, there are many more!
-/// dispatch(DispatchType::Exec("kitty".to_string())).await?;
-/// # Ok(())
-/// # }
-/// ```
-pub async fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
-    let socket_path = get_socket_path(SocketType::Command);
-    let output = write_to_socket(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes()).await;
+    /// This function calls a specified dispatcher (async)
+    ///
+    /// ```rust
+    /// # use hyprland::shared::HResult;
+    /// # async fn function() -> HResult<()> {
+    /// use hyprland::dispatch::{DispatchType,Dispatch};
+    /// // This is an example of just one dispatcher, there are many more!
+    /// Dispatch::call_async(DispatchType::Exec("kitty".to_string())).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn call_async(dispatch_type: DispatchType) -> HResult<()> {
+        let socket_path = get_socket_path(SocketType::Command);
+        let output =
+            write_to_socket(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes()).await;
 
-    match output {
+        match output {
         Ok(msg) => match msg.as_str() {
             "ok" => Ok(()),
             msg => panic!(
@@ -421,5 +426,6 @@ pub async fn dispatch(dispatch_type: DispatchType) -> io::Result<()> {
             ),
         },
         Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
+    }
     }
 }
