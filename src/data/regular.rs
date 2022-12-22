@@ -162,7 +162,7 @@ pub(crate) struct WorkspaceRaw {
     pub monitor: String,
     /// The amount of windows in the workspace
     pub windows: u8,
-    /// A bool that shoes if there is a fullscreen window in the workspace
+    /// A bool that shows if there is a fullscreen window in the workspace
     #[serde(rename = "hasfullscreen")]
     pub fullscreen: bool,
 }
@@ -178,7 +178,7 @@ pub struct Workspace {
     pub monitor: String,
     /// The amount of windows in the workspace
     pub windows: u8,
-    /// A bool that shoes if there is a fullscreen window in the workspace
+    /// A bool that shows if there is a fullscreen window in the workspace
     #[serde(rename = "hasfullscreen")]
     pub fullscreen: bool,
 }
@@ -299,7 +299,7 @@ create_data_struct!(
 pub struct ActiveWindow(
     /// The client data
     #[serde(deserialize_with = "object_empty_as_none")]
-    Option<Client>,
+    pub Option<Client>,
 );
 
 impl_on!(ActiveWindow, DataCommands::ActiveWindow);
