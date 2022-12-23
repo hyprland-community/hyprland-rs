@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/l/hyprland)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![docs.rs](https://img.shields.io/docsrs/hyprland)](https://docs.rs/hyprland)
 [![Hyprland](https://img.shields.io/badge/Made%20for-Hyprland-blue)](https://github.com/hyprwm/Hyprland)
-
+[![Discord](https://img.shields.io/discord/1055990214411169892?label=discord)](https://discord.gg/zzWqvcKRMy)
 A unoffical rust wrapper for Hyprland's IPC
 
 ## Disclaimer
@@ -58,7 +58,7 @@ fn main() -> HResult<()> {
     ))?;
 
     // get all monitors as a vector
-    let monitors = Monitors::get()?.vec();
+    let monitors = Monitors::get()?.collect();
 
     // and printing them all out!
     println!("{monitors:#?}");
