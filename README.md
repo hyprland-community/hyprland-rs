@@ -6,6 +6,7 @@
 [![docs.rs](https://img.shields.io/docsrs/hyprland)](https://docs.rs/hyprland)
 [![Hyprland](https://img.shields.io/badge/Made%20for-Hyprland-blue)](https://github.com/hyprwm/Hyprland)
 [![Discord](https://img.shields.io/discord/1055990214411169892?label=discord)](https://discord.gg/zzWqvcKRMy)
+
 A unoffical rust wrapper for Hyprland's IPC
 
 ## Disclaimer
