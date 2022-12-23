@@ -129,7 +129,7 @@ pub struct Monitor {
 impl HyprDataActive for Monitor {
     fn get_active() -> HResult<Self> {
         let all = Monitors::get()?;
-        if let Some(it) = all.vec().iter().find(|item| item.focused) {
+        if let Some(it) = all.collect().iter().find(|item| item.focused) {
             Ok(it.clone())
         } else {
             panic!("No active monitor?")
@@ -137,7 +137,7 @@ impl HyprDataActive for Monitor {
     }
     async fn get_active_async() -> HResult<Self> {
         let all = Monitors::get_async().await?;
-        if let Some(it) = all.vec().iter().find(|item| item.focused) {
+        if let Some(it) = all.collect().iter().find(|item| item.focused) {
             Ok(it.clone())
         } else {
             panic!("No active monitor?")
@@ -209,7 +209,7 @@ impl HyprDataActive for Workspace {
         let mon = Monitor::get_active()?;
 
         if let Some(it) = all
-            .vec()
+            .collect()
             .iter()
             .find(|item| item.id == mon.active_workspace.id)
         {
@@ -223,7 +223,7 @@ impl HyprDataActive for Workspace {
         let mon = Monitor::get_active_async().await?;
 
         if let Some(it) = all
-            .vec()
+            .collect()
             .iter()
             .find(|item| item.id == mon.active_workspace.id)
         {

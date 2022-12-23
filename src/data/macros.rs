@@ -36,7 +36,7 @@ macro_rules! create_data_struct {
             }
         }
         impl HyprDataVec<$held> for $name {
-            fn vec(self) -> Vec<$held> {
+            fn collect(self) -> Vec<$held> {
                 self.0
             }
         }
@@ -96,7 +96,7 @@ macro_rules! create_data_struct {
             }
         }
         impl HyprDataVec<$held> for Workspaces {
-            fn vec(self) -> Vec<$held> {
+            fn collect(self) -> Vec<$held> {
                 self.0
             }
         }

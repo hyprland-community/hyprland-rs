@@ -43,7 +43,7 @@ pub trait HyprDataActive {
 /// This trait provides a standardized way to get data in a from of a vector
 pub trait HyprDataVec<T>: HyprData {
     /// This method returns a vector of data
-    fn vec(self) -> Vec<T>;
+    fn collect(self) -> Vec<T>;
 }
 
 /// This type provides the id used to identify workspaces

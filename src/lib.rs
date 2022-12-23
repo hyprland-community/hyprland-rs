@@ -10,6 +10,7 @@ extern crate lazy_static;
 pub mod shared;
 
 /// This module provides functions for getting information on the compositor
+#[cfg(feature = "data")]
 pub mod data;
 
 /// This module provides the EventListener struct for listening and acting upon for events
@@ -17,9 +18,11 @@ pub mod data;
 pub mod event_listener;
 
 /// This module is for calling dispatchers and changing keywords
+#[cfg(feature = "dispatch")]
 pub mod dispatch;
 
 /// This module provides the stuff needed to mutate, and read Hyprland config values
+#[cfg(feature = "keyword")]
 pub mod keyword;
 
 /// The prelude module, this is to import all traits
