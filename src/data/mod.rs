@@ -18,13 +18,13 @@
 //! use hyprland::shared::HResult;
 //!
 //! fn main() -> HResult<()> {
-//!     let monitors = Monitors::get()?.vec();
+//!     let monitors = Monitors::get()?.collect();
 //!     println!("{monitors:#?}");
 //!
-//!     let workspaces = Workspaces::get()?.vec();
+//!     let workspaces = Workspaces::get()?.collect();
 //!     println!("{workspaces:#?}");
 //!
-//!     let clients = Clients::get()?.vec();
+//!     let clients = Clients::get()?.collect();
 //!     println!("{clients:#?}");
 //!
 //!     let active_window = ActiveWindow::get()?;

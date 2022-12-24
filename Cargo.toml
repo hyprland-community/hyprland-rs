@@ -13,14 +13,7 @@ repository = "https://github.com/hyprland-community/hyprland-rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.nix]
-#app = true
 build = true
-#library = true
-#systems = [
-#    "aarch64-linux",
-#    "i686-linux",
-#    "x86_64-linux",
-#]
 
 [profile.release]
 opt-level = "z"
