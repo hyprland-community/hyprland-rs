@@ -6,8 +6,43 @@ use serde::{Deserialize, Deserializer, Serialize};
 use std::env::{var, VarError};
 use std::{fmt, io};
 
+#[derive(Debug)]
+/// Error that unifies different error types used by Hyprland-rs
+pub enum HyprError {
+    /// Error coming from serde
+    SerdeError(serde_json::Error),
+    /// Error coming from std::io
+    IoError(io::Error),
+}
+
+impl From<io::Error> for HyprError {
+    fn from(error: io::Error) -> Self {
+        HyprError::IoError(error)
+    }
+}
+
+impl From<serde_json::Error> for HyprError {
+    fn from(error: serde_json::Error) -> Self {
+        HyprError::SerdeError(error)
+    }
+}
+
+impl fmt::Display for HyprError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::IoError(err) => err.to_string(),
+                Self::SerdeError(err) => err.to_string(),
+            }
+        )
+    }
+}
+
 /// This type provides the result type used everywhere in Hyprland-rs
-pub type HResult<T> = Result<T, Box<dyn std::error::Error>>;
+//pub type HResult<T> = Result<T, Box<dyn std::error::Error>>;
+pub type HResult<T> = Result<T, HyprError>;
 
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
@@ -36,6 +71,19 @@ pub trait HyprDataActive {
         Self: Sized;
     /// This method gets the active data (async)
     async fn get_active_async() -> HResult<Self>
+    where
+        Self: Sized;
+}
+
+/// Trait for helper functions to get the active of the implementor, but for optional ones
+#[async_trait]
+pub trait HyprDataActiveOptional {
+    /// This method gets the active data
+    fn get_active() -> HResult<Option<Self>>
+    where
+        Self: Sized;
+    /// This method gets the active data (async)
+    async fn get_active_async() -> HResult<Option<Self>>
     where
         Self: Sized;
 }

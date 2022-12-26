@@ -275,15 +275,27 @@ pub struct Client {
     pub xwayland: bool,
 }
 
-//impl_on!();
+/// This enum holds the information for the active window
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub(crate) struct ActiveWindow(
+    /// The client data
+    #[serde(deserialize_with = "object_empty_as_none")]
+    pub Option<Client>,
+);
 
-// #[async_trait]
-// impl HyprDataActive for Client {
-//     fn get_active() -> HResult<Self> {
-//
-//     }
-//     async fn get_active_async() -> HResult<Self> {}
-// }
+#[async_trait]
+impl HyprDataActiveOptional for Client {
+    fn get_active() -> HResult<Option<Self>> {
+        let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow);
+        let deserialized: ActiveWindow = serde_json::from_str(&data)?;
+        Ok(deserialized.0)
+    }
+    async fn get_active_async() -> HResult<Option<Self>> {
+        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await;
+        let deserialized: ActiveWindow = serde_json::from_str(&data)?;
+        Ok(deserialized.0)
+    }
+}
 
 create_data_struct!(
     vec Clients,
@@ -294,15 +306,7 @@ create_data_struct!(
 
 //pub type Clients = Vec<Client>;
 
-/// This enum holds the information for the active window
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct ActiveWindow(
-    /// The client data
-    #[serde(deserialize_with = "object_empty_as_none")]
-    pub Option<Client>,
-);
-
-impl_on!(ActiveWindow, DataCommands::ActiveWindow);
+//impl_on!(ActiveWindow, DataCommands::ActiveWindow);
 
 /// This struct holds information about a layer surface/client
 #[derive(Serialize, Deserialize, Debug, Clone)]

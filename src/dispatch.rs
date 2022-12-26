@@ -139,13 +139,6 @@ pub enum WindowMove {
 
 /// This enum holds every dispatcher
 pub enum DispatchType {
-    /// This dispatcher changes a keyword
-    Keyword(
-        /// The keyword key
-        String,
-        /// The value to set the keyword to
-        String,
-    ),
     /// This dispatcher changes the current cursor
     SetCursor(
         /// The cursor theme
@@ -357,16 +350,11 @@ fn gen_dispatch_str(cmd: DispatchType) -> HResult<String> {
             match_mon_indentifier(mon.clone())
         ),
         DispatchType::ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
-        DispatchType::Keyword(key, val) => {
-            format!("{key} {val}", key = key.clone(), val = val.clone())
-        }
         DispatchType::SetCursor(theme, size) => {
             format!("{theme} {size}", theme = theme.clone(), size = *size)
         }
     };
-    if let DispatchType::Keyword(_, _) = cmd {
-        Ok(format!("keyword {string_to_pass}"))
-    } else if let DispatchType::SetCursor(_, _) = cmd {
+    if let DispatchType::SetCursor(_, _) = cmd {
         Ok(format!("setcursor {string_to_pass}"))
     } else {
         Ok(format!("dispatch {string_to_pass}"))
@@ -428,4 +416,15 @@ impl Dispatch {
         Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
     }
     }
+}
+
+/// Macro abstraction over [Dispatch::call]
+#[macro_export]
+macro_rules! dispatch {
+    ($dis:ident, $( $arg:expr ), *) => {
+        Dispatch::call(DispatchType::$dis($($arg), *))
+    };
+    (async $dis:ident, $( $arg:expr ), *) => {
+        Dispatch::call_async(DispatchType::$dis($($arg), *))
+    };
 }

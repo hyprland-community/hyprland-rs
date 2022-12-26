@@ -32,6 +32,7 @@ tokio = { version = "1", features = ["full"] }
 lazy_static = "1.4"
 regex = "1.6"
 async-trait = "0.1"
+num-traits = "0.2"
 
 [features]
 default = ["listener", "dispatch", "data", "keyword"]

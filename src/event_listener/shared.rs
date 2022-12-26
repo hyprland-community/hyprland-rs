@@ -444,7 +444,7 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                 );
             }
         } else {
-            return Err(Box::new(io::Error::new(
+            return Err(HyprError::IoError(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Event matched more or less than one regex (not a unknown event issue!)",
             )));

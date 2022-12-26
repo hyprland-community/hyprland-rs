@@ -1,4 +1,22 @@
+//! # Keyword module
+//!
+//! This module is used for setting, and getting keywords
+//!
+//! ## Usage
+//!
+//! ```rust, no_run
+//! use hyprland::shared::HResult;
+//! use hyprland::keyword::Keyword;
+//! fn main() -> HResult<()> {
+//!    Keyword::get("some_keyword")?;
+//!    Keyword::set("another_keyword", "the value to set it to")?;
+//!
+//!    Ok(())
+//! }
+//! ````
+
 use crate::shared::*;
+use num_traits::AsPrimitive;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -30,6 +48,49 @@ impl ToString for OptionValue {
     }
 }
 
+impl From<OptionValue> for String {
+    fn from(opt: OptionValue) -> Self {
+        opt.to_string()
+    }
+}
+
+impl From<String> for OptionValue {
+    fn from(str: String) -> Self {
+        OptionValue::String(str)
+    }
+}
+
+macro_rules! int_to_opt {
+    ($ty:ty) => {
+        impl From<$ty> for OptionValue {
+            fn from(num: $ty) -> Self {
+                OptionValue::Int(num.as_())
+            }
+        }
+    };
+}
+
+macro_rules! ints_to_opt {
+    ( $( $t:ty ),* ) => {
+        $(int_to_opt!($t);)*
+    };
+}
+
+ints_to_opt!(u8, i8, u16, i16, u32, i32, u64, i64);
+
+macro_rules! float_to_opt {
+    ($ty:ty) => {
+        impl From<$ty> for OptionValue {
+            fn from(num: $ty) -> Self {
+                OptionValue::Float(num.as_())
+            }
+        }
+    };
+}
+
+float_to_opt!(f32);
+float_to_opt!(f64);
+
 /// This struct holds a keyword
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Keyword {
@@ -50,22 +111,34 @@ macro_rules! keyword {
 
 impl Keyword {
     /// This function sets a keyword's value
-    pub fn set(key: String, value: OptionValue) -> HResult<()> {
+    pub fn set<Str: ToString, Opt: Into<OptionValue>>(key: Str, value: Opt) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let _ = write_to_socket_sync(socket_path, keyword!(key, (value.to_string())).as_bytes())?;
+        let key = key.to_string();
+        let _ = write_to_socket_sync(
+            socket_path,
+            keyword!(key, (value.into().to_string())).as_bytes(),
+        )?;
         Ok(())
     }
     /// This function sets a keyword's value (async)
-    pub async fn set_async(key: String, value: OptionValue) -> HResult<()> {
+    pub async fn set_async<Str: ToString, Opt: Into<OptionValue>>(
+        key: Str,
+        value: Opt,
+    ) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let _ = write_to_socket(socket_path, keyword!(key, (value.to_string())).as_bytes()).await?;
+        let key = key.to_string();
+        let _ = write_to_socket(
+            socket_path,
+            keyword!(key, (value.into().to_string())).as_bytes(),
+        )
+        .await?;
         Ok(())
     }
     /// This function returns the value of a keyword
-    pub fn get(key: String) -> HResult<Self> {
+    pub fn get<Str: ToString>(key: Str) -> HResult<Self> {
         let socket_path = get_socket_path(SocketType::Command);
+        let key = key.to_string();
         let data = write_to_socket_sync(socket_path, keyword!(g key).as_bytes())?;
-        dbg!(&data);
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let dc = deserialized.clone();
         let keyword = Keyword {
@@ -83,8 +156,9 @@ impl Keyword {
         Ok(keyword)
     }
     /// This function returns the value of a keyword (async)
-    pub async fn get_async(key: String) -> HResult<Self> {
+    pub async fn get_async<Str: ToString>(key: Str) -> HResult<Self> {
         let socket_path = get_socket_path(SocketType::Command);
+        let key = key.to_string();
         let data = write_to_socket(socket_path, keyword!(g key).as_bytes()).await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let dc = deserialized.clone();

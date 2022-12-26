@@ -27,5 +27,5 @@ pub mod keyword;
 
 /// The prelude module, this is to import all traits
 pub mod prelude {
-    pub use crate::shared::{HyprData, HyprDataActive, HyprDataVec};
+    pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};
 }

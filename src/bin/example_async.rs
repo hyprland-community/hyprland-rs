@@ -5,34 +5,34 @@ use hyprland::keyword::*;
 use hyprland::prelude::*;
 use hyprland::shared::WorkspaceType;
 
-fn main() -> hyprland::shared::HResult<()> {
-    // We can call dispatchers with the dispatch macro, and struct!
-    // You can decide what you want to use, below are some examples of their usage
+#[tokio::main]
+async fn main() -> hyprland::shared::HResult<()> {
+    // We can call dispatchers with the dispatch function!
 
     // Here we are telling hyprland to open kitty using the dispatch macro!
-    hyprland::dispatch!(Exec, "kitty".to_string())?;
+    hyprland::dispatch!(async Exec, "kitty".to_string()).await?;
 
     // Here we are moving the cursor to the top left corner! We can also just use the Dispatch
     // struct!
-    Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
+    Dispatch::call_async(DispatchType::MoveCursorToCorner(Corner::TopLeft)).await?;
 
-    let border_size = match Keyword::get("general:border_size")?.value {
+    let border_size = match Keyword::get_async("general:border_size").await?.value {
         OptionValue::Int(i) => i,
         _ => panic!("border size can only be a int"),
     };
     println!("{border_size}");
 
     // Here we change a keyword, yes its a dispatcher don't complain
-    Keyword::set("general:border_size", border_size * 2)?;
+    Keyword::set_async("general:border_size", border_size * 2).await?;
 
     // get all monitors
-    let monitors = Monitors::get()?;
+    let monitors = Monitors::get_async().await?;
 
     // and the active window
-    let win = Client::get_active()?;
+    let win = Client::get_active_async().await?;
 
     // and all open windows
-    let clients = Clients::get()?;
+    let clients = Clients::get_async().await?;
 
     // and printing them all out!
     println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}");
@@ -77,5 +77,5 @@ fn main() -> hyprland::shared::HResult<()> {
     // and execute the function
     // here we are using the blocking variant
     // but there is a async version too
-    event_listener.start_listener()
+    event_listener.start_listener_async().await
 }
