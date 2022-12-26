@@ -38,6 +38,7 @@ here is an example of most of the provided features being utilized
 
 ```rust ,no_run
 use hyprland::data::Monitors;
+use hyprland::keyword::*;
 use hyprland::dispatch::{Dispatch, Corner, DispatchType};
 use hyprland::event_listener::EventListener;
 use hyprland::shared::HResult;
@@ -53,10 +54,10 @@ fn main() -> HResult<()> {
     Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
     // Here we change a keyword, yes its a dispatcher don't complain
-    Dispatch::call(DispatchType::Keyword(
-        "general:border_size".to_string(),
-        "30".to_string(),
-    ))?;
+    Keyword::set(
+        "general:border_size",
+        30,
+    )?;
 
     // get all monitors as a vector
     let monitors = Monitors::get()?.collect();

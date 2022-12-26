@@ -60,6 +60,12 @@ impl From<String> for OptionValue {
     }
 }
 
+impl From<&str> for OptionValue {
+    fn from(str: &str) -> Self {
+        OptionValue::String(str.to_string())
+    }
+}
+
 macro_rules! int_to_opt {
     ($ty:ty) => {
         impl From<$ty> for OptionValue {

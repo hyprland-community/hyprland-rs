@@ -10,7 +10,7 @@
 //!     Monitors,
 //!     Workspaces,
 //!     Clients,
-//!     ActiveWindow,
+//!     Client,
 //!     Layers,
 //!     Devices
 //! };
@@ -27,7 +27,7 @@
 //!     let clients = Clients::get()?.collect();
 //!     println!("{clients:#?}");
 //!
-//!     let active_window = ActiveWindow::get()?;
+//!     let active_window = Client::get_active()?;
 //!     println!("{active_window:#?}");
 //!
 //!     let layers = Layers::get()?;
