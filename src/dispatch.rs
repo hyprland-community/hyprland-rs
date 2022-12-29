@@ -148,8 +148,13 @@ pub enum DispatchType {
     ),
     /// This dispatcher executes a program
     Exec(String),
+    /// This dispatcher passes a keybind to a window when called in a
+    /// keybind, its used for global keybinds. And should **ONLY** be used with keybinds
+    Pass(WindowIdentifier),
     /// This dispatcher kills the active window/client
     KillActiveWindow,
+    /// This dispatcher closes the specified window
+    CloseWindow(WindowIdentifier),
     /// This dispatcher changes the current workspace
     Workspace(WorkspaceIdentifierWithSpecial),
     /// This dispatcher moves the focused window to a specified workspace, and
@@ -162,18 +167,30 @@ pub enum DispatchType {
     ToggleFloating,
     /// This toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
+    /// This dispatcher sets the DPMS status for all monitors
+    ToggleDPMS(bool, Option<String>),
     /// This dispatcher toggles pseudo tiling for the current window
     TogglePseudo,
+    /// This dispatcher pins the active window to all workspaces
+    TogglePin,
     /// This dispatcher moves the window focus in a specified direction
     MoveFocus(Direction),
     /// This dispatcher moves the current window to a monitor or in a specified direction
     MoveWindow(WindowMove),
+    /// This dispatcher centers the active window
+    CenterWindow,
     /// This dispatcher resizes the active window using a [`Position`][Position] enum
     ResizeActive(Position),
     /// This dispatcher moves the active window using a [`Position`][Position] enum
     MoveActive(Position),
+    /// This dispatcher resizes the specified window using a [`Position`][Position] enum
+    ResizeWindowPixel(Position, WindowIdentifier),
+    /// This dispatcher moves the specified window using a [`Position`][Position] enum
+    MoveWindowPixel(Position, WindowIdentifier),
     /// This dispatcher cycles windows using a specified direction
     CycleWindow(CycleDirection),
+    /// This dispatcher swaps windows using a specified direction
+    SwapWindow(CycleDirection),
     /// This dispatcher focuses a specified window
     FocusWindow(WindowIdentifier),
     /// This dispatcher focuses a specified monitor
@@ -194,6 +211,10 @@ pub enum DispatchType {
     MoveCurrentWorkspaceToMonitor(MonitorIdentifier),
     /// This dispatcher moves a specified workspace to a specified monitor
     MoveWorkspaceToMonitor(WorkspaceIdentifier, MonitorIdentifier),
+    /// This dispatcher swaps the active workspaces of two monitors
+    SwapActiveWorkspaces(MonitorIdentifier, MonitorIdentifier),
+    /// This dispatcher brings the active window to the top of the stack
+    BringActiveToTop,
     /// This toggles the special workspace (AKA scratchpad)
     ToggleSpecialWorkspace,
 }
@@ -221,7 +242,7 @@ fn match_workspace_identifier_special(identifier: WorkspaceIdentifierWithSpecial
     }
 }
 
-fn match_mon_indentifier(identifier: MonitorIdentifier) -> String {
+fn match_mon_identifier(identifier: MonitorIdentifier) -> String {
     match identifier {
         MonitorIdentifier::Direction(dir) => match_dir(dir),
         MonitorIdentifier::Id(id) => id.to_string(),
@@ -255,38 +276,54 @@ fn match_window_identifier(iden: WindowIdentifier) -> String {
     }
 }
 
-fn gen_dispatch_str(cmd: DispatchType) -> HResult<String> {
+pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<String> {
+    let sep = if dispatch { " " } else { "," };
     let string_to_pass = match &cmd {
-        DispatchType::Exec(sh) => format!("exec {sh}"),
+        DispatchType::Exec(sh) => format!("exec{sep}{sh}"),
+        DispatchType::Pass(win) => format!("pass{sep}{}", match_window_identifier(win.clone())),
         DispatchType::KillActiveWindow => "killactive".to_string(),
-        DispatchType::Workspace(identifier) => format!(
-            "workspace {}",
-            match_workspace_identifier_special(identifier.clone())
+        DispatchType::CloseWindow(win) => {
+            format!("closewindow{sep}{}", match_window_identifier(win.clone()))
+        }
+        DispatchType::Workspace(ident) => format!(
+            "workspace{sep}{}",
+            match_workspace_identifier_special(ident.clone())
         ),
-        DispatchType::MoveFocusedWindowToWorkspace(identifier) => {
+        DispatchType::MoveFocusedWindowToWorkspace(ident) => {
             format!(
-                "workspace {}",
-                match_workspace_identifier(identifier.clone())
+                "workspace{sep}{}",
+                match_workspace_identifier(ident.clone())
             )
         }
-        DispatchType::MoveFocusedWindowToWorkspaceSilent(identifier) => {
+        DispatchType::MoveFocusedWindowToWorkspaceSilent(ident) => {
             format!(
-                "workspace {}",
-                match_workspace_identifier(identifier.clone())
+                "workspace{sep}{}",
+                match_workspace_identifier(ident.clone())
             )
         }
         DispatchType::ToggleFloating => "togglefloating".to_string(),
         DispatchType::ToggleFullscreen(fullscreen_type) => format!(
-            "fullscreen {}",
+            "fullscreen{sep}{}",
             match fullscreen_type {
                 FullscreenType::Real => "0",
                 FullscreenType::Maximize => "1",
                 FullscreenType::NoParam => "",
             }
         ),
+        DispatchType::ToggleDPMS(stat, mon) => {
+            format!(
+                "dpms{sep}{} {}",
+                if *stat { "on" } else { "off" },
+                match mon {
+                    Some(s) => s.clone(),
+                    None => "".to_string(),
+                }
+            )
+        }
         DispatchType::TogglePseudo => "pseudo".to_string(),
+        DispatchType::TogglePin => "pin".to_string(),
         DispatchType::MoveFocus(dir) => format!(
-            "movefocus {}",
+            "movefocus{sep}{}",
             match dir {
                 Direction::Down => "d",
                 Direction::Up => "u",
@@ -294,34 +331,54 @@ fn gen_dispatch_str(cmd: DispatchType) -> HResult<String> {
                 Direction::Left => "l",
             }
         ),
-        DispatchType::MoveWindow(iden) => format!(
-            "movewindow {}",
-            match iden {
+        DispatchType::MoveWindow(ident) => format!(
+            "movewindow{sep}{}",
+            match ident {
                 WindowMove::Direction(dir) => match_dir(dir.clone()),
-                WindowMove::Monitor(mon) => format!("mon:{}", match_mon_indentifier(mon.clone())),
+                WindowMove::Monitor(mon) => format!("mon:{}", match_mon_identifier(mon.clone())),
             }
         ),
+        DispatchType::CenterWindow => "centerwindow".to_string(),
         DispatchType::ResizeActive(pos) => {
-            format!("resizeactive {}", position_to_string(pos.clone()))
+            format!("resizeactive{sep}{}", position_to_string(pos.clone()))
         }
         DispatchType::MoveActive(pos) => format!("moveactive {}", position_to_string(pos.clone())),
+        DispatchType::ResizeWindowPixel(pos, win) => {
+            format!(
+                "resizeactive{sep}{} {}",
+                position_to_string(pos.clone()),
+                match_window_identifier(win.clone())
+            )
+        }
+        DispatchType::MoveWindowPixel(pos, win) => format!(
+            "moveactive{sep}{} {}",
+            position_to_string(pos.clone()),
+            match_window_identifier(win.clone())
+        ),
         DispatchType::CycleWindow(dir) => format!(
-            "cyclenext {}",
+            "cyclenext{sep}{}",
+            match dir {
+                CycleDirection::Next => "",
+                CycleDirection::Previous => "prev",
+            }
+        ),
+        DispatchType::SwapWindow(dir) => format!(
+            "swapnext{sep}{}",
             match dir {
                 CycleDirection::Next => "",
                 CycleDirection::Previous => "prev",
             }
         ),
         DispatchType::FocusWindow(win) => {
-            format!("focuswindow {}", match_window_identifier(win.clone()))
+            format!("focuswindow{sep}{}", match_window_identifier(win.clone()))
         }
         DispatchType::FocusMonitor(mon) => {
-            format!("focusmonitor {}", match_mon_indentifier(mon.clone()))
+            format!("focusmonitor{sep}{}", match_mon_identifier(mon.clone()))
         }
         DispatchType::ChangeSplitRatio(ratio) => format!("splitratio {}", ratio),
         DispatchType::ToggleOpaque => "toggleopaque".to_string(),
         DispatchType::MoveCursorToCorner(corner) => format!(
-            "movecursortocorner {}",
+            "movecursortocorner{sep}{}",
             match corner {
                 Corner::BottomLeft => "0",
                 Corner::BottomRight => "1",
@@ -330,7 +387,7 @@ fn gen_dispatch_str(cmd: DispatchType) -> HResult<String> {
             }
         ),
         DispatchType::WorkspaceOption(opt) => format!(
-            "workspaceopt {}",
+            "workspaceopt{sep}{}",
             match opt {
                 WorkspaceOptions::AllFloat => "allfloat",
                 WorkspaceOptions::AllPseudo => "allpseudo",
@@ -340,24 +397,32 @@ fn gen_dispatch_str(cmd: DispatchType) -> HResult<String> {
         DispatchType::ForceRendererReload => "forcerendererreload".to_string(),
         DispatchType::MoveCurrentWorkspaceToMonitor(mon) => {
             format!(
-                "movecurrentworkspacetomonitor {}",
-                match_mon_indentifier(mon.clone())
+                "movecurrentworkspacetomonitor{sep}{}",
+                match_mon_identifier(mon.clone())
             )
         }
         DispatchType::MoveWorkspaceToMonitor(work, mon) => format!(
-            "movecurrentworkspacetomonitor {} {}",
+            "movecurrentworkspacetomonitor{sep}{} {}",
             match_workspace_identifier(work.clone()),
-            match_mon_indentifier(mon.clone())
+            match_mon_identifier(mon.clone())
         ),
         DispatchType::ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
+        DispatchType::SwapActiveWorkspaces(mon, mon2) => format!(
+            "swapactiveworkspaces{sep}{} {}",
+            match_mon_identifier(mon.clone()),
+            match_mon_identifier(mon2.clone())
+        ),
+        DispatchType::BringActiveToTop => "bringactivetotop".to_string(),
         DispatchType::SetCursor(theme, size) => {
             format!("{theme} {size}", theme = theme.clone(), size = *size)
         }
     };
     if let DispatchType::SetCursor(_, _) = cmd {
         Ok(format!("setcursor {string_to_pass}"))
-    } else {
+    } else if dispatch {
         Ok(format!("dispatch {string_to_pass}"))
+    } else {
+        Ok(string_to_pass)
     }
 }
 
@@ -377,7 +442,10 @@ impl Dispatch {
     /// ```
     pub fn call(dispatch_type: DispatchType) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes());
+        let output = write_to_socket_sync(
+            socket_path,
+            gen_dispatch_str(dispatch_type, true)?.as_bytes(),
+        );
 
         match output {
         Ok(msg) => match msg.as_str() {
@@ -403,8 +471,11 @@ impl Dispatch {
     /// ```
     pub async fn call_async(dispatch_type: DispatchType) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let output =
-            write_to_socket(socket_path, gen_dispatch_str(dispatch_type)?.as_bytes()).await;
+        let output = write_to_socket(
+            socket_path,
+            gen_dispatch_str(dispatch_type, true)?.as_bytes(),
+        )
+        .await;
 
         match output {
         Ok(msg) => match msg.as_str() {
