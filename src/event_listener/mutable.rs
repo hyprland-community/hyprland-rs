@@ -61,6 +61,7 @@ impl EventListener {
                 layer_closed_events: vec![],
                 sub_map_changed_events: vec![],
                 workspace_moved_events: vec![],
+                float_state_events: vec![],
             },
             state: State {
                 active_workspace: match Workspace::get_active() {
@@ -226,6 +227,14 @@ impl EventListener {
         r#"listener.add_layer_closed_handler(|data, _| println!("Layer closed: {data}"));"#
     );
 
+    mut_add_listener!(
+        reg add_float_state_handler,
+        float_state_events,
+        WindowFloatEventData,
+        "This method adds an event to the listener which executes when the float state of a window is changed",
+        r#"listener.add_float_state_handler(|data, _| println!("Float state changed: {data:#?}"));"#
+    );
+
     async fn event_executor(&mut self, event: &Event) -> HResult<()> {
         match event {
             Event::WorkspaceChanged(id) => mut_state_arm!(
@@ -267,6 +276,7 @@ impl EventListener {
             Event::SubMapChanged(map) => mut_arm!(map.clone(), sub_map_changed_events, self),
             Event::LayerOpened(even) => mut_arm!(even.clone(), layer_open_events, self),
             Event::LayerClosed(even) => mut_arm!(even.clone(), layer_closed_events, self),
+            Event::FloatStateChanged(even) => mut_arm!(even.clone(), float_state_events, self),
         }
         Ok(())
     }
@@ -326,6 +336,9 @@ impl EventListener {
             Event::SubMapChanged(even) => mut_arm_sync!(even.clone(), sub_map_changed_events, self),
             Event::LayerOpened(even) => mut_arm_sync!(even.clone(), layer_open_events, self),
             Event::LayerClosed(even) => mut_arm_sync!(even.clone(), layer_closed_events, self),
+            Event::FloatStateChanged(even) => {
+                mut_arm_sync!(even.clone(), float_state_events, self)
+            }
         }
         Ok(())
     }

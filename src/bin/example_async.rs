@@ -10,7 +10,10 @@ async fn main() -> hyprland::shared::HResult<()> {
     // We can call dispatchers with the dispatch function!
 
     // Here we are telling hyprland to open kitty using the dispatch macro!
-    hyprland::dispatch!(async Exec, "kitty".to_string()).await?;
+    hyprland::dispatch!(async; Exec, "kitty").await?;
+
+    // Here we are adding a keybinding to Hyprland using the bind macro!
+    hyprland::bind!(async; SUPER, Key, "i" => ToggleFloating).await?;
 
     // Here we are moving the cursor to the top left corner! We can also just use the Dispatch
     // struct!

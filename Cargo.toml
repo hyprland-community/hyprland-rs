@@ -35,9 +35,10 @@ async-trait = "0.1"
 num-traits = "0.2"
 
 [features]
-default = ["listener", "dispatch", "data", "keyword"]
+default = ["listener", "dispatch", "data", "keyword", "config"]
 dispatch = []
 data = []
 keyword = []
+config = ["dispatch", "keyword"]
 listener = ["data", "dispatch"]
 

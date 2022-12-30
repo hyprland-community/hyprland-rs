@@ -53,6 +53,7 @@ impl EventListener {
                 sub_map_changed_events: vec![],
                 layer_open_events: vec![],
                 layer_closed_events: vec![],
+                float_state_events: vec![],
             },
         }
     }
@@ -185,6 +186,14 @@ impl EventListener {
         r#"listener.add_layer_closed_handler(|data| println!("Layer closed: {data}"));"#
     );
 
+    add_listener!(
+        reg add_float_state_handler,
+        float_state_events,
+        WindowFloatEventData,
+        "This method adds an event to the listener which executes when the float state of a window is changed",
+        r#"listener.add_float_state_handler(|data| println!("Float state changed: {data:#?}"));"#
+    );
+
     fn event_executor(&self, event: &Event) {
         match event {
             Event::WorkspaceChanged(id) => arm_sync!(id.clone(), workspace_changed_events, self),
@@ -223,6 +232,7 @@ impl EventListener {
             Event::LayerClosed(namespace) => {
                 arm_sync!(namespace.clone(), layer_closed_events, self)
             }
+            Event::FloatStateChanged(even) => arm_sync!(even.clone(), float_state_events, self),
         }
     }
 

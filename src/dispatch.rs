@@ -8,7 +8,7 @@
 //! use hyprland::shared::HResult;
 //! use hyprland::dispatch::{Dispatch, DispatchType};
 //! fn main() -> HResult<()> {
-//!    Dispatch::call(DispatchType::Exec("kitty".to_string()))?;
+//!    Dispatch::call(DispatchType::Exec("kitty"))?;
 //!
 //!    Ok(())
 //! }
@@ -17,19 +17,20 @@
 use crate::shared::*;
 
 /// This enum is for identifying a window
-#[derive(Clone)]
-pub enum WindowIdentifier {
+#[derive(Debug, Clone)]
+pub enum WindowIdentifier<'a> {
     /// The address of a window
     Address(Address),
     /// A Regular Expression to match the window class (handled by Hyprland)
-    ClassRegularExpression(String),
+    ClassRegularExpression(&'a str),
     /// The window title
-    Title(String),
+    Title(&'a str),
     /// The window's process Id
     ProcessId(u32),
 }
 
 /// This enum holds the fullscreen types
+#[derive(Debug, Clone)]
 pub enum FullscreenType {
     /// Fills the whole screen
     Real,
@@ -40,7 +41,7 @@ pub enum FullscreenType {
 }
 
 /// This enum holds directions, typically used for moving
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[allow(missing_docs)]
 pub enum Direction {
     Up,
@@ -50,7 +51,7 @@ pub enum Direction {
 }
 
 /// This enum is used for resizing and moving windows precisely
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Position {
     /// A delta
     Delta(i16, i16),
@@ -60,24 +61,26 @@ pub enum Position {
 
 /// This enum holds a direction for cycling
 #[allow(missing_docs)]
+#[derive(Debug, Clone)]
 pub enum CycleDirection {
     Next,
     Previous,
 }
 
 /// This enum is used for identifying monitors
-#[derive(Clone)]
-pub enum MonitorIdentifier {
+#[derive(Debug, Clone)]
+pub enum MonitorIdentifier<'a> {
     /// The monitor that is to the specified direction of the active one
     Direction(Direction),
     /// The monitor id
     Id(u8),
     /// The monitor name
-    Name(String),
+    Name(&'a str),
 }
 
 /// This enum holds corners
 #[allow(missing_docs)]
+#[derive(Debug, Clone)]
 pub enum Corner {
     TopRight,
     TopLeft,
@@ -86,6 +89,7 @@ pub enum Corner {
 }
 
 /// This enum holds options that are applied to the current workspace
+#[derive(Debug, Clone)]
 pub enum WorkspaceOptions {
     /// Makes all windows pseudo tiled
     AllPseudo,
@@ -94,8 +98,8 @@ pub enum WorkspaceOptions {
 }
 
 /// This enum is for identifying workspaces that also includes the special workspace
-#[derive(Clone)]
-pub enum WorkspaceIdentifierWithSpecial {
+#[derive(Debug, Clone)]
+pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
     /// The workspace relative to the current workspace (positive)
@@ -107,14 +111,14 @@ pub enum WorkspaceIdentifierWithSpecial {
     /// The workspace on the monitor relative to the current monitor (negative)
     NegativeRelativeMonitor(u8),
     /// The name of the workspace
-    Name(String),
+    Name(&'a str),
     /// The special workspace
     Special,
 }
 
 /// This enum is for identifying workspaces
-#[derive(Clone)]
-pub enum WorkspaceIdentifier {
+#[derive(Debug, Clone)]
+pub enum WorkspaceIdentifier<'a> {
     /// The workspace Id
     Id(WorkspaceId),
     /// The workspace relative to the current workspace (positive)
@@ -126,49 +130,51 @@ pub enum WorkspaceIdentifier {
     /// The workspace on the monitor relative to the current monitor (negative)
     NegativeRelativeMonitor(u8),
     /// The name of the workspace
-    Name(String),
+    Name(&'a str),
 }
 
 /// This enum is the params to MoveWindow dispatcher
-pub enum WindowMove {
+#[derive(Debug, Clone)]
+pub enum WindowMove<'a> {
     /// Moves the window to a specified monitor
-    Monitor(MonitorIdentifier),
+    Monitor(MonitorIdentifier<'a>),
     /// Moves the window in a specified direction
     Direction(Direction),
 }
 
 /// This enum holds every dispatcher
-pub enum DispatchType {
+#[derive(Debug, Clone)]
+pub enum DispatchType<'a> {
     /// This dispatcher changes the current cursor
     SetCursor(
         /// The cursor theme
-        String,
+        &'a str,
         /// The size
         u16,
     ),
     /// This dispatcher executes a program
-    Exec(String),
+    Exec(&'a str),
     /// This dispatcher passes a keybind to a window when called in a
     /// keybind, its used for global keybinds. And should **ONLY** be used with keybinds
-    Pass(WindowIdentifier),
+    Pass(WindowIdentifier<'a>),
     /// This dispatcher kills the active window/client
     KillActiveWindow,
     /// This dispatcher closes the specified window
-    CloseWindow(WindowIdentifier),
+    CloseWindow(WindowIdentifier<'a>),
     /// This dispatcher changes the current workspace
-    Workspace(WorkspaceIdentifierWithSpecial),
+    Workspace(WorkspaceIdentifierWithSpecial<'a>),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// changes the active workspace aswell
-    MoveFocusedWindowToWorkspace(WorkspaceIdentifier),
+    MoveFocusedWindowToWorkspace(WorkspaceIdentifier<'a>),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// does not change workspaces
-    MoveFocusedWindowToWorkspaceSilent(WorkspaceIdentifier),
+    MoveFocusedWindowToWorkspaceSilent(WorkspaceIdentifier<'a>),
     /// This dispatcher floats the current window
     ToggleFloating,
     /// This toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
     /// This dispatcher sets the DPMS status for all monitors
-    ToggleDPMS(bool, Option<String>),
+    ToggleDPMS(bool, Option<&'a str>),
     /// This dispatcher toggles pseudo tiling for the current window
     TogglePseudo,
     /// This dispatcher pins the active window to all workspaces
@@ -176,7 +182,7 @@ pub enum DispatchType {
     /// This dispatcher moves the window focus in a specified direction
     MoveFocus(Direction),
     /// This dispatcher moves the current window to a monitor or in a specified direction
-    MoveWindow(WindowMove),
+    MoveWindow(WindowMove<'a>),
     /// This dispatcher centers the active window
     CenterWindow,
     /// This dispatcher resizes the active window using a [`Position`][Position] enum
@@ -184,17 +190,17 @@ pub enum DispatchType {
     /// This dispatcher moves the active window using a [`Position`][Position] enum
     MoveActive(Position),
     /// This dispatcher resizes the specified window using a [`Position`][Position] enum
-    ResizeWindowPixel(Position, WindowIdentifier),
+    ResizeWindowPixel(Position, WindowIdentifier<'a>),
     /// This dispatcher moves the specified window using a [`Position`][Position] enum
-    MoveWindowPixel(Position, WindowIdentifier),
+    MoveWindowPixel(Position, WindowIdentifier<'a>),
     /// This dispatcher cycles windows using a specified direction
     CycleWindow(CycleDirection),
     /// This dispatcher swaps windows using a specified direction
     SwapWindow(CycleDirection),
     /// This dispatcher focuses a specified window
-    FocusWindow(WindowIdentifier),
+    FocusWindow(WindowIdentifier<'a>),
     /// This dispatcher focuses a specified monitor
-    FocusMonitor(MonitorIdentifier),
+    FocusMonitor(MonitorIdentifier<'a>),
     /// This dispatcher changed the split ratio
     ChangeSplitRatio(f32),
     /// This dispatcher toggle opacity for the current window/client
@@ -208,11 +214,11 @@ pub enum DispatchType {
     /// This dispatcher forces the renderer to reload
     ForceRendererReload,
     /// This dispatcher moves the current workspace to a specified monitor
-    MoveCurrentWorkspaceToMonitor(MonitorIdentifier),
+    MoveCurrentWorkspaceToMonitor(MonitorIdentifier<'a>),
     /// This dispatcher moves a specified workspace to a specified monitor
-    MoveWorkspaceToMonitor(WorkspaceIdentifier, MonitorIdentifier),
+    MoveWorkspaceToMonitor(WorkspaceIdentifier<'a>, MonitorIdentifier<'a>),
     /// This dispatcher swaps the active workspaces of two monitors
-    SwapActiveWorkspaces(MonitorIdentifier, MonitorIdentifier),
+    SwapActiveWorkspaces(MonitorIdentifier<'a>, MonitorIdentifier<'a>),
     /// This dispatcher brings the active window to the top of the stack
     BringActiveToTop,
     /// This toggles the special workspace (AKA scratchpad)
@@ -246,7 +252,7 @@ fn match_mon_identifier(identifier: MonitorIdentifier) -> String {
     match identifier {
         MonitorIdentifier::Direction(dir) => match_dir(dir),
         MonitorIdentifier::Id(id) => id.to_string(),
-        MonitorIdentifier::Name(name) => name,
+        MonitorIdentifier::Name(name) => name.to_string(),
     }
 }
 
@@ -271,7 +277,7 @@ fn match_window_identifier(iden: WindowIdentifier) -> String {
     match iden {
         WindowIdentifier::Address(addr) => format!("address:{}", addr),
         WindowIdentifier::ProcessId(id) => format!("pid:{}", id),
-        WindowIdentifier::ClassRegularExpression(regex) => regex,
+        WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
         WindowIdentifier::Title(title) => format!("title:{}", title),
     }
 }
@@ -315,8 +321,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
                 "dpms{sep}{} {}",
                 if *stat { "on" } else { "off" },
                 match mon {
-                    Some(s) => s.clone(),
-                    None => "".to_string(),
+                    Some(s) => s,
+                    None => "",
                 }
             )
         }
@@ -414,7 +420,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         ),
         DispatchType::BringActiveToTop => "bringactivetotop".to_string(),
         DispatchType::SetCursor(theme, size) => {
-            format!("{theme} {size}", theme = theme.clone(), size = *size)
+            format!("{theme} {size}", size = *size)
         }
     };
     if let DispatchType::SetCursor(_, _) = cmd {
@@ -437,7 +443,7 @@ impl Dispatch {
     /// # fn main() -> HResult<()> {
     /// use hyprland::dispatch::{DispatchType,Dispatch};
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::call(DispatchType::Exec("something".to_string()))
+    /// Dispatch::call(DispatchType::Exec("kitty"))
     /// # }
     /// ```
     pub fn call(dispatch_type: DispatchType) -> HResult<()> {
@@ -465,11 +471,11 @@ impl Dispatch {
     /// # async fn function() -> HResult<()> {
     /// use hyprland::dispatch::{DispatchType,Dispatch};
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::call_async(DispatchType::Exec("kitty".to_string())).await?;
+    /// Dispatch::call_async(DispatchType::Exec("kitty")).await?;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn call_async(dispatch_type: DispatchType) -> HResult<()> {
+    pub async fn call_async(dispatch_type: DispatchType<'_>) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
         let output = write_to_socket(
             socket_path,
@@ -495,7 +501,7 @@ macro_rules! dispatch {
     ($dis:ident, $( $arg:expr ), *) => {
         Dispatch::call(DispatchType::$dis($($arg), *))
     };
-    (async $dis:ident, $( $arg:expr ), *) => {
+    (async; $dis:ident, $( $arg:expr ), *) => {
         Dispatch::call_async(DispatchType::$dis($($arg), *))
     };
 }

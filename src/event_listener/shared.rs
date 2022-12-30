@@ -38,6 +38,7 @@ pub(crate) struct Events {
     pub(crate) window_moved_events: Closures<WindowMoveEvent>,
     pub(crate) layer_open_events: Closures<String>,
     pub(crate) layer_closed_events: Closures<String>,
+    pub(crate) float_state_events: Closures<WindowFloatEventData>,
 }
 
 /// The data for the event executed when moving a window to a new workspace
@@ -97,9 +98,7 @@ impl State {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
                 Dispatch::call_async(DispatchType::Workspace(match &state.active_workspace {
                     WorkspaceType::Unnamed(id) => WorkspaceIdentifierWithSpecial::Id(*id),
-                    WorkspaceType::Named(name) => {
-                        WorkspaceIdentifierWithSpecial::Name(name.clone())
-                    }
+                    WorkspaceType::Named(name) => WorkspaceIdentifierWithSpecial::Name(name),
                     WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special,
                 }))
                 .await?;
@@ -107,7 +106,7 @@ impl State {
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
                 Dispatch::call_async(DispatchType::FocusMonitor(MonitorIdentifier::Name(
-                    state.active_monitor.clone(),
+                    &state.active_monitor,
                 )))
                 .await?;
             };
@@ -127,16 +126,14 @@ impl State {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
                 Dispatch::call(DispatchType::Workspace(match &state.active_workspace {
                     WorkspaceType::Unnamed(id) => WorkspaceIdentifierWithSpecial::Id(*id),
-                    WorkspaceType::Named(name) => {
-                        WorkspaceIdentifierWithSpecial::Name(name.clone())
-                    }
+                    WorkspaceType::Named(name) => WorkspaceIdentifierWithSpecial::Name(name),
                     WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special,
                 }))?;
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
                 Dispatch::call(DispatchType::FocusMonitor(MonitorIdentifier::Name(
-                    state.active_monitor.clone(),
+                    &state.active_monitor,
                 )))?;
             };
         }
@@ -194,6 +191,15 @@ pub struct MonitorEventData(
     pub WorkspaceType,
 );
 
+/// This tuple struct holds monitor event data
+#[derive(Debug, Clone)]
+pub struct WindowFloatEventData(
+    /// The window address
+    pub Address,
+    /// The float state
+    pub bool,
+);
+
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
@@ -213,6 +219,7 @@ pub(crate) enum Event {
     SubMapChanged(String),
     LayerOpened(String),
     LayerClosed(String),
+    FloatStateChanged(WindowFloatEventData),
 }
 
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
@@ -281,6 +288,7 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
             r"submap>>(?P<submap>.*)",
             r"openlayer>>(?P<namespace>.*)",
             r"closelayer>>(?P<namespace>.*)",
+            r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
             r"(?P<Event>.*)>>.*?"
         ]));
         static ref EVENT_REGEXES: Vec<Regex> = EVENT_SET
@@ -429,19 +437,33 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                     let namespace = &captures["namespace"];
                     events.push(Event::LayerClosed(namespace.to_string()));
                 }
+                16 => {
+                    // FloatStateChanged
+                    let addr = &captures["address"];
+                    let state = &captures["floatstate"] == "0";
+                    events.push(Event::FloatStateChanged(WindowFloatEventData(
+                        Address::new(addr),
+                        state,
+                    )));
+                }
                 _ => unreachable!(), //panic!("There are only 16 items in the array? prob a regex issue 🤷"),
             }
         } else if matches_event.len() == 1 {
-            if matches_event[0] != 16 {
-                panic!("One event matched, that isn't the unrecognised, sus")
+            if matches_event[0] != EVENT_SET.len() - 1 {
+                panic!("One event matched, that isn't the unrecognised event type, sus")
             } else {
                 // Unknown Event
-                let event = &captures["event"];
-                eprintln!(
-                    "A unknown event was passed into Hyprland-rs
+                match &captures.name("event") {
+                    Some(s) => eprintln!(
+                        "A unknown event was passed into Hyprland-rs
                     PLEASE MAKE AN ISSUE!!
-                    The event was: {event}"
-                );
+                    The event was: {}",
+                        s.as_str()
+                    ),
+                    None => eprintln!(
+                        "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: (Unable to get)"
+                    ),
+                };
             }
         } else {
             return Err(HyprError::IoError(io::Error::new(

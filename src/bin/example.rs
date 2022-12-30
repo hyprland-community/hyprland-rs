@@ -10,19 +10,23 @@ fn main() -> hyprland::shared::HResult<()> {
     // You can decide what you want to use, below are some examples of their usage
 
     // Here we are telling hyprland to open kitty using the dispatch macro!
-    hyprland::dispatch!(Exec, "kitty".to_string())?;
+    hyprland::dispatch!(Exec, "kitty")?;
 
     // Here we are moving the cursor to the top left corner! We can also just use the Dispatch
     // struct!
     Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
+    // Here we are adding a keybinding to Hyprland using the bind macro!
+    hyprland::bind!(SUPER, Key, "i" => ToggleFloating)?;
+
+    // Here we are getting the border size
     let border_size = match Keyword::get("general:border_size")?.value {
         OptionValue::Int(i) => i,
         _ => panic!("border size can only be a int"),
     };
     println!("{border_size}");
 
-    // Here we change a keyword, yes its a dispatcher don't complain
+    // Here we change a keyword, in this case we are doubling the border size we got above
     Keyword::set("general:border_size", border_size * 2)?;
 
     // get all monitors

@@ -37,43 +37,77 @@ This crate provides 3 modules (+1 for shared things)
 here is an example of most of the provided features being utilized
 
 ```rust ,no_run
-use hyprland::data::Monitors;
+use hyprland::data::{Client, Clients, Monitors};
+use hyprland::dispatch::*;
+use hyprland::event_listener::EventListenerMutable as EventListener;
 use hyprland::keyword::*;
-use hyprland::dispatch::{Dispatch, Corner, DispatchType};
-use hyprland::event_listener::EventListener;
-use hyprland::shared::HResult;
 use hyprland::prelude::*;
+use hyprland::shared::WorkspaceType;
 
-fn main() -> HResult<()> {
-    // We can call dispatchers with the dispatch function!
+fn main() -> hyprland::shared::HResult<()> {
+    // We can call dispatchers with the dispatch macro, and struct!
+    // You can decide what you want to use, below are some examples of their usage
 
-    // Here we are telling hyprland to open kitty!
-    Dispatch::call(DispatchType::Exec("kitty".to_string()))?;
+    // Here we are telling hyprland to open kitty using the dispatch macro!
+    hyprland::dispatch!(Exec, "kitty")?;
 
-    // Here we are moving the cursor to the top left corner!
+    // Here we are moving the cursor to the top left corner! We can also just use the Dispatch
+    // struct!
     Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
-    // Here we change a keyword, yes its a dispatcher don't complain
-    Keyword::set(
-        "general:border_size",
-        30,
-    )?;
+    // Here we are adding a keybinding to Hyprland using the bind macro!
+    hyprland::bind!(SUPER, Key, "i" => ToggleFloating)?;
 
-    // get all monitors as a vector
-    let monitors = Monitors::get()?.collect();
+    // Here we are getting the border size
+    let border_size = match Keyword::get("general:border_size")?.value {
+        OptionValue::Int(i) => i,
+        _ => panic!("border size can only be a int"),
+    };
+    println!("{border_size}");
+
+    // Here we change a keyword, in this case we are doubling the border size we got above
+    Keyword::set("general:border_size", border_size * 2)?;
+
+    // get all monitors
+    let monitors = Monitors::get()?;
+
+    // and the active window
+    let win = Client::get_active()?;
+
+    // and all open windows
+    let clients = Clients::get()?;
 
     // and printing them all out!
-    println!("{monitors:#?}");
+    println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}");
 
     // Create a event listener
     let mut event_listener = EventListener::new();
 
-    // add event, yes functions and closures both work!
-    event_listener.add_workspace_change_handler(|id| println!("workspace changed to {id:#?}"));
+    // This changes the workspace to 5 if the workspace is switched to 9
+    // this is a performance and mutable state test
+    event_listener.add_workspace_change_handler(|id, state| {
+        if id == WorkspaceType::Unnamed(9) {
+            state.active_workspace = WorkspaceType::Unnamed(2);
+        }
+    });
+    // This makes it so you can't turn on fullscreen lol
+    event_listener.add_fullscreen_state_change_handler(|fstate, state| {
+        if fstate {
+            state.fullscreen_state = false;
+        }
+    });
+    // Makes a monitor unfocusable
+    event_listener.add_active_monitor_change_handler(|data, state| {
+        let hyprland::event_listener::MonitorEventData(monitor, _) = data;
 
-    // and execute the function
-    // here we are using the blocking variant
-    // but there is a async version too
+        if monitor == *"DP-1".to_string() {
+            state.active_monitor = "eDP-1".to_string()
+        }
+    });
+
+    // add event, yes functions and closures both work!
+    event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
+
     event_listener.start_listener()
 }
 ```

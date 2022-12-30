@@ -7,10 +7,11 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 1. Add the prelude! This new release includes traits! `use hyprland::prelude::*;`
 2. Switch to the `HResult` Result type (`hyprland::shared::HResult`)
 3. [Update your data fetcher functions to structs](#update-data-fetchers)
-3. [Update your dispatch functions to structs](#update-dispatchers)
-3. [Update your keyword calls to new module](#update-keyword-calls)
-4. [Update start listener calls](#update-start-listener-calls)
-5. Update `WorkspaceType` enum usage, `Regular` now is `Unnamed`
+4. [Update your dispatch functions to structs](#update-dispatchers)
+5. Switch all `String`s to `&str`s in your dispatchers
+6. [Update your keyword calls to new module](#update-keyword-calls)
+7. [Update start listener calls](#update-start-listener-calls)
+8. Update `WorkspaceType` enum usage, `Regular` now is `Unnamed`
  
 
 ## More in-depth steps

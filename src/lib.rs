@@ -25,6 +25,10 @@ pub mod dispatch;
 #[cfg(feature = "keyword")]
 pub mod keyword;
 
+/// This module provides helpers to easily config Hyprland
+#[cfg(feature = "config")]
+pub mod config;
+
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};

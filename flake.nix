@@ -19,6 +19,12 @@
       root = ./.;
       config = common: {
         shell = {
+					env = [
+						{
+							name = "PATH";
+							eval = "$HOME/.cargo/bin:$PATH";
+						}
+					];
           packages = with common.pkgs; [ 
 						rust-analyzer
 						cbfmt
