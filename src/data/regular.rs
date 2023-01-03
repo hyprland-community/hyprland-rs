@@ -5,15 +5,16 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 /// This private function is to call socket commands
 async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
     let cmd_string = match cmd {
-        DataCommands::Monitors => "monitors".to_string(),
-        DataCommands::ActiveWindow => "activewindow".to_string(),
-        DataCommands::Clients => "clients".to_string(),
-        DataCommands::Devices => "devices".to_string(),
-        DataCommands::Layers => "layers".to_string(),
-        DataCommands::Workspaces => "workspaces".to_string(),
-        DataCommands::Version => "version".to_string(),
-        //DataCommands::Keyword(key) => format!("getoption {key}"),
-    };
+        DataCommands::Monitors => "monitors",
+        DataCommands::ActiveWindow => "activewindow",
+        DataCommands::Clients => "clients",
+        DataCommands::Devices => "devices",
+        DataCommands::Layers => "layers",
+        DataCommands::Workspaces => "workspaces",
+        DataCommands::Version => "version",
+        DataCommands::CursorPosition => "cursorpos",
+    }
+    .to_string();
 
     let socket_path = get_socket_path(SocketType::Command);
 
@@ -28,15 +29,16 @@ async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
 
 fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
     let cmd_string = match cmd {
-        DataCommands::Monitors => "monitors".to_string(),
-        DataCommands::ActiveWindow => "activewindow".to_string(),
-        DataCommands::Clients => "clients".to_string(),
-        DataCommands::Devices => "devices".to_string(),
-        DataCommands::Layers => "layers".to_string(),
-        DataCommands::Workspaces => "workspaces".to_string(),
-        DataCommands::Version => "version".to_string(),
-        //DataCommands::Keyword(key) => format!("getoption {key}"),
-    };
+        DataCommands::Monitors => "monitors",
+        DataCommands::ActiveWindow => "activewindow",
+        DataCommands::Clients => "clients",
+        DataCommands::Devices => "devices",
+        DataCommands::Layers => "layers",
+        DataCommands::Workspaces => "workspaces",
+        DataCommands::Version => "version",
+        DataCommands::CursorPosition => "cursorpos",
+    }
+    .to_string();
 
     let socket_path = get_socket_path(SocketType::Command);
 
@@ -59,15 +61,14 @@ pub(crate) enum DataCommands {
     Layers,
     Devices,
     Version,
-    //Keyword(String),
+    CursorPosition,
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkspaceBasic {
     /// The workspace Id
-    #[serde(deserialize_with = "de_work_id")]
-    pub id: WorkspaceType,
+    pub id: WorkspaceId,
     /// The workspace's name
     pub name: String,
 }
@@ -152,21 +153,6 @@ create_data_struct!(
     "This struct holds a vector of monitors"
 );
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct WorkspaceRaw {
-    /// The workspace Id
-    pub id: i8,
-    /// The workspace's name
-    pub name: String,
-    /// The monitor the workspace is on
-    pub monitor: String,
-    /// The amount of windows in the workspace
-    pub windows: u8,
-    /// A bool that shows if there is a fullscreen window in the workspace
-    #[serde(rename = "hasfullscreen")]
-    pub fullscreen: bool,
-}
-
 /// This struct holds information for a workspace
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Workspace {
@@ -183,25 +169,6 @@ pub struct Workspace {
     pub fullscreen: bool,
 }
 
-impl From<WorkspaceRaw> for Workspace {
-    fn from(raw: WorkspaceRaw) -> Self {
-        Workspace {
-            id: match raw.id {
-                -99 => WorkspaceType::Special,
-                0.. => WorkspaceType::Unnamed(match raw.id.try_into() {
-                    Ok(num) => num,
-                    Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
-                }),
-                _ => panic!("Unrecognised id"),
-            },
-            name: raw.name,
-            monitor: raw.monitor,
-            windows: raw.windows,
-            fullscreen: raw.fullscreen,
-        }
-    }
-}
-
 #[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> HResult<Self> {
@@ -211,7 +178,7 @@ impl HyprDataActive for Workspace {
         if let Some(it) = all
             .collect()
             .iter()
-            .find(|item| item.id == mon.active_workspace.id)
+            .find(|item| item.id == WorkspaceType::Unnamed(mon.active_workspace.id))
         {
             Ok(it.clone())
         } else {
@@ -225,7 +192,7 @@ impl HyprDataActive for Workspace {
         if let Some(it) = all
             .collect()
             .iter()
-            .find(|item| item.id == mon.active_workspace.id)
+            .find(|item| item.id == WorkspaceType::Unnamed(mon.active_workspace.id))
         {
             Ok(it.clone())
         } else {
@@ -234,18 +201,14 @@ impl HyprDataActive for Workspace {
     }
 }
 
-fn parse_works(data: String) -> HResult<Vec<Workspace>> {
-    let deserialized: Vec<WorkspaceRaw> = serde_json::from_str(&data)?;
-    let new = deserialized
-        .iter()
-        .map(|work| Workspace::from(work.clone()));
-    Ok(new.collect())
-}
+// fn parse_works(data: String) -> HResult<Vec<Workspace>> {
+//     let deserialized: Vec<Workspace> = serde_json::from_str(&data)?;
+//     Ok(deserialized)
+// }
 
 create_data_struct!(
-    vecp Workspaces,
+    vec Workspaces,
     DataCommands::Workspaces,
-    parse_works,
     Workspace,
     "This type provides a vector of workspaces"
 );
@@ -303,10 +266,6 @@ create_data_struct!(
     Client,
     "This struct holds a vector of clients"
 );
-
-//pub type Clients = Vec<Client>;
-
-//impl_on!(ActiveWindow, DataCommands::ActiveWindow);
 
 /// This struct holds information about a layer surface/client
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -419,7 +378,7 @@ pub struct Devices {
     /// All the tablets
     pub tablets: Vec<Tablet>,
 }
-impl_on!(Devices, DataCommands::Devices);
+impl_on!(Devices);
 
 /// This struct holds version information
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -435,4 +394,14 @@ pub struct Version {
     /// The flags that Hyprland was built with
     pub flags: Vec<String>,
 }
-impl_on!(Version, DataCommands::Version);
+impl_on!(Version);
+
+/// This struct holds information on the cursor position
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct CursorPosition {
+    /// The x position of the cursor
+    pub x: i64,
+    /// The y position of the cursor
+    pub y: i64,
+}
+impl_on!(CursorPosition);

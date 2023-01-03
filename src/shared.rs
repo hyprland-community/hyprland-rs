@@ -96,7 +96,7 @@ pub trait HyprDataVec<T>: HyprData {
 
 /// This type provides the id used to identify workspaces
 /// > its a type because it might change at some point
-pub type WorkspaceId = u8;
+pub type WorkspaceId = i32;
 
 /// This enum holds workspace data
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -113,17 +113,28 @@ pub enum WorkspaceType {
         String,
     ),
     /// The special workspace
-    Special,
+    Special(
+        /// The name, if exists
+        Option<String>,
+    ),
 }
 
 impl From<i8> for WorkspaceType {
     fn from(int: i8) -> Self {
         match int {
-            -99 => WorkspaceType::Special,
-            0.. => WorkspaceType::Unnamed(match int.try_into() {
+            1.. => WorkspaceType::Unnamed(match int.try_into() {
                 Ok(num) => num,
                 Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
             }),
+            _ => panic!("Unrecognised id"),
+        }
+    }
+}
+
+impl From<i32> for WorkspaceType {
+    fn from(int: i32) -> Self {
+        match int {
+            1.. => WorkspaceType::Unnamed(int),
             _ => panic!("Unrecognised id"),
         }
     }
@@ -225,22 +236,5 @@ where
     match Deserialize::deserialize(deserializer)? {
         Aux::T(t) => Ok(Some(t)),
         Aux::Empty(_) | Aux::Null => Ok(None),
-    }
-}
-
-pub(crate) fn de_work_id<'de, D>(deserializer: D) -> Result<WorkspaceType, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize, Debug)]
-    #[serde(untagged)]
-    enum Aux {
-        Reg(u8),
-        Special(i8),
-    }
-
-    match Deserialize::deserialize(deserializer)? {
-        Aux::Special(_) => Ok(WorkspaceType::Special),
-        Aux::Reg(int) => Ok(WorkspaceType::Unnamed(int)),
     }
 }

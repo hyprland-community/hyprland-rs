@@ -99,7 +99,12 @@ impl State {
                 Dispatch::call_async(DispatchType::Workspace(match &state.active_workspace {
                     WorkspaceType::Unnamed(id) => WorkspaceIdentifierWithSpecial::Id(*id),
                     WorkspaceType::Named(name) => WorkspaceIdentifierWithSpecial::Name(name),
-                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special,
+                    WorkspaceType::Special(opt) => {
+                        WorkspaceIdentifierWithSpecial::Special(match opt {
+                            Some(name) => Some(name),
+                            None => None,
+                        })
+                    }
                 }))
                 .await?;
             }
@@ -127,7 +132,12 @@ impl State {
                 Dispatch::call(DispatchType::Workspace(match &state.active_workspace {
                     WorkspaceType::Unnamed(id) => WorkspaceIdentifierWithSpecial::Id(*id),
                     WorkspaceType::Named(name) => WorkspaceIdentifierWithSpecial::Name(name),
-                    WorkspaceType::Special => WorkspaceIdentifierWithSpecial::Special,
+                    WorkspaceType::Special(opt) => {
+                        WorkspaceIdentifierWithSpecial::Special(match opt {
+                            Some(name) => Some(name),
+                            None => None,
+                        })
+                    }
                 }))?;
             }
             if old.active_monitor != state.active_monitor {
@@ -246,12 +256,18 @@ fn check_for_regex_set_error(val: Result<RegexSet, RegexError>) -> RegexSet {
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
     if str == "special" {
-        WorkspaceType::Special
-    } else if str.len() == 1 {
-        match str.parse::<i8>() {
-            Ok(num) => WorkspaceType::from(num),
-            Err(e) => panic!("error parsing string as u8:\nthe string:{str}\nerror message: {e}"),
+        WorkspaceType::Special(None)
+    } else if str.starts_with("special:") {
+        {
+            let mut iter = str.split(':');
+            iter.next();
+            match iter.next() {
+                Some(name) => WorkspaceType::Special(Some(name.to_string())),
+                None => WorkspaceType::Special(None),
+            }
         }
+    } else if let Ok(num) = str.parse::<i32>() {
+        WorkspaceType::from(num)
     } else {
         WorkspaceType::Named(str)
     }
@@ -272,16 +288,16 @@ macro_rules! report_unknown {
 pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
     lazy_static! {
         static ref EVENT_SET: RegexSet = check_for_regex_set_error(RegexSet::new([
-            r"\bworkspace>>(?P<workspace>special|[0-9]{1,2}|)",
-            r"destroyworkspace>>(?P<workspace>special|[0-9]{1,2})",
-            r"createworkspace>>(?P<workspace>special|[0-9]{1,2})",
-            r"moveworkspace>>(?P<workspace>special|[0-9]{1,2}),(?P<monitor>.*)",
-            r"focusedmon>>(?P<monitor>.*),(?P<workspace>[0-9]{1,2})",
+            r"\bworkspace>>(?P<workspace>.*)",
+            r"destroyworkspace>>(?P<workspace>.*)",
+            r"createworkspace>>(?P<workspace>.*)",
+            r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
+            r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
             r"activewindow>>(?P<class>.*),(?P<title>.*)",
             r"fullscreen>>(?P<state>0|1)",
             r"monitorremoved>>(?P<monitor>.*)",
             r"monitoradded>>(?P<monitor>.*)",
-            r"openwindow>>(?P<address>.*),(?P<workspace>special|[0-9]{1,2}),(?P<class>.*),(?P<title>.*)",
+            r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)",
             r"closewindow>>(?P<address>.*)",
             r"movewindow>>(?P<address>.*),(?P<workspace>.*)",
             r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",

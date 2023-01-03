@@ -6,14 +6,7 @@
 //!
 //! here is a example of every function in use! (blocking)
 //! ```rust
-//! use hyprland::data::{
-//!     Monitors,
-//!     Workspaces,
-//!     Clients,
-//!     Client,
-//!     Layers,
-//!     Devices
-//! };
+//! use hyprland::data::*;
 //! use hyprland::prelude::*;
 //! use hyprland::shared::HResult;
 //!
@@ -36,6 +29,11 @@
 //!     let devices = Devices::get()?;
 //!     println!("{devices:#?}");
 //!
+//!     let version = Version::get()?;
+//!     println!("{version:#?}");
+//!
+//!     let cursor_pos = CursorPosition::get()?;
+//!     println!("{cursor_pos:#?}");
 //!     Ok(())
 //! }
 //! ```

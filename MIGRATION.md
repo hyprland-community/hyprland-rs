@@ -9,10 +9,12 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 3. [Update your data fetcher functions to structs](#update-data-fetchers)
 4. [Update your dispatch functions to structs](#update-dispatchers)
 5. Switch all `String`s to `&str`s in your dispatchers
-6. [Update your keyword calls to new module](#update-keyword-calls)
-7. [Update start listener calls](#update-start-listener-calls)
-8. Update `WorkspaceType` enum usage, `Regular` now is `Unnamed`
- 
+6. Switch from `Positive`/`Negative` `Relative` dispatchers to just `Relative..`, and signed ints
+7. When using `WorkspaceType::Special`, now include a `Some(name: String)` or `None`
+8. [Update your keyword calls to new module](#update-keyword-calls)
+9. [Update start listener calls](#update-start-listener-calls)
+10. Update `WorkspaceType` enum usage, `Regular` now is `Unnamed`
+11. Follow Rustc for everything else! 
 
 ## More in-depth steps
 

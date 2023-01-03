@@ -76,6 +76,10 @@ pub enum MonitorIdentifier<'a> {
     Id(u8),
     /// The monitor name
     Name(&'a str),
+    /// The current monitor
+    Current,
+    /// The workspace relative to the current workspace
+    Relative(i32),
 }
 
 /// This enum holds corners
@@ -102,18 +106,20 @@ pub enum WorkspaceOptions {
 pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
-    /// The workspace relative to the current workspace (positive)
-    PositiveRelative(u8),
-    /// The workspace relative to the current workspace (positive)
-    NegativeRelative(u8),
-    /// The workspace on the monitor relative to the current monitor (positive)
-    PositiveRelativeMonitor(u8),
-    /// The workspace on the monitor relative to the current monitor (negative)
-    NegativeRelativeMonitor(u8),
+    /// The workspace relative to the current workspace
+    Relative(i32),
+    /// The workspace on the monitor relative to the current monitor
+    RelativeMonitor(i32),
+    /// The open workspace relative to the current workspace
+    RelativeOpen(i32),
+    /// The previous Workspace
+    Previous,
+    /// The first available empty workspace
+    Empty,
     /// The name of the workspace
     Name(&'a str),
     /// The special workspace
-    Special,
+    Special(Option<&'a str>),
 }
 
 /// This enum is for identifying workspaces
@@ -121,14 +127,16 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
 pub enum WorkspaceIdentifier<'a> {
     /// The workspace Id
     Id(WorkspaceId),
-    /// The workspace relative to the current workspace (positive)
-    PositiveRelative(u8),
-    /// The workspace relative to the current workspace (positive)
-    NegativeRelative(u8),
-    /// The workspace on the monitor relative to the current monitor (positive)
-    PositiveRelativeMonitor(u8),
-    /// The workspace on the monitor relative to the current monitor (negative)
-    NegativeRelativeMonitor(u8),
+    /// The workspace relative to the current workspace
+    Relative(i32),
+    /// The workspace on the monitor relative to the current monitor
+    RelativeMonitor(i32),
+    /// The open workspace relative to the current workspace
+    RelativeOpen(i32),
+    /// The previous Workspace
+    Previous,
+    /// The first available empty workspace
+    Empty,
     /// The name of the workspace
     Name(&'a str),
 }
@@ -225,26 +233,46 @@ pub enum DispatchType<'a> {
     ToggleSpecialWorkspace,
 }
 
+fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
+    int: T,
+    extra: &'_ str,
+) -> String {
+    if int.is_positive() {
+        format!("{extra}+{int}")
+    } else if int.is_negative() {
+        format!("{extra}-{int}", int = int.abs())
+    } else {
+        "+0".to_string()
+    }
+}
+
 fn match_workspace_identifier(identifier: WorkspaceIdentifier) -> String {
+    use WorkspaceIdentifier::*;
     match identifier {
-        WorkspaceIdentifier::Id(id) => format!("{id}"),
-        WorkspaceIdentifier::Name(name) => format!("name:{name}"),
-        WorkspaceIdentifier::PositiveRelative(int) => format!("+{int}"),
-        WorkspaceIdentifier::PositiveRelativeMonitor(int) => format!("m+{int}"),
-        WorkspaceIdentifier::NegativeRelative(int) => format!("-{int}"),
-        WorkspaceIdentifier::NegativeRelativeMonitor(int) => format!("m-{int}"),
+        Id(id) => format!("{id}"),
+        Name(name) => format!("name:{name}"),
+        Relative(int) => format_relative(int, ""),
+        RelativeMonitor(int) => format_relative(int, "m"),
+        RelativeOpen(int) => format_relative(int, "e"),
+        Previous => "previous".to_string(),
+        Empty => "empty".to_string(),
     }
 }
 
 fn match_workspace_identifier_special(identifier: WorkspaceIdentifierWithSpecial) -> String {
+    use WorkspaceIdentifierWithSpecial::*;
     match identifier {
-        WorkspaceIdentifierWithSpecial::Id(id) => format!("{id}"),
-        WorkspaceIdentifierWithSpecial::Name(name) => format!("name:{name}"),
-        WorkspaceIdentifierWithSpecial::PositiveRelative(int) => format!("+{int}"),
-        WorkspaceIdentifierWithSpecial::PositiveRelativeMonitor(int) => format!("m+{int}"),
-        WorkspaceIdentifierWithSpecial::NegativeRelative(int) => format!("-{int}"),
-        WorkspaceIdentifierWithSpecial::NegativeRelativeMonitor(int) => format!("m-{int}"),
-        WorkspaceIdentifierWithSpecial::Special => "special".to_string(),
+        Id(id) => format!("{id}"),
+        Name(name) => format!("name:{name}"),
+        Relative(int) => format_relative(int, ""),
+        RelativeMonitor(int) => format_relative(int, "m"),
+        RelativeOpen(int) => format_relative(int, "e"),
+        Previous => "previous".to_string(),
+        Empty => "empty".to_string(),
+        Special(opt) => match opt {
+            Some(name) => format!("special:{name}"),
+            None => "special".to_string(),
+        },
     }
 }
 
@@ -253,6 +281,8 @@ fn match_mon_identifier(identifier: MonitorIdentifier) -> String {
         MonitorIdentifier::Direction(dir) => match_dir(dir),
         MonitorIdentifier::Id(id) => id.to_string(),
         MonitorIdentifier::Name(name) => name.to_string(),
+        MonitorIdentifier::Current => "current".to_string(),
+        MonitorIdentifier::Relative(int) => format_relative(int, ""),
     }
 }
 
@@ -275,40 +305,41 @@ fn position_to_string(pos: Position) -> String {
 
 fn match_window_identifier(iden: WindowIdentifier) -> String {
     match iden {
-        WindowIdentifier::Address(addr) => format!("address:{}", addr),
-        WindowIdentifier::ProcessId(id) => format!("pid:{}", id),
+        WindowIdentifier::Address(addr) => format!("address:{addr}"),
+        WindowIdentifier::ProcessId(id) => format!("pid:{id}"),
         WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
-        WindowIdentifier::Title(title) => format!("title:{}", title),
+        WindowIdentifier::Title(title) => format!("title:{title}"),
     }
 }
 
 pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<String> {
+    use DispatchType::*;
     let sep = if dispatch { " " } else { "," };
     let string_to_pass = match &cmd {
-        DispatchType::Exec(sh) => format!("exec{sep}{sh}"),
-        DispatchType::Pass(win) => format!("pass{sep}{}", match_window_identifier(win.clone())),
-        DispatchType::KillActiveWindow => "killactive".to_string(),
-        DispatchType::CloseWindow(win) => {
+        Exec(sh) => format!("exec{sep}{sh}"),
+        Pass(win) => format!("pass{sep}{}", match_window_identifier(win.clone())),
+        KillActiveWindow => "killactive".to_string(),
+        CloseWindow(win) => {
             format!("closewindow{sep}{}", match_window_identifier(win.clone()))
         }
-        DispatchType::Workspace(ident) => format!(
+        Workspace(ident) => format!(
             "workspace{sep}{}",
             match_workspace_identifier_special(ident.clone())
         ),
-        DispatchType::MoveFocusedWindowToWorkspace(ident) => {
+        MoveFocusedWindowToWorkspace(ident) => {
             format!(
                 "workspace{sep}{}",
                 match_workspace_identifier(ident.clone())
             )
         }
-        DispatchType::MoveFocusedWindowToWorkspaceSilent(ident) => {
+        MoveFocusedWindowToWorkspaceSilent(ident) => {
             format!(
                 "workspace{sep}{}",
                 match_workspace_identifier(ident.clone())
             )
         }
-        DispatchType::ToggleFloating => "togglefloating".to_string(),
-        DispatchType::ToggleFullscreen(fullscreen_type) => format!(
+        ToggleFloating => "togglefloating".to_string(),
+        ToggleFullscreen(fullscreen_type) => format!(
             "fullscreen{sep}{}",
             match fullscreen_type {
                 FullscreenType::Real => "0",
@@ -316,7 +347,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
                 FullscreenType::NoParam => "",
             }
         ),
-        DispatchType::ToggleDPMS(stat, mon) => {
+        ToggleDPMS(stat, mon) => {
             format!(
                 "dpms{sep}{} {}",
                 if *stat { "on" } else { "off" },
@@ -326,9 +357,9 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
                 }
             )
         }
-        DispatchType::TogglePseudo => "pseudo".to_string(),
-        DispatchType::TogglePin => "pin".to_string(),
-        DispatchType::MoveFocus(dir) => format!(
+        TogglePseudo => "pseudo".to_string(),
+        TogglePin => "pin".to_string(),
+        MoveFocus(dir) => format!(
             "movefocus{sep}{}",
             match dir {
                 Direction::Down => "d",
@@ -337,53 +368,53 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
                 Direction::Left => "l",
             }
         ),
-        DispatchType::MoveWindow(ident) => format!(
+        MoveWindow(ident) => format!(
             "movewindow{sep}{}",
             match ident {
                 WindowMove::Direction(dir) => match_dir(dir.clone()),
                 WindowMove::Monitor(mon) => format!("mon:{}", match_mon_identifier(mon.clone())),
             }
         ),
-        DispatchType::CenterWindow => "centerwindow".to_string(),
-        DispatchType::ResizeActive(pos) => {
+        CenterWindow => "centerwindow".to_string(),
+        ResizeActive(pos) => {
             format!("resizeactive{sep}{}", position_to_string(pos.clone()))
         }
-        DispatchType::MoveActive(pos) => format!("moveactive {}", position_to_string(pos.clone())),
-        DispatchType::ResizeWindowPixel(pos, win) => {
+        MoveActive(pos) => format!("moveactive {}", position_to_string(pos.clone())),
+        ResizeWindowPixel(pos, win) => {
             format!(
                 "resizeactive{sep}{} {}",
                 position_to_string(pos.clone()),
                 match_window_identifier(win.clone())
             )
         }
-        DispatchType::MoveWindowPixel(pos, win) => format!(
+        MoveWindowPixel(pos, win) => format!(
             "moveactive{sep}{} {}",
             position_to_string(pos.clone()),
             match_window_identifier(win.clone())
         ),
-        DispatchType::CycleWindow(dir) => format!(
+        CycleWindow(dir) => format!(
             "cyclenext{sep}{}",
             match dir {
                 CycleDirection::Next => "",
                 CycleDirection::Previous => "prev",
             }
         ),
-        DispatchType::SwapWindow(dir) => format!(
+        SwapWindow(dir) => format!(
             "swapnext{sep}{}",
             match dir {
                 CycleDirection::Next => "",
                 CycleDirection::Previous => "prev",
             }
         ),
-        DispatchType::FocusWindow(win) => {
+        FocusWindow(win) => {
             format!("focuswindow{sep}{}", match_window_identifier(win.clone()))
         }
-        DispatchType::FocusMonitor(mon) => {
+        FocusMonitor(mon) => {
             format!("focusmonitor{sep}{}", match_mon_identifier(mon.clone()))
         }
-        DispatchType::ChangeSplitRatio(ratio) => format!("splitratio {}", ratio),
-        DispatchType::ToggleOpaque => "toggleopaque".to_string(),
-        DispatchType::MoveCursorToCorner(corner) => format!(
+        ChangeSplitRatio(ratio) => format!("splitratio {}", ratio),
+        ToggleOpaque => "toggleopaque".to_string(),
+        MoveCursorToCorner(corner) => format!(
             "movecursortocorner{sep}{}",
             match corner {
                 Corner::BottomLeft => "0",
@@ -392,38 +423,38 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
                 Corner::TopLeft => "3",
             }
         ),
-        DispatchType::WorkspaceOption(opt) => format!(
+        WorkspaceOption(opt) => format!(
             "workspaceopt{sep}{}",
             match opt {
                 WorkspaceOptions::AllFloat => "allfloat",
                 WorkspaceOptions::AllPseudo => "allpseudo",
             }
         ),
-        DispatchType::Exit => "exit".to_string(),
-        DispatchType::ForceRendererReload => "forcerendererreload".to_string(),
-        DispatchType::MoveCurrentWorkspaceToMonitor(mon) => {
+        Exit => "exit".to_string(),
+        ForceRendererReload => "forcerendererreload".to_string(),
+        MoveCurrentWorkspaceToMonitor(mon) => {
             format!(
                 "movecurrentworkspacetomonitor{sep}{}",
                 match_mon_identifier(mon.clone())
             )
         }
-        DispatchType::MoveWorkspaceToMonitor(work, mon) => format!(
+        MoveWorkspaceToMonitor(work, mon) => format!(
             "movecurrentworkspacetomonitor{sep}{} {}",
             match_workspace_identifier(work.clone()),
             match_mon_identifier(mon.clone())
         ),
-        DispatchType::ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
-        DispatchType::SwapActiveWorkspaces(mon, mon2) => format!(
+        ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
+        SwapActiveWorkspaces(mon, mon2) => format!(
             "swapactiveworkspaces{sep}{} {}",
             match_mon_identifier(mon.clone()),
             match_mon_identifier(mon2.clone())
         ),
-        DispatchType::BringActiveToTop => "bringactivetotop".to_string(),
-        DispatchType::SetCursor(theme, size) => {
+        BringActiveToTop => "bringactivetotop".to_string(),
+        SetCursor(theme, size) => {
             format!("{theme} {size}", size = *size)
         }
     };
-    if let DispatchType::SetCursor(_, _) = cmd {
+    if let SetCursor(_, _) = cmd {
         Ok(format!("setcursor {string_to_pass}"))
     } else if dispatch {
         Ok(format!("dispatch {string_to_pass}"))

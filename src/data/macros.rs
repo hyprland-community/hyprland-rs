@@ -1,14 +1,14 @@
 macro_rules! impl_on {
-    ($name:ident, $kind:path) => {
+    ($name:ident) => {
         #[async_trait]
         impl HyprData for $name {
             fn get() -> HResult<Self> {
-                let data = call_hyprctl_data_cmd($kind);
+                let data = call_hyprctl_data_cmd(DataCommands::$name);
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
             async fn get_async() -> HResult<Self> {
-                let data = call_hyprctl_data_cmd_async($kind).await;
+                let data = call_hyprctl_data_cmd_async(DataCommands::$name).await;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
