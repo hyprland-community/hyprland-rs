@@ -149,9 +149,9 @@ impl Keyword {
         let dc = deserialized.clone();
         let keyword = Keyword {
             option: deserialized.option,
-            value: if deserialized.int != -1 {
+            value: if deserialized.int.is_positive() {
                 OptionValue::Int(deserialized.int)
-            } else if deserialized.float != -1.0 {
+            } else if deserialized.float.is_sign_positive() {
                 OptionValue::Float(deserialized.float)
             } else if deserialized.str != *"".to_string() {
                 OptionValue::String(deserialized.str)
