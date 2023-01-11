@@ -4,7 +4,7 @@
 pub use async_trait::async_trait;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env::{var, VarError};
-use std::{fmt, io};
+use std::{error, fmt, io};
 
 #[derive(Debug)]
 /// Error that unifies different error types used by Hyprland-rs
@@ -39,6 +39,8 @@ impl fmt::Display for HyprError {
         )
     }
 }
+
+impl error::Error for HyprError {}
 
 /// This type provides the result type used everywhere in Hyprland-rs
 //pub type HResult<T> = Result<T, Box<dyn std::error::Error>>;
