@@ -115,14 +115,28 @@ macro_rules! keyword {
     };
 }
 
+fn parse_option_raw(opt: OptionRaw) -> OptionValue {
+    static HYPR_UNSET_FLOAT: f64 = -340282346638528859811704183484516925440.0;
+    static HYPR_UNSET_INT: i64 = -9223372036854775807;
+
+    if opt.float == HYPR_UNSET_FLOAT {
+        if opt.int == HYPR_UNSET_INT {
+            OptionValue::String(opt.str)
+        } else {
+            OptionValue::Int(opt.int)
+        }
+    } else {
+        OptionValue::Float(opt.float)
+    }
+}
+
 impl Keyword {
     /// This function sets a keyword's value
     pub fn set<Str: ToString, Opt: Into<OptionValue>>(key: Str, value: Opt) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let key = key.to_string();
         let _ = write_to_socket_sync(
             socket_path,
-            keyword!(key, (value.into().to_string())).as_bytes(),
+            keyword!((key.to_string()), (value.into().to_string())).as_bytes(),
         )?;
         Ok(())
     }
@@ -132,10 +146,9 @@ impl Keyword {
         value: Opt,
     ) -> HResult<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let key = key.to_string();
         let _ = write_to_socket(
             socket_path,
-            keyword!(key, (value.into().to_string())).as_bytes(),
+            keyword!((key.to_string()), (value.into().to_string())).as_bytes(),
         )
         .await?;
         Ok(())
@@ -143,42 +156,22 @@ impl Keyword {
     /// This function returns the value of a keyword
     pub fn get<Str: ToString>(key: Str) -> HResult<Self> {
         let socket_path = get_socket_path(SocketType::Command);
-        let key = key.to_string();
-        let data = write_to_socket_sync(socket_path, keyword!(g key).as_bytes())?;
+        let data = write_to_socket_sync(socket_path, keyword!(g(key.to_string())).as_bytes())?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let dc = deserialized.clone();
         let keyword = Keyword {
-            option: deserialized.option,
-            value: if deserialized.int.is_positive() {
-                OptionValue::Int(deserialized.int)
-            } else if deserialized.float.is_sign_positive() {
-                OptionValue::Float(deserialized.float)
-            } else if deserialized.str != *"".to_string() {
-                OptionValue::String(deserialized.str)
-            } else {
-                panic!("The option returned data that was unrecognized: {dc:#?}")
-            },
+            option: deserialized.option.clone(),
+            value: parse_option_raw(deserialized),
         };
         Ok(keyword)
     }
     /// This function returns the value of a keyword (async)
     pub async fn get_async<Str: ToString>(key: Str) -> HResult<Self> {
         let socket_path = get_socket_path(SocketType::Command);
-        let key = key.to_string();
-        let data = write_to_socket(socket_path, keyword!(g key).as_bytes()).await?;
+        let data = write_to_socket(socket_path, keyword!(g(key.to_string())).as_bytes()).await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let dc = deserialized.clone();
         let keyword = Keyword {
-            option: deserialized.option,
-            value: if deserialized.int != -1 {
-                OptionValue::Int(deserialized.int)
-            } else if deserialized.float != -1.0 {
-                OptionValue::Float(deserialized.float)
-            } else if deserialized.str != *"".to_string() {
-                OptionValue::String(deserialized.str)
-            } else {
-                panic!("The option returned data that was unrecognized: {dc:#?}")
-            },
+            option: deserialized.option.clone(),
+            value: parse_option_raw(deserialized),
         };
         Ok(keyword)
     }
