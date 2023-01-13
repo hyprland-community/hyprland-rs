@@ -6,6 +6,12 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate doc_comment;
+
+#[macro_use]
+extern crate paste;
+
 /// This module provides shared things throughout the crate
 pub mod shared;
 

@@ -44,25 +44,7 @@ impl EventListener {
             prelude::*,
         };
         EventListener {
-            events: Events {
-                workspace_changed_events: vec![],
-                workspace_added_events: vec![],
-                workspace_destroyed_events: vec![],
-                active_monitor_changed_events: vec![],
-                active_window_changed_events: vec![],
-                fullscreen_state_changed_events: vec![],
-                monitor_removed_events: vec![],
-                monitor_added_events: vec![],
-                window_open_events: vec![],
-                window_close_events: vec![],
-                window_moved_events: vec![],
-                keyboard_layout_change_events: vec![],
-                layer_open_events: vec![],
-                layer_closed_events: vec![],
-                sub_map_changed_events: vec![],
-                workspace_moved_events: vec![],
-                float_state_events: vec![],
-            },
+            events: init_events!(),
             state: State {
                 active_workspace: match Workspace::get_active() {
                     Ok(work) => work.id,
@@ -83,157 +65,23 @@ impl EventListener {
         }
     }
 
-    // /// This method adds a event to the listener which executes on workspace change
-    // ///
-    // /// ```rust, no_run
-    // /// use hyprland::event_listener::EventListenerMutable as EventListener;
-    // /// let mut listener = EventListener::new();
-    // /// listener.add_workspace_change_handler(|id, _| println!("changed workspace to {id:?}"));
-    // /// listener.start_listener_blocking();
-    // /// ```
-    // pub fn add_workspace_change_handler(
-    //     &mut self,
-    //     f: impl Fn(WorkspaceType, &mut State) + 'static,
-    // ) {
-    //     self.events
-    //         .workspace_changed_events
-    //         .push(EventTypes::MutableState(Box::new(f)));
-    // }
-    mut_add_listener!(
-        reg add_workspace_change_handler,
-        workspace_changed_events,
-        WorkspaceType,
-        "This method adds a event to the listener which executes on workspace change",
-        r#"listener.add_workspace_change_handler(|id, _| println!("changed workspace to {id:?}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_workspace_added_handler,
-        workspace_added_events,
-        WorkspaceType,
-        "This method adds a event to the listener which executes when a new workspace is created",
-        r#"listener.add_workspace_added_handler(|id, _| println!("workspace {id:?} was added"));"#
-    );
-
-    mut_add_listener!(
-        reg add_workspace_destroy_handler,
-        workspace_destroyed_events,
-        WorkspaceType,
-        "This method adds a event to the listener which executes when a workspace is destroyed",
-        r#"listener.add_workspace_destroy_handler(|id, _| println!("workspace {id:?} was destroyed"));"#
-    );
-
-    mut_add_listener!(
-        reg add_workspace_moved_handler,
-        workspace_moved_events,
-        MonitorEventData,
-        "This method to add a event to the listener which executes when a workspace is moved",
-        r#"listener.add_workspace_moved_handler(|id, _| println!("workspace {id:?} was moved"));"#
-    );
-
-    mut_add_listener!(
-        reg add_active_monitor_change_handler,
-        active_monitor_changed_events,
-        MonitorEventData,
-        "This method adds a event to the listener which executes when the active monitor is changed",
-        r#"listener.add_active_monitor_change_handler(|data, _| println!("Active Monitor changed: {data:#?}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_active_window_change_handler,
-        active_window_changed_events,
-        Option<WindowEventData>,
-        "This method adds a event to the listener which executes when the active window is changed",
-        r#"listener.add_active_window_change_handler(|data, _| println!("Active window changed: {data:#?}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_fullscreen_state_change_handler,
-        fullscreen_state_changed_events,
-        bool,
-        "This method adds a event to the listener which executes when the fullscreen state is changed",
-        r#"listener.add_fullscreen_state_change_handler(|state, _| println!("Fullscreen is on: {state}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_monitor_added_handler,
-        monitor_added_events,
-        String,
-        "This method adds a event to the listener which executes when a new monitor is added",
-        r#"listener.add_monitor_added_handler(|data, _| println!("Monitor added: {data}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_monitor_removed_handler,
-        monitor_removed_events,
-        String,
-        "This method adds a event to the listener which executes when a monitor is removed",
-        r#"listener.add_monitor_removed_handler(|data, _| println!("Monitor removed: {data}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_keyboard_layout_change_handler,
-        keyboard_layout_change_events,
-        LayoutEvent,
-        "This method adds a event to the listener which executes when the keyboard layout is changed",
-        r#"listener.add_keyboard_layout_change_handler(|data, _| println!("Keyboard Layout Changed: {data:#?}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_sub_map_change_handler,
-        sub_map_changed_events,
-        String,
-        "This method adds a event to the listener which executes when the submap is changed",
-        r#"listener.add_sub_map_change_handler(|data, _| println!("Submap changed: {data}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_window_open_handler,
-        window_open_events,
-        WindowOpenEvent,
-        "This method adds an event to the listener which executes when a window is opened",
-        r#"listener.add_window_open_handler(|data, _| println!("Window opened: {data:#?}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_window_close_handler,
-        window_close_events,
-        Address,
-        "This method adds an event to the listener which executes when a window is closed",
-        r#"listener.add_window_close_handler(|data, _| println!("Window closed: {data}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_window_moved_handler,
-        window_moved_events,
-        WindowMoveEvent,
-        "This method adds an event to the listener which executes when a window is moved",
-        r#"listener.add_window_moved_handler(|data, _| println!("Window moved: {data:#?}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_layer_open_handler,
-        layer_open_events,
-        String,
-        "This method adds an event to the listener which executes when a new layer is opened",
-        r#"listener.add_layer_open_handler(|data, _| println!("Layer opened: {data}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_layer_closed_handler,
-        layer_closed_events,
-        String,
-        "This method adds an event to the listener which executes when a layer is closed",
-        r#"listener.add_layer_closed_handler(|data, _| println!("Layer closed: {data}"));"#
-    );
-
-    mut_add_listener!(
-        reg add_float_state_handler,
-        float_state_events,
-        WindowFloatEventData,
-        "This method adds an event to the listener which executes when the float state of a window is changed",
-        r#"listener.add_float_state_handler(|data, _| println!("Float state changed: {data:#?}"));"#
-    );
+    mut_add_listener!(workspace_change d, WorkspaceType, "on workspace change", "changed workspace to" => id);
+    mut_add_listener!(workspace_added, WorkspaceType, "a workspace is created", "workspace was added" => id);
+    mut_add_listener!(workspace_destroy ed, WorkspaceType, "a workspace is destroyed", "workspace was destroyed" => id);
+    mut_add_listener!(workspace_moved, MonitorEventData, "a workspace is moved", "workspace was moved" => id);
+    mut_add_listener!(active_monitor_change d, MonitorEventData, "the active monitor is changed", "Active monitor changed to" => data);
+    mut_add_listener!(active_window_change d, Option<WindowEventData>, "the active window is changed", "Active window changed" => data);
+    mut_add_listener!(fullscreen_state_change d, bool, "the active monitor is changed", "Fullscreen is on" => state);
+    mut_add_listener!(monitor_added, String, "a new monitor is added", "Monitor added" => data);
+    mut_add_listener!(monitor_removed, String, "a monitor is removed", "Monitor removed" => data);
+    mut_add_listener!(window_open, WindowOpenEvent, "a window is opened", "Window opened" => data);
+    mut_add_listener!(window_close, Address, "a window is closed", "Window closed" => data);
+    mut_add_listener!(window_moved, WindowMoveEvent, "a window is moved", "Window moved" => data);
+    mut_add_listener!(keyboard_layout_change, LayoutEvent, "the keyboard layout is changed", "Layout changed" => data);
+    mut_add_listener!(sub_map_change d, String, "the sub map is changed", "Submap changed" => data);
+    mut_add_listener!(layer_open, String, "a new layer is opened", "Layer opened" => data);
+    mut_add_listener!(layer_closed, String, "a layer is closed", "Layer closed" => data);
+    mut_add_listener!(float_state, WindowFloatEventData, "the float state of a window is changed", "Float state changed" => data);
 
     async fn event_executor(&mut self, event: &Event) -> HResult<()> {
         match event {

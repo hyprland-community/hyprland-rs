@@ -5,50 +5,63 @@
 // }
 
 macro_rules! add_listener {
-    (reg $name:ident,$field:ident,$f:ty,$c:literal,$c2:expr) => {
-        #[doc = $c]
-        ///
-        ///
-        ///```rust, no_run
-        ///use hyprland::event_listener::EventListener;
-        ///let mut listener = EventListener::new();
-        #[doc = $c2]
-        ///listener.start_listener();
-        ///```
-        pub fn $name(&mut self, f: impl Fn($f) + 'static) {
-            self.events.$field.push(EventTypes::Regular(Box::new(f)));
+    ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
+        paste! {
+            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+```rust, no_run
+use hyprland::event_listener::EventListener;
+let mut listener = EventListener::new();
+listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.start_listener();"#),
+                pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) + 'static) {
+                    self.events.[<$name $end _events>].push(EventTypes::Regular(Box::new(f)));
+                }
+            }
         }
     };
-    ($name:ident,$field:ident,$f:ty) => {
-        pub fn $name(&mut self. f: impl Fn($F) + 'static) {
-            self.events.$field.push(EventTypes::Regular(Box::new(f)));
+    ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
+        paste! {
+            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+```rust, no_run
+use hyprland::event_listener::EventListener;
+let mut listener = EventListener::new();
+listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.start_listener();"#),
+                pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) + 'static) {
+                    self.events.[<$name _events>].push(EventTypes::Regular(Box::new(f)));
+                }
+            }
         }
     };
-
 }
 
 macro_rules! mut_add_listener {
-    (reg $name:ident,$field:ident,$f:ty,$c:literal,$c2:expr) => {
-        #[doc = $c]
-        ///
-        ///
-        ///```rust, no_run
-        ///use hyprland::event_listener::EventListenerMutable as EventListener;
-        ///let mut listener = EventListener::new();
-        #[doc = $c2]
-        ///listener.start_listener();
-        ///```
-        pub fn $name(&mut self, f: impl Fn($f, &mut State) + 'static) {
-            self.events
-                .$field
-                .push(EventTypes::MutableState(Box::new(f)));
+    ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
+        paste! {
+            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+```rust, no_run
+use hyprland::event_listener::EventListenerMutable as EventListener;
+let mut listener = EventListener::new();
+listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#", _| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.start_listener();"#),
+                pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f, &mut State) + 'static) {
+                    self.events.[<$name $end _events>].push(EventTypes::MutableState(Box::new(f)));
+                }
+            }
         }
     };
-    ($name:ident,$field:ident,$f:ty) => {
-        pub fn $name(&mut self, f: impl Fn($f, &mut State) + 'static) {
-            self.events
-                .$field
-                .push(EventTypes::MutableState(Box::new(f)));
+    ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
+        paste! {
+            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+```rust, no_run
+use hyprland::event_listener::EventListenerMutable as EventListener;
+let mut listener = EventListener::new();
+listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#", _| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.start_listener();"#),
+                pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f, &mut State) + 'static) {
+                    self.events.[<$name _events>].push(EventTypes::MutableState(Box::new(f)));
+                }
+            }
         }
     };
 }
@@ -95,7 +108,7 @@ macro_rules! mut_state_arm_sync {
     }};
 }
 
-macro_rules! arm_sync {
+macro_rules! arm {
     ($val:expr,$nam:ident,$se:ident) => {{
         let events = &$se.events.$nam;
         for item in events.iter() {
@@ -104,11 +117,26 @@ macro_rules! arm_sync {
     }};
 }
 
-// macro_rules! arm_async {
-//     ($val:expr,$nam:ident,$se:ident) => {{
-//         let events = &$se.events.$nam;
-//         for item in events.iter() {
-//             execute_closure(item, $val).await;
-//         }
-//     }};
-// }
+macro_rules! init_events {
+    () => {
+        Events {
+            workspace_changed_events: vec![],
+            workspace_added_events: vec![],
+            workspace_destroyed_events: vec![],
+            workspace_moved_events: vec![],
+            active_monitor_changed_events: vec![],
+            active_window_changed_events: vec![],
+            fullscreen_state_changed_events: vec![],
+            monitor_removed_events: vec![],
+            monitor_added_events: vec![],
+            window_open_events: vec![],
+            window_close_events: vec![],
+            window_moved_events: vec![],
+            keyboard_layout_change_events: vec![],
+            sub_map_changed_events: vec![],
+            layer_open_events: vec![],
+            layer_closed_events: vec![],
+            float_state_events: vec![],
+        }
+    };
+}
