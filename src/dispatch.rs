@@ -448,7 +448,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
             format!(
-                "renameworkspace {} {}",
+                "renameworkspace{sep}{} {}",
                 id.clone().to_owned(),
                 name.unwrap_or(&id.to_string())
             )
