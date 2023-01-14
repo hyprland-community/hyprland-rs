@@ -218,15 +218,8 @@ impl EventListener {
             }
             let buf = &buf[..num_read];
 
-            let string = match String::from_utf8(buf.to_vec()) {
-                Ok(str) => str,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
-
-            let parsed: Vec<Event> = match event_parser(string) {
-                Ok(vec) => vec,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
+            let string = String::from_utf8(buf.to_vec())?;
+            let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
                 self.event_executor(event).await?;
@@ -263,15 +256,8 @@ impl EventListener {
             }
             let buf = &buf[..num_read];
 
-            let string = match String::from_utf8(buf.to_vec()) {
-                Ok(str) => str,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
-
-            let parsed: Vec<Event> = match event_parser(string) {
-                Ok(vec) => vec,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
+            let string = String::from_utf8(buf.to_vec())?;
+            let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
                 self.event_executor_sync(event)?;

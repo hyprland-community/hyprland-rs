@@ -485,14 +485,12 @@ impl Dispatch {
         );
 
         match output {
-        Ok(msg) => match msg.as_str() {
-            "ok" => Ok(()),
-            msg => panic!(
-                "Hyprland returned a non `ok` value to the dispatcher, this is usually a error, output:({msg})"
-            ),
-        },
-        Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
-    }
+            Ok(msg) => match msg.as_str() {
+                "ok" => Ok(()),
+                msg => Err(HyprError::NotOkDispatch(msg.to_string())),
+            },
+            Err(error) => Err(error),
+        }
     }
 
     /// This function calls a specified dispatcher (async)
@@ -515,14 +513,12 @@ impl Dispatch {
         .await;
 
         match output {
-        Ok(msg) => match msg.as_str() {
-            "ok" => Ok(()),
-            msg => panic!(
-                "Hyprland returned a non `ok` value to the dispatcher, this is usually a error, output:({msg})"
-            ),
-        },
-        Err(error) => panic!("A error occured when running the dispatcher: {error:#?}"),
-    }
+            Ok(msg) => match msg.as_str() {
+                "ok" => Ok(()),
+                msg => Err(HyprError::NotOkDispatch(msg.to_string())),
+            },
+            Err(error) => Err(error),
+        }
     }
 }
 

@@ -13,6 +13,10 @@ pub enum HyprError {
     SerdeError(serde_json::Error),
     /// Error coming from std::io
     IoError(io::Error),
+    /// Error that occurs when parsing UTF-8 string
+    FromUtf8Error(std::string::FromUtf8Error),
+    /// Dispatcher returned non `ok` value
+    NotOkDispatch(String),
 }
 
 impl From<io::Error> for HyprError {
@@ -27,6 +31,12 @@ impl From<serde_json::Error> for HyprError {
     }
 }
 
+impl From<std::string::FromUtf8Error> for HyprError {
+    fn from(error: std::string::FromUtf8Error) -> Self {
+        HyprError::FromUtf8Error(error)
+    }
+}
+
 impl fmt::Display for HyprError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -35,6 +45,10 @@ impl fmt::Display for HyprError {
             match self {
                 Self::IoError(err) => err.to_string(),
                 Self::SerdeError(err) => err.to_string(),
+                Self::FromUtf8Error(err) => err.to_string(),
+                Self::NotOkDispatch(msg) => format!(
+                    "A dispatcher retrurned a non `ok`, value which is probably a error: {msg} was returned by it"
+                ),
             }
         )
     }
@@ -173,10 +187,7 @@ pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> HResult<Str
     let mut response = [0; 8192];
     let num_read = stream.read(&mut response).await?;
     let response = &response[..num_read];
-    Ok(match String::from_utf8(response.to_vec()) {
-        Ok(str) => str,
-        Err(error) => panic!("an error has occured while parsing bytes as utf8: {error:#?}"),
-    })
+    Ok(String::from_utf8(response.to_vec())?)
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
@@ -189,10 +200,7 @@ pub(crate) fn write_to_socket_sync(path: String, content: &[u8]) -> HResult<Stri
     let mut response = [0; 8192];
     let num_read = stream.read(&mut response)?;
     let response = &response[..num_read];
-    Ok(match String::from_utf8(response.to_vec()) {
-        Ok(str) => str,
-        Err(error) => panic!("an error has occured while parsing bytes as utf8: {error:#?}"),
-    })
+    Ok(String::from_utf8(response.to_vec())?)
 }
 
 /// This pub(crate) enum holds the different sockets that Hyprland has

@@ -112,7 +112,6 @@ impl EventListener {
         use tokio::net::UnixStream;
 
         let socket_path = get_socket_path(SocketType::Listener);
-
         let mut stream = UnixStream::connect(socket_path).await?;
 
         loop {
@@ -123,16 +122,8 @@ impl EventListener {
                 break;
             }
             let buf = &buf[..num_read];
-
-            let string = match String::from_utf8(buf.to_vec()) {
-                Ok(str) => str,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
-
-            let parsed: Vec<Event> = match event_parser(string) {
-                Ok(vec) => vec,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
+            let string = String::from_utf8(buf.to_vec())?;
+            let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
                 self.event_executor(event);
@@ -156,7 +147,6 @@ impl EventListener {
         use std::os::unix::net::UnixStream;
 
         let socket_path = get_socket_path(SocketType::Listener);
-
         let mut stream = UnixStream::connect(socket_path)?;
 
         loop {
@@ -167,16 +157,8 @@ impl EventListener {
                 break;
             }
             let buf = &buf[..num_read];
-
-            let string = match String::from_utf8(buf.to_vec()) {
-                Ok(str) => str,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
-
-            let parsed: Vec<Event> = match event_parser(string) {
-                Ok(vec) => vec,
-                Err(error) => panic!("a error has occured {error:#?}"),
-            };
+            let string = String::from_utf8(buf.to_vec())?;
+            let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
                 self.event_executor(event);
