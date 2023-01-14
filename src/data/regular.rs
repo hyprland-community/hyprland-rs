@@ -226,6 +226,8 @@ pub struct Client {
     pub workspace: WorkspaceBasic,
     /// Is this window floating?
     pub floating: bool,
+    /// Is this window fullscreen?
+    pub fullscreen: bool,
     /// The monitor the window is on
     pub monitor: u8,
     /// The window class

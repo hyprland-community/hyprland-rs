@@ -231,6 +231,8 @@ pub enum DispatchType<'a> {
     BringActiveToTop,
     /// This toggles the special workspace (AKA scratchpad)
     ToggleSpecialWorkspace,
+    /// This dispatcher renames a workspace
+    RenameWorkspace(WorkspaceId, Option<&'a str>),
 }
 
 fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
@@ -444,6 +446,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
             match_mon_identifier(mon.clone())
         ),
         ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
+        RenameWorkspace(id, name) => {
+            format!(
+                "renameworkspace{sep}{} {}",
+                id.clone().to_owned(),
+                name.unwrap_or(&id.to_string())
+            )
+        }
         SwapActiveWorkspaces(mon, mon2) => format!(
             "swapactiveworkspaces{sep}{} {}",
             match_mon_identifier(mon.clone()),
