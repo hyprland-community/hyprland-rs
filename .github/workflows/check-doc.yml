@@ -27,7 +27,7 @@ jobs:
       name: Add caching
 
     - uses: actions-rs/cargo@v1
-      name: Build crate
+      name: Check Documentation with Rustdoc
       with:
         command: doc
         args: --verbose --all-features --no-deps
