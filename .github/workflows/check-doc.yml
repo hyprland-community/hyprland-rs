@@ -1,4 +1,4 @@
-name: Rust Build
+name: Check Docs
 
 on:
   push:
@@ -29,6 +29,6 @@ jobs:
     - uses: actions-rs/cargo@v1
       name: Build crate
       with:
-        command: build
-        args: --verbose --all-features
+        command: doc
+        args: --verbose --all-features --no-deps
 

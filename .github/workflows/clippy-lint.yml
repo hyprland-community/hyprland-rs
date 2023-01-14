@@ -7,12 +7,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - uses: actions-rs/toolchain@v1
+      name: Install Rust Toolchain
       with:
         toolchain: nightly
         components: clippy
         override: true
+
+    - uses: Swatinem/rust-cache@v2
+      name: Add caching
+
     - uses: actions-rs/clippy-check@v1
+      name: Lint and Check codebase with Clippy
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features
+        args: --all-features --verbose
