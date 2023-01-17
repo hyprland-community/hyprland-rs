@@ -1,6 +1,6 @@
 [package]
 name = "hyprland"
-version = "0.3.0"
+version = "0.3.0-alpha.0"
 edition = "2021"
 authors = ["yavko <yavornkolev@gmail.com>"]
 license = "GPL-3.0-or-later"
