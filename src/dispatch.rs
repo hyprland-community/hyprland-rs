@@ -233,6 +233,8 @@ pub enum DispatchType<'a> {
     ToggleSpecialWorkspace,
     /// This dispatcher renames a workspace
     RenameWorkspace(WorkspaceId, Option<&'a str>),
+    /// This dispatcher jump to urgent or the last window
+    FocusUrgentOrLast,
 }
 
 fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
@@ -462,6 +464,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         SetCursor(theme, size) => {
             format!("{theme} {size}", size = *size)
         }
+        FocusUrgentOrLast => "focusurgentorlast".to_string(),
     };
     if let SetCursor(_, _) = cmd {
         Ok(format!("setcursor {string_to_pass}"))
