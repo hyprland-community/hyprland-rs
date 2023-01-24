@@ -25,7 +25,10 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 |---------------|------------------------------------|-----------------------------|
 | Old notation  | `asynchronous::get_something()`    | `blocking::get_something()` |
 | New Notation  | `Something::get_async().collect()` | `Something::get().collect()`|
-> The `.collect()` is required because data is now stored as a struct!
+> The `.collect()` is required because data fetchers are now iterators!
+>
+> If you are just converting to a `Vec`, **USE THE `.as_vec()`** method instead,
+> this being an iterator is useful if you wanna for example loop over all the workspaces
 
 
 #### Update Dispatchers
