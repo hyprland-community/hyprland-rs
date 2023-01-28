@@ -137,6 +137,7 @@ macro_rules! init_events {
             layer_open_events: vec![],
             layer_closed_events: vec![],
             float_state_events: vec![],
+            urgent_state_events: vec![],
         }
     };
 }

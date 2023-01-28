@@ -57,6 +57,7 @@ impl EventListener {
     add_listener!(layer_open, String, "a new layer is opened", "Layer opened" => data);
     add_listener!(layer_closed, String, "a layer is closed", "Layer closed" => data);
     add_listener!(float_state, WindowFloatEventData, "the float state of a window is changed", "Float state changed" => data);
+    add_listener!(urgent_state, Address, "the urgent state of a window is changed", "urgent state changed" => data);
 
     fn event_executor(&self, event: &Event) {
         match event {
@@ -92,6 +93,7 @@ impl EventListener {
                 arm!(namespace.clone(), layer_closed_events, self)
             }
             Event::FloatStateChanged(even) => arm!(even.clone(), float_state_events, self),
+            Event::UrgentStateChanged(even) => arm!(even.clone(), urgent_state_events, self),
         }
     }
 

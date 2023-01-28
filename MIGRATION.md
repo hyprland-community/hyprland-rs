@@ -13,8 +13,7 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 7. When using `WorkspaceType::Special`, now include a `Some(name: String)` or `None`
 8. [Update your keyword calls to new module](#update-keyword-calls)
 9. [Update start listener calls](#update-start-listener-calls)
-10. Update `WorkspaceType` enum usage, `Regular` now is `Unnamed`
-11. Follow Rustc for everything else! 
+10. Follow Rustc and Clippy for everything else! 
 
 ## More in-depth steps
 
@@ -27,7 +26,7 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 | New Notation  | `Something::get_async().collect()` | `Something::get().collect()`|
 > The `.collect()` is required because data fetchers are now iterators!
 >
-> If you are just converting to a `Vec`, **USE THE `.as_vec()`** method instead,
+> If you are just converting to a `Vec`, **USE THE `.to_vec()`** method instead,
 > this being an iterator is useful if you wanna for example loop over all the workspaces
 
 

@@ -107,7 +107,7 @@ pub trait HyprDataActiveOptional {
 /// This trait provides a standardized way to get data in a from of a vector
 pub trait HyprDataVec<T>: HyprData {
     /// This method returns a vector of data
-    fn as_vec(self) -> Vec<T>;
+    fn to_vec(self) -> Vec<T>;
 }
 
 /// This type provides the id used to identify workspaces
@@ -118,13 +118,8 @@ pub type WorkspaceId = i32;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum WorkspaceType {
-    /// A workspace with the id as its name
-    Unnamed(
-        /// The workspace id
-        WorkspaceId,
-    ),
     /// A named workspace
-    Named(
+    Regular(
         /// The name
         String,
     ),
@@ -135,22 +130,22 @@ pub enum WorkspaceType {
     ),
 }
 
-impl From<i8> for WorkspaceType {
-    fn from(int: i8) -> Self {
-        match int {
-            1.. => WorkspaceType::Unnamed(match int.try_into() {
-                Ok(num) => num,
-                Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
-            }),
-            _ => panic!("Unrecognised id"),
-        }
-    }
-}
+// impl From<i8> for WorkspaceType {
+//     fn from(int: i8) -> Self {
+//         match int {
+//             1.. => WorkspaceType::Unnamed(match int.try_into() {
+//                 Ok(num) => num,
+//                 Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
+//             }),
+//             _ => panic!("Unrecognised id"),
+//         }
+//     }
+// }
 
 impl From<i32> for WorkspaceType {
     fn from(int: i32) -> Self {
         match int {
-            1.. => WorkspaceType::Unnamed(int),
+            1.. => WorkspaceType::Regular(int.to_string()),
             _ => panic!("Unrecognised id"),
         }
     }

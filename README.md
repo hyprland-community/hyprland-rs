@@ -22,7 +22,7 @@ Lets get started with Hyprland-rs!
 Add the code below to the dependencies section of your Cargo.toml file!
 
 ```toml
-hyprland = "0.3.0-alpha.0"
+hyprland = "0.3.0"
 ```
 
 ### What this crate provides
@@ -56,7 +56,7 @@ fn main() -> hyprland::shared::HResult<()> {
     Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
     // Here we are adding a keybinding to Hyprland using the bind macro!
-    hyprland::bind!(SUPER, Key, "i" => ToggleFloating)?;
+    hyprland::bind!(SUPER, Key, "i" => ToggleFloating, None)?;
 
     // Here we are getting the border size
     let border_size = match Keyword::get("general:border_size")?.value {
@@ -86,8 +86,8 @@ fn main() -> hyprland::shared::HResult<()> {
     // This changes the workspace to 5 if the workspace is switched to 9
     // this is a performance and mutable state test
     event_listener.add_workspace_change_handler(|id, state| {
-        if id == WorkspaceType::Unnamed(9) {
-            state.active_workspace = WorkspaceType::Unnamed(2);
+        if id == WorkspaceType::Regular('9'.to_string()) {
+            state.active_workspace = WorkspaceType::Regular('2'.to_string());
         }
     });
     // This makes it so you can't turn on fullscreen lol
@@ -107,7 +107,19 @@ fn main() -> hyprland::shared::HResult<()> {
 
     // add event, yes functions and closures both work!
     event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
+    // Waybar example
+    // event_listener.add_active_window_change_handler(|data| {
+    //     use hyprland::event_listener::WindowEventData;
+    //     let string = match data {
+    //         Some(WindowEventData(class, title)) => format!("{class}: {title}"),
+    //         None => "".to_string()
+    //     };
+    //     println!(r#"{{"text": "{string}", class: "what is this?"}}"#);
+    // });
 
+    // and execute the function
+    // here we are using the blocking variant
+    // but there is a async version too
     event_listener.start_listener()
 }
 ```

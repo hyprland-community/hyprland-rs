@@ -59,7 +59,7 @@ macro_rules! create_data_struct {
         }
 
         impl HyprDataVec<$held> for $name {
-            fn as_vec(self) -> Vec<$held> {
+            fn to_vec(self) -> Vec<$held> {
                 self.held
             }
         }

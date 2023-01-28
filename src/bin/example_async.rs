@@ -25,15 +25,16 @@ async fn main() -> hyprland::shared::HResult<()> {
     };
     println!("{border_size}");
 
+    dbg!("works so far");
     // Here we change a keyword, yes its a dispatcher don't complain
     Keyword::set_async("general:border_size", border_size * 2).await?;
-
+    dbg!("works so far");
     // get all monitors
     let monitors = Monitors::get_async().await?;
-
+    dbg!("monitors too");
     // and the active window
     let win = Client::get_active_async().await?;
-
+    dbg!("Active window!!");
     // and all open windows
     let clients = Clients::get_async().await?;
 
@@ -46,8 +47,8 @@ async fn main() -> hyprland::shared::HResult<()> {
     // This changes the workspace to 5 if the workspace is switched to 9
     // this is a performance and mutable state test
     event_listener.add_workspace_change_handler(|id, state| {
-        if id == WorkspaceType::Unnamed(9) {
-            state.active_workspace = WorkspaceType::Unnamed(2);
+        if id == WorkspaceType::Regular('9'.to_string()) {
+            state.active_workspace = WorkspaceType::Regular('2'.to_string());
         }
     });
     // This makes it so you can't turn on fullscreen lol

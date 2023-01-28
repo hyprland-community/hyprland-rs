@@ -47,8 +47,8 @@ fn main() -> hyprland::shared::HResult<()> {
     // This changes the workspace to 5 if the workspace is switched to 9
     // this is a performance and mutable state test
     event_listener.add_workspace_change_handler(|id, state| {
-        if id == WorkspaceType::Unnamed(9) {
-            state.active_workspace = WorkspaceType::Unnamed(2);
+        if id == WorkspaceType::Regular('9'.to_string()) {
+            state.active_workspace = WorkspaceType::Regular('2'.to_string());
         }
     });
     // This makes it so you can't turn on fullscreen lol

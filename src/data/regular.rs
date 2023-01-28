@@ -20,10 +20,7 @@ async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
 
     match write_to_socket(socket_path, format!("j/{cmd_string}").as_bytes()).await {
         Ok(data) => data,
-        Err(e) => panic!(
-            "A error occured while parsing the output from the hypr socket: {:?}",
-            e
-        ),
+        Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
     }
 }
 
@@ -44,10 +41,7 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
 
     match write_to_socket_sync(socket_path, format!("j/{cmd_string}").as_bytes()) {
         Ok(data) => data,
-        Err(e) => panic!(
-            "A error occured while parsing the output from the hypr socket: {:?}",
-            e
-        ),
+        Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
     }
 }
 
@@ -102,6 +96,8 @@ pub struct Monitor {
     pub id: u8,
     /// The monitor's name
     pub name: String,
+    /// The monitor's description
+    pub description: String,
     /// The monitor width (in pixels)
     pub width: u16,
     /// The monitor height (in pixels)
@@ -120,26 +116,29 @@ pub struct Monitor {
     pub reserved: (u8, u8, u8, u8),
     /// The display's scale
     pub scale: f32,
-    /// idk what this is lol
+    /// I think like the rotation?
     pub transform: Transforms,
     /// a string that identifies if the display is active
     pub focused: bool,
+    /// The dpms status of a monitor
+    #[serde(rename = "dpmsStatus")]
+    pub dpms_status: bool,
 }
 
 #[async_trait]
 impl HyprDataActive for Monitor {
     fn get_active() -> HResult<Self> {
-        let all = Monitors::get()?;
-        if let Some(it) = all.clone().find(|item| item.focused) {
-            Ok(it.clone())
+        let mut all = Monitors::get()?;
+        if let Some(it) = all.find(|item| item.focused) {
+            Ok(it)
         } else {
             panic!("No active monitor?")
         }
     }
     async fn get_active_async() -> HResult<Self> {
-        let all = Monitors::get_async().await?;
-        if let Some(it) = all.clone().find(|item| item.focused) {
-            Ok(it.clone())
+        let mut all = Monitors::get_async().await?;
+        if let Some(it) = all.find(|item| item.focused) {
+            Ok(it)
         } else {
             panic!("No active monitor?")
         }
@@ -157,7 +156,7 @@ create_data_struct!(
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Workspace {
     /// The workspace Id
-    pub id: WorkspaceType,
+    pub id: WorkspaceId,
     /// The workspace's name
     pub name: String,
     /// The monitor the workspace is on
@@ -167,42 +166,37 @@ pub struct Workspace {
     /// A bool that shows if there is a fullscreen window in the workspace
     #[serde(rename = "hasfullscreen")]
     pub fullscreen: bool,
+    /// The last window's [Address]
+    #[serde(rename = "lastwindow")]
+    pub last_window: Address,
+    /// The last window's title
+    #[serde(rename = "lastwindowtitle")]
+    pub last_window_title: String,
 }
 
 #[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> HResult<Self> {
-        let all = Workspaces::get()?;
+        let mut all = Workspaces::get()?;
         let mon = Monitor::get_active()?;
 
-        if let Some(it) = all
-            .clone()
-            .find(|item| item.id == WorkspaceType::Unnamed(mon.active_workspace.id))
-        {
-            Ok(it.clone())
+        if let Some(it) = all.find(|item| item.id == mon.active_workspace.id) {
+            Ok(it)
         } else {
             panic!("No active monitor?")
         }
     }
     async fn get_active_async() -> HResult<Self> {
-        let all = Workspaces::get_async().await?;
+        let mut all = Workspaces::get_async().await?;
         let mon = Monitor::get_active_async().await?;
 
-        if let Some(it) = all
-            .clone()
-            .find(|item| item.id == WorkspaceType::Unnamed(mon.active_workspace.id))
-        {
-            Ok(it.clone())
+        if let Some(it) = all.find(|item| item.id == mon.active_workspace.id) {
+            Ok(it)
         } else {
             panic!("No active monitor?")
         }
     }
 }
-
-// fn parse_works(data: String) -> HResult<Vec<Workspace>> {
-//     let deserialized: Vec<Workspace> = serde_json::from_str(&data)?;
-//     Ok(deserialized)
-// }
 
 create_data_struct!(
     vec Workspaces,
@@ -226,6 +220,9 @@ pub struct Client {
     pub floating: bool,
     /// Is this window fullscreen?
     pub fullscreen: bool,
+    /// What type of fullscreen?
+    #[serde(rename = "fullscreenMode")]
+    pub fullscreen_mode: u8,
     /// The monitor the window is on
     pub monitor: u8,
     /// The window class
@@ -236,6 +233,12 @@ pub struct Client {
     pub pid: u32,
     /// Is this window running under XWayland?
     pub xwayland: bool,
+    /// Is this window pinned?
+    pub pinned: bool,
+    /// Group members
+    pub grouped: Vec<Box<Self>>,
+    /// The swallowed window
+    pub swallowing: Option<Box<Self>>,
 }
 
 /// This enum holds the information for the active window

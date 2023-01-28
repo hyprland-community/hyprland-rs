@@ -39,6 +39,7 @@ pub(crate) struct Events {
     pub(crate) layer_open_events: Closures<String>,
     pub(crate) layer_closed_events: Closures<String>,
     pub(crate) float_state_events: Closures<WindowFloatEventData>,
+    pub(crate) urgent_state_events: Closures<Address>,
 }
 
 /// The data for the event executed when moving a window to a new workspace
@@ -97,8 +98,7 @@ impl State {
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
                 Dispatch::call_async(DispatchType::Workspace(match &state.active_workspace {
-                    WorkspaceType::Unnamed(id) => WorkspaceIdentifierWithSpecial::Id(*id),
-                    WorkspaceType::Named(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                    WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
                     WorkspaceType::Special(opt) => {
                         WorkspaceIdentifierWithSpecial::Special(match opt {
                             Some(name) => Some(name),
@@ -130,8 +130,7 @@ impl State {
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
                 Dispatch::call(DispatchType::Workspace(match &state.active_workspace {
-                    WorkspaceType::Unnamed(id) => WorkspaceIdentifierWithSpecial::Id(*id),
-                    WorkspaceType::Named(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                    WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
                     WorkspaceType::Special(opt) => {
                         WorkspaceIdentifierWithSpecial::Special(match opt {
                             Some(name) => Some(name),
@@ -230,6 +229,7 @@ pub(crate) enum Event {
     LayerOpened(String),
     LayerClosed(String),
     FloatStateChanged(WindowFloatEventData),
+    UrgentStateChanged(Address),
 }
 
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
@@ -266,10 +266,8 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
                 None => WorkspaceType::Special(None),
             }
         }
-    } else if let Ok(num) = str.parse::<i32>() {
-        WorkspaceType::from(num)
     } else {
-        WorkspaceType::Named(str)
+        WorkspaceType::Regular(str)
     }
 }
 
@@ -312,6 +310,7 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
             .iter()
             .map(|pat| check_for_regex_error(Regex::new(pat)))
             .collect();
+        static ref EVENT_LEN: usize = EVENT_SET.len() - 1;
     }
 
     let event_iter = event.trim().split('\n');
@@ -339,7 +338,7 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                     let workspace = if !captured.is_empty() {
                         parse_string_as_work(captured.to_string())
                     } else {
-                        WorkspaceType::Unnamed(1)
+                        WorkspaceType::Regular("1".to_string())
                     };
                     events.push(Event::WorkspaceChanged(workspace));
                 }
@@ -365,13 +364,10 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                 4 => {
                     // ActiveMonitorChanged
                     let monitor = &captures["monitor"];
-                    let workspace = match captures["workspace"].parse::<i8>() {
-                        Ok(num) => num,
-                        Err(e) => panic!("error parsing string as u8: {e}"),
-                    };
+                    let workspace = &captures["workspace"];
                     events.push(Event::ActiveMonitorChanged(MonitorEventData(
                         monitor.to_string(),
-                        WorkspaceType::from(workspace),
+                        WorkspaceType::Regular(workspace.to_string()),
                     )));
                 }
                 5 => {
@@ -462,10 +458,15 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                         state,
                     )));
                 }
+                18 => {
+                    // UrgentStateChanged
+                    let addr = &captures["address"];
+                    events.push(Event::UrgentStateChanged(Address::new(addr)));
+                }
                 _ => unreachable!(), //panic!("There are only 16 items in the array? prob a regex issue 🤷"),
             }
         } else if matches_event.len() == 1 {
-            if matches_event[0] != EVENT_SET.len() - 1 {
+            if matches_event[0] != *EVENT_LEN {
                 panic!("One event matched, that isn't the unrecognised event type, sus")
             } else {
                 // Unknown Event
