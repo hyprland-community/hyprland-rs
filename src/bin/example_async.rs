@@ -13,7 +13,7 @@ async fn main() -> hyprland::shared::HResult<()> {
     hyprland::dispatch!(async; Exec, "kitty").await?;
 
     // Here we are adding a keybinding to Hyprland using the bind macro!
-    hyprland::bind!(async; SUPER, Key, "i" => ToggleFloating).await?;
+    hyprland::bind!(async; SUPER, Key, "i" => ToggleFloating, None).await?;
 
     // Here we are moving the cursor to the top left corner! We can also just use the Dispatch
     // struct!

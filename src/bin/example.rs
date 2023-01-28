@@ -17,7 +17,7 @@ fn main() -> hyprland::shared::HResult<()> {
     Dispatch::call(DispatchType::MoveCursorToCorner(Corner::TopLeft))?;
 
     // Here we are adding a keybinding to Hyprland using the bind macro!
-    hyprland::bind!(SUPER, Key, "i" => ToggleFloating)?;
+    hyprland::bind!(SUPER, Key, "i" => ToggleFloating, None)?;
 
     // Here we are getting the border size
     let border_size = match Keyword::get("general:border_size")?.value {

@@ -15,6 +15,8 @@
 //! ````
 
 use crate::shared::*;
+use std::string::ToString;
+use strum_macros::Display;
 
 /// This enum is for identifying a window
 #[derive(Debug, Clone)]
@@ -29,24 +31,43 @@ pub enum WindowIdentifier<'a> {
     ProcessId(u32),
 }
 
+impl std::fmt::Display for WindowIdentifier<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let out = match self {
+            WindowIdentifier::Address(addr) => format!("address:{addr}"),
+            WindowIdentifier::ProcessId(id) => format!("pid:{id}"),
+            WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
+            WindowIdentifier::Title(title) => format!("title:{title}"),
+        };
+        write!(f, "{out}")
+    }
+}
+
 /// This enum holds the fullscreen types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum FullscreenType {
     /// Fills the whole screen
+    #[strum(serialize = "0")]
     Real,
     /// Maximizes the window
+    #[strum(serialize = "1")]
     Maximize,
     /// Passes no param
+    #[strum(serialize = "")]
     NoParam,
 }
 
 /// This enum holds directions, typically used for moving
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 #[allow(missing_docs)]
 pub enum Direction {
+    #[strum(serialize = "u")]
     Up,
+    #[strum(serialize = "d")]
     Down,
+    #[strum(serialize = "r")]
     Right,
+    #[strum(serialize = "l")]
     Left,
 }
 
@@ -59,11 +80,23 @@ pub enum Position {
     Exact(i16, i16),
 }
 
+impl std::fmt::Display for Position {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let out = match self {
+            Position::Delta(x, y) => format!("{x},{y}"),
+            Position::Exact(w, h) => format!("exact {w} {h}"),
+        };
+        write!(f, "{out}")
+    }
+}
+
 /// This enum holds a direction for cycling
 #[allow(missing_docs)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum CycleDirection {
+    #[strum(serialize = "")]
     Next,
+    #[strum(serialize = "prev")]
     Previous,
 }
 
@@ -82,22 +115,37 @@ pub enum MonitorIdentifier<'a> {
     Relative(i32),
 }
 
+impl std::fmt::Display for MonitorIdentifier<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let out = match self {
+            MonitorIdentifier::Direction(dir) => dir.to_string(),
+            MonitorIdentifier::Id(id) => id.to_string(),
+            MonitorIdentifier::Name(name) => name.to_string(),
+            MonitorIdentifier::Current => "current".to_string(),
+            MonitorIdentifier::Relative(int) => format_relative(*int, ""),
+        };
+        write!(f, "{out}")
+    }
+}
+
 /// This enum holds corners
 #[allow(missing_docs)]
 #[derive(Debug, Clone)]
 pub enum Corner {
-    TopRight,
-    TopLeft,
-    BottomRight,
-    BottomLeft,
+    TopRight = 0,
+    TopLeft = 1,
+    BottomRight = 2,
+    BottomLeft = 3,
 }
 
 /// This enum holds options that are applied to the current workspace
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum WorkspaceOptions {
     /// Makes all windows pseudo tiled
+    #[strum(serialize = "allfloat")]
     AllPseudo,
     /// Makes all windows float
+    #[strum(serialize = "allpseudo")]
     AllFloat,
 }
 
@@ -122,6 +170,27 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
     Special(Option<&'a str>),
 }
 
+impl std::fmt::Display for WorkspaceIdentifierWithSpecial<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use WorkspaceIdentifierWithSpecial::*;
+        let out = match self {
+            Id(id) => format!("{id}"),
+            Name(name) => format!("name:{name}"),
+            Relative(int) => format_relative(*int, ""),
+            RelativeMonitor(int) => format_relative(*int, "m"),
+            RelativeOpen(int) => format_relative(*int, "e"),
+            Previous => "previous".to_string(),
+            Empty => "empty".to_string(),
+            Special(opt) => match opt {
+                Some(name) => format!("special:{name}"),
+                None => "special".to_string(),
+            },
+        };
+
+        write!(f, "{out}")
+    }
+}
+
 /// This enum is for identifying workspaces
 #[derive(Debug, Clone)]
 pub enum WorkspaceIdentifier<'a> {
@@ -139,6 +208,23 @@ pub enum WorkspaceIdentifier<'a> {
     Empty,
     /// The name of the workspace
     Name(&'a str),
+}
+
+impl std::fmt::Display for WorkspaceIdentifier<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        use WorkspaceIdentifier::*;
+        let out = match self {
+            Id(id) => format!("{id}"),
+            Name(name) => format!("name:{name}"),
+            Relative(int) => format_relative(*int, ""),
+            RelativeMonitor(int) => format_relative(*int, "m"),
+            RelativeOpen(int) => format_relative(*int, "e"),
+            Previous => "previous".to_string(),
+            Empty => "empty".to_string(),
+        };
+
+        write!(f, "{out}")
+    }
 }
 
 /// This enum is the params to MoveWindow dispatcher
@@ -171,16 +257,24 @@ pub enum DispatchType<'a> {
     CloseWindow(WindowIdentifier<'a>),
     /// This dispatcher changes the current workspace
     Workspace(WorkspaceIdentifierWithSpecial<'a>),
+    /// This dispatcher moves a window (focused if not specified) to a workspace
+    MoveToWorkspace(WorkspaceIdentifier<'a>, Option<WindowIdentifier<'a>>),
+    /// This dispatcher moves a window (focused if not specified) to a workspace, without switching to that
+    /// workspace
+    MoveToWorkspaceSilent(WorkspaceIdentifier<'a>, Option<WindowIdentifier<'a>>),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// changes the active workspace aswell
     MoveFocusedWindowToWorkspace(WorkspaceIdentifier<'a>),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// does not change workspaces
     MoveFocusedWindowToWorkspaceSilent(WorkspaceIdentifier<'a>),
-    /// This dispatcher floats the current window
-    ToggleFloating,
-    /// This toggles the current window fullscreen state
+    /// This dispatcher floats a window (current if not specified)
+    ToggleFloating(Option<WindowIdentifier<'a>>),
+    /// This dispatcher toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
+    /// This dispatcher toggles the focused window’s internal
+    /// fullscreen state without altering the geometry
+    ToggleFakeFullscreen,
     /// This dispatcher sets the DPMS status for all monitors
     ToggleDPMS(bool, Option<&'a str>),
     /// This dispatcher toggles pseudo tiling for the current window
@@ -217,6 +311,8 @@ pub enum DispatchType<'a> {
     MoveCursorToCorner(Corner),
     /// This dispatcher applied a option to all windows in a workspace
     WorkspaceOption(WorkspaceOptions),
+    /// This dispatcher renames a workspace
+    RenameWorkspace(WorkspaceId, Option<&'a str>),
     /// This exits Hyprland **(DANGEROUS)**
     Exit,
     /// This dispatcher forces the renderer to reload
@@ -231,8 +327,6 @@ pub enum DispatchType<'a> {
     BringActiveToTop,
     /// This toggles the special workspace (AKA scratchpad)
     ToggleSpecialWorkspace,
-    /// This dispatcher renames a workspace
-    RenameWorkspace(WorkspaceId, Option<&'a str>),
 }
 
 fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
@@ -248,219 +342,87 @@ fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     }
 }
 
-fn match_workspace_identifier(identifier: WorkspaceIdentifier) -> String {
-    use WorkspaceIdentifier::*;
-    match identifier {
-        Id(id) => format!("{id}"),
-        Name(name) => format!("name:{name}"),
-        Relative(int) => format_relative(int, ""),
-        RelativeMonitor(int) => format_relative(int, "m"),
-        RelativeOpen(int) => format_relative(int, "e"),
-        Previous => "previous".to_string(),
-        Empty => "empty".to_string(),
-    }
-}
-
-fn match_workspace_identifier_special(identifier: WorkspaceIdentifierWithSpecial) -> String {
-    use WorkspaceIdentifierWithSpecial::*;
-    match identifier {
-        Id(id) => format!("{id}"),
-        Name(name) => format!("name:{name}"),
-        Relative(int) => format_relative(int, ""),
-        RelativeMonitor(int) => format_relative(int, "m"),
-        RelativeOpen(int) => format_relative(int, "e"),
-        Previous => "previous".to_string(),
-        Empty => "empty".to_string(),
-        Special(opt) => match opt {
-            Some(name) => format!("special:{name}"),
-            None => "special".to_string(),
-        },
-    }
-}
-
-fn match_mon_identifier(identifier: MonitorIdentifier) -> String {
-    match identifier {
-        MonitorIdentifier::Direction(dir) => match_dir(dir),
-        MonitorIdentifier::Id(id) => id.to_string(),
-        MonitorIdentifier::Name(name) => name.to_string(),
-        MonitorIdentifier::Current => "current".to_string(),
-        MonitorIdentifier::Relative(int) => format_relative(int, ""),
-    }
-}
-
-fn match_dir(dir: Direction) -> String {
-    match dir {
-        Direction::Left => "l",
-        Direction::Right => "r",
-        Direction::Down => "d",
-        Direction::Up => "u",
-    }
-    .to_string()
-}
-
-fn position_to_string(pos: Position) -> String {
-    match pos {
-        Position::Delta(x, y) => format!("{x},{y}"),
-        Position::Exact(w, h) => format!("exact {w} {h}"),
-    }
-}
-
-fn match_window_identifier(iden: WindowIdentifier) -> String {
-    match iden {
-        WindowIdentifier::Address(addr) => format!("address:{addr}"),
-        WindowIdentifier::ProcessId(id) => format!("pid:{id}"),
-        WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
-        WindowIdentifier::Title(title) => format!("title:{title}"),
-    }
-}
-
 pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<String> {
     use DispatchType::*;
     let sep = if dispatch { " " } else { "," };
     let string_to_pass = match &cmd {
         Exec(sh) => format!("exec{sep}{sh}"),
-        Pass(win) => format!("pass{sep}{}", match_window_identifier(win.clone())),
+        Pass(win) => format!("pass{sep}{win}"),
         KillActiveWindow => "killactive".to_string(),
         CloseWindow(win) => {
-            format!("closewindow{sep}{}", match_window_identifier(win.clone()))
+            format!("closewindow{sep}{win}")
         }
-        Workspace(ident) => format!(
-            "workspace{sep}{}",
-            match_workspace_identifier_special(ident.clone())
-        ),
-        MoveFocusedWindowToWorkspace(ident) => {
-            format!(
-                "workspace{sep}{}",
-                match_workspace_identifier(ident.clone())
-            )
+        Workspace(work) => format!("workspace{sep}{work}"),
+        MoveToWorkspace(work, Some(win)) => format!("movetoworkspace {work} {win}"),
+        MoveToWorkspace(work, None) => format!("movetoworkspace {work}"),
+        MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent {work} {win}"),
+        MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent {work}"),
+        MoveFocusedWindowToWorkspace(work) => {
+            format!("workspace{sep}{work}",)
         }
-        MoveFocusedWindowToWorkspaceSilent(ident) => {
-            format!(
-                "workspace{sep}{}",
-                match_workspace_identifier(ident.clone())
-            )
+        MoveFocusedWindowToWorkspaceSilent(work) => {
+            format!("workspace{sep}{work}",)
         }
-        ToggleFloating => "togglefloating".to_string(),
-        ToggleFullscreen(fullscreen_type) => format!(
-            "fullscreen{sep}{}",
-            match fullscreen_type {
-                FullscreenType::Real => "0",
-                FullscreenType::Maximize => "1",
-                FullscreenType::NoParam => "",
-            }
-        ),
+        ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
+        ToggleFloating(None) => "togglefloating".to_string(),
+        ToggleFullscreen(ftype) => format!("fullscreen{sep}{ftype}"),
+        ToggleFakeFullscreen => "fakefullscreen".to_string(),
         ToggleDPMS(stat, mon) => {
             format!(
                 "dpms{sep}{} {}",
                 if *stat { "on" } else { "off" },
-                match mon {
-                    Some(s) => s,
-                    None => "",
-                }
+                mon.unwrap_or_default()
             )
         }
         TogglePseudo => "pseudo".to_string(),
         TogglePin => "pin".to_string(),
-        MoveFocus(dir) => format!(
-            "movefocus{sep}{}",
-            match dir {
-                Direction::Down => "d",
-                Direction::Up => "u",
-                Direction::Right => "r",
-                Direction::Left => "l",
-            }
-        ),
+        MoveFocus(dir) => format!("movefocus{sep}{dir}",),
         MoveWindow(ident) => format!(
             "movewindow{sep}{}",
             match ident {
-                WindowMove::Direction(dir) => match_dir(dir.clone()),
-                WindowMove::Monitor(mon) => format!("mon:{}", match_mon_identifier(mon.clone())),
+                WindowMove::Direction(dir) => dir.to_string(),
+                WindowMove::Monitor(mon) => format!("mon:{mon}"),
             }
         ),
         CenterWindow => "centerwindow".to_string(),
         ResizeActive(pos) => {
-            format!("resizeactive{sep}{}", position_to_string(pos.clone()))
+            format!("resizeactive{sep}{pos}")
         }
-        MoveActive(pos) => format!("moveactive {}", position_to_string(pos.clone())),
+        MoveActive(pos) => format!("moveactive {pos}"),
         ResizeWindowPixel(pos, win) => {
-            format!(
-                "resizeactive{sep}{} {}",
-                position_to_string(pos.clone()),
-                match_window_identifier(win.clone())
-            )
+            format!("resizeactive{sep}{pos} {win}")
         }
-        MoveWindowPixel(pos, win) => format!(
-            "moveactive{sep}{} {}",
-            position_to_string(pos.clone()),
-            match_window_identifier(win.clone())
-        ),
-        CycleWindow(dir) => format!(
-            "cyclenext{sep}{}",
-            match dir {
-                CycleDirection::Next => "",
-                CycleDirection::Previous => "prev",
-            }
-        ),
-        SwapWindow(dir) => format!(
-            "swapnext{sep}{}",
-            match dir {
-                CycleDirection::Next => "",
-                CycleDirection::Previous => "prev",
-            }
-        ),
-        FocusWindow(win) => {
-            format!("focuswindow{sep}{}", match_window_identifier(win.clone()))
+        MoveWindowPixel(pos, win) => {
+            format!("moveactive{sep}{pos} {win}")
         }
-        FocusMonitor(mon) => {
-            format!("focusmonitor{sep}{}", match_mon_identifier(mon.clone()))
-        }
-        ChangeSplitRatio(ratio) => format!("splitratio {}", ratio),
+        CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
+        SwapWindow(dir) => format!("swapnext{sep}{dir}"),
+        FocusWindow(win) => format!("focuswindow{sep}{win}"),
+        FocusMonitor(mon) => format!("focusmonitor{sep}{mon}"),
+        ChangeSplitRatio(ratio) => format!("splitratio {ratio}"),
         ToggleOpaque => "toggleopaque".to_string(),
-        MoveCursorToCorner(corner) => format!(
-            "movecursortocorner{sep}{}",
-            match corner {
-                Corner::BottomLeft => "0",
-                Corner::BottomRight => "1",
-                Corner::TopRight => "2",
-                Corner::TopLeft => "3",
-            }
-        ),
-        WorkspaceOption(opt) => format!(
-            "workspaceopt{sep}{}",
-            match opt {
-                WorkspaceOptions::AllFloat => "allfloat",
-                WorkspaceOptions::AllPseudo => "allpseudo",
-            }
-        ),
+        MoveCursorToCorner(corner) => format!("movecursortocorner{sep}{}", corner.clone() as u8),
+
+        WorkspaceOption(opt) => format!("workspaceopt{sep}{opt}"),
         Exit => "exit".to_string(),
         ForceRendererReload => "forcerendererreload".to_string(),
         MoveCurrentWorkspaceToMonitor(mon) => {
-            format!(
-                "movecurrentworkspacetomonitor{sep}{}",
-                match_mon_identifier(mon.clone())
-            )
+            format!("movecurrentworkspacetomonitor{sep}{mon}")
         }
-        MoveWorkspaceToMonitor(work, mon) => format!(
-            "movecurrentworkspacetomonitor{sep}{} {}",
-            match_workspace_identifier(work.clone()),
-            match_mon_identifier(mon.clone())
-        ),
+        MoveWorkspaceToMonitor(work, mon) => {
+            format!("movecurrentworkspacetomonitor{sep}{work} {mon}",)
+        }
         ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
             format!(
-                "renameworkspace{sep}{} {}",
-                id.clone().to_owned(),
+                "renameworkspace{sep}{id} {}",
                 name.unwrap_or(&id.to_string())
             )
         }
-        SwapActiveWorkspaces(mon, mon2) => format!(
-            "swapactiveworkspaces{sep}{} {}",
-            match_mon_identifier(mon.clone()),
-            match_mon_identifier(mon2.clone())
-        ),
+        SwapActiveWorkspaces(mon, mon2) => format!("swapactiveworkspaces{sep}{mon} {mon2}",),
         BringActiveToTop => "bringactivetotop".to_string(),
         SetCursor(theme, size) => {
-            format!("{theme} {size}", size = *size)
+            format!("{theme} {}", *size)
         }
     };
     if let SetCursor(_, _) = cmd {

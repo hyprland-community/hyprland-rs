@@ -259,7 +259,7 @@ fn test_binds() {
         mods: vec![Mod::SUPER],
         key: Key::Key("v"),
         flags: vec![],
-        dispatcher: DispatchType::ToggleFloating,
+        dispatcher: DispatchType::ToggleFloating(None),
     };
     let built_bind = match Binder::gen_str(binding) {
         Ok(v) => v,
