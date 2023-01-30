@@ -110,8 +110,7 @@ impl EventListener {
     /// # }
     /// ```
     pub async fn start_listener_async(&self) -> HResult<()> {
-        use tokio::io::AsyncReadExt;
-        use tokio::net::UnixStream;
+        use crate::unix_async::*;
 
         let socket_path = get_socket_path(SocketType::Listener);
         let mut stream = UnixStream::connect(socket_path).await?;

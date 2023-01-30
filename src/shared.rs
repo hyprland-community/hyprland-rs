@@ -174,8 +174,8 @@ impl Address {
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
 pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> HResult<String> {
-    use tokio::io::{AsyncReadExt, AsyncWriteExt};
-    use tokio::net::UnixStream;
+    use crate::unix_async::*;
+
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(content).await?;

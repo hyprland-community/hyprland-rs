@@ -1,7 +1,5 @@
 use crate::shared::*;
 use std::io;
-use tokio::io::AsyncReadExt;
-use tokio::net::UnixStream;
 
 use crate::event_listener::shared::*;
 
@@ -209,6 +207,8 @@ impl EventListener {
     /// # }
     /// ```
     pub async fn start_listener_async(&mut self) -> HResult<()> {
+        use crate::unix_async::*;
+
         let socket_path = get_socket_path(SocketType::Listener);
 
         let mut stream = UnixStream::connect(socket_path).await?;
