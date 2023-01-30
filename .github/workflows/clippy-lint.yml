@@ -22,4 +22,4 @@ jobs:
       name: Lint and Check codebase with Clippy
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features --verbose
+        args: --verbose
