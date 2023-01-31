@@ -216,7 +216,6 @@ impl EventListener {
         let mut buf = [0; 4096];
 
         loop {
-            stream.readable().await?;
             let num_read = stream.read(&mut buf).await?;
             if num_read == 0 {
                 break;
