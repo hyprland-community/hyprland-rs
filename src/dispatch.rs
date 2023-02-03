@@ -412,7 +412,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
             format!("movecurrentworkspacetomonitor{sep}{mon}")
         }
         MoveWorkspaceToMonitor(work, mon) => {
-            format!("movecurrentworkspacetomonitor{sep}{work} {mon}",)
+            format!("moveworkspacetomonitor{sep}{work} {mon}",)
         }
         ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
