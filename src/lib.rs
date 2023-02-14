@@ -12,6 +12,8 @@ extern crate doc_comment;
 #[macro_use]
 extern crate paste;
 
+pub use hyprland_macros::*;
+
 /// This module provides shared things throughout the crate
 pub mod shared;
 
@@ -27,6 +29,10 @@ pub mod event_listener;
 #[cfg(feature = "dispatch")]
 pub mod dispatch;
 
+/// This module is for calling hyprctl **commands**, for getting data use [data]
+#[cfg(feature = "ctl")]
+pub mod ctl;
+
 /// This module provides the stuff needed to mutate, and read Hyprland config values
 #[cfg(feature = "keyword")]
 pub mod keyword;
@@ -38,6 +44,7 @@ pub mod config;
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};
+    pub use hyprland_macros::async_closure;
 }
 
 pub(crate) mod unix_async {

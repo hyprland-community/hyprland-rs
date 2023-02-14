@@ -1,20 +1,11 @@
 use super::*;
+use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// This private function is to call socket commands
 async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
-    let cmd_string = match cmd {
-        DataCommands::Monitors => "monitors",
-        DataCommands::ActiveWindow => "activewindow",
-        DataCommands::Clients => "clients",
-        DataCommands::Devices => "devices",
-        DataCommands::Layers => "layers",
-        DataCommands::Workspaces => "workspaces",
-        DataCommands::Version => "version",
-        DataCommands::CursorPosition => "cursorpos",
-    }
-    .to_string();
+    let cmd_string = cmd.to_string();
 
     let socket_path = get_socket_path(SocketType::Command);
 
@@ -25,17 +16,7 @@ async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
 }
 
 fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
-    let cmd_string = match cmd {
-        DataCommands::Monitors => "monitors",
-        DataCommands::ActiveWindow => "activewindow",
-        DataCommands::Clients => "clients",
-        DataCommands::Devices => "devices",
-        DataCommands::Layers => "layers",
-        DataCommands::Workspaces => "workspaces",
-        DataCommands::Version => "version",
-        DataCommands::CursorPosition => "cursorpos",
-    }
-    .to_string();
+    let cmd_string = cmd.to_string();
 
     let socket_path = get_socket_path(SocketType::Command);
 
@@ -46,16 +27,28 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
 }
 
 /// This pub(crate) enum holds every socket command that returns data
-#[derive(Debug)]
+#[derive(Debug, Display)]
 pub(crate) enum DataCommands {
+    #[display(fmt = "monitors")]
     Monitors,
+    #[display(fmt = "workspaces")]
     Workspaces,
+    #[display(fmt = "clients")]
     Clients,
+    #[display(fmt = "activewindow")]
     ActiveWindow,
+    #[display(fmt = "layers")]
     Layers,
+    #[display(fmt = "devices")]
     Devices,
+    #[display(fmt = "version")]
     Version,
+    #[display(fmt = "cursorpos")]
     CursorPosition,
+    #[display(fmt = "binds")]
+    Binds,
+    #[display(fmt = "animations")]
+    Animations,
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
@@ -408,3 +401,221 @@ pub struct CursorPosition {
     pub y: i64,
 }
 impl_on!(CursorPosition);
+
+/// A keybinding returned from the binds command
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Bind {
+    /// Is it locked?
+    pub locked: bool,
+    /// Is it a mouse bind?
+    pub mouse: bool,
+    /// Does it execute on release?
+    pub release: bool,
+    /// Can it be held?
+    pub repeat: bool,
+    /// It's modmask
+    pub modmask: u8,
+    /// The submap its apart of
+    pub submap: String,
+    /// The key
+    pub key: String,
+    /// The keycode
+    pub keycode: i16,
+    /// The dispatcher to be executed
+    pub dispatcher: String,
+    /// The dispatcher arg
+    pub arg: String,
+}
+
+create_data_struct!(
+    vec Binds,
+    DataCommands::Binds,
+    Bind,
+    "This struct holds a vector of binds"
+);
+
+/// Animation styles
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum AnimationStyle {
+    /// Slide animation
+    Slide,
+    /// Vertical slide animation
+    SlideVert,
+    /// Popin animation (with percentage)
+    PopIn(u8),
+    /// Fade animation
+    Fade,
+    /// Once animation used for gradient animation
+    Once,
+    /// Loop animation used for gradient animation
+    Loop,
+    /// No animation style
+    None,
+    /// Unknown style
+    Unknown(String),
+}
+
+impl<Str: ToString + Clone> From<Str> for AnimationStyle {
+    fn from(value: Str) -> Self {
+        let string = value.to_string();
+        if string.starts_with("popin") {
+            let mut iter = string.split(' ');
+            iter.next();
+            AnimationStyle::PopIn({
+                let mut str = iter.next().unwrap_or("100%").to_string();
+                str.remove(str.len() - 1);
+
+                str.parse().unwrap_or(100_u8)
+            })
+        } else {
+            match value.to_string().as_str() {
+                "slide" => AnimationStyle::Slide,
+                "slidevert" => AnimationStyle::SlideVert,
+                "fade" => AnimationStyle::Fade,
+                "once" => AnimationStyle::Once,
+                "loop" => AnimationStyle::Loop,
+                "" => AnimationStyle::None,
+                _ => AnimationStyle::Unknown(string),
+            }
+        }
+    }
+}
+/// Bezier identifier
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub enum BezierIdent {
+    /// No bezier specified
+    #[serde(rename = "")]
+    None,
+    /// The default bezier
+    #[serde(rename = "default")]
+    Default,
+    /// A specified bezier
+    #[serde(rename = "name")]
+    Specified(String),
+}
+
+impl<Str: ToString + Clone> From<Str> for BezierIdent {
+    fn from(value: Str) -> Self {
+        let str = value.to_string();
+        match str.as_str() {
+            "" => BezierIdent::None,
+            "default" => BezierIdent::Default,
+            _ => BezierIdent::Specified(str),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct RawBezierIdent {
+    pub name: String,
+}
+
+/// A bezier curve
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Bezier {
+    ///. Name of the bezier
+    pub name: String,
+    /// X position of first point
+    pub x0: f32,
+    /// Y position of first point
+    pub y0: f32,
+    /// X position of second point
+    pub x1: f32,
+    /// Y position of second point
+    pub y1: f32,
+}
+
+/// A struct representing a animation
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct AnimationRaw {
+    /// The name of the animation
+    pub name: String,
+    /// Is it overriden?
+    pub overriden: bool,
+    /// What bezier does it use?
+    pub bezier: String,
+    /// Is it enabled?
+    pub enabled: bool,
+    /// How fast is it?
+    pub speed: f32,
+    /// The style of animation
+    pub style: String,
+}
+
+/// A struct representing a animation
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Animation {
+    /// The name of the animation
+    pub name: String,
+    /// Is it overriden?
+    pub overriden: bool,
+    /// What bezier does it use?
+    pub bezier: BezierIdent,
+    /// Is it enabled?
+    pub enabled: bool,
+    /// How fast is it?
+    pub speed: f32,
+    /// The style of animation
+    pub style: AnimationStyle,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
+
+/// Struct that holds animations and beziers
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Animations(Vec<Animation>, Vec<BezierIdent>);
+
+#[async_trait]
+impl HyprData for Animations {
+    fn get() -> HResult<Self>
+    where
+        Self: Sized,
+    {
+        let out = call_hyprctl_data_cmd(DataCommands::Animations);
+        let des: AnimationsRaw = serde_json::from_str(&out)?;
+        let AnimationsRaw(anims, beziers) = des;
+        let new_anims: Vec<Animation> = anims
+            .iter()
+            .map(|item| Animation {
+                name: item.name.clone(),
+                overriden: item.overriden,
+                bezier: item.bezier.clone().into(),
+                enabled: item.enabled,
+                speed: item.speed,
+                style: item.style.clone().into(),
+            })
+            .collect();
+        let new_bezs: Vec<BezierIdent> = beziers
+            .iter()
+            .map(|item| item.name.clone().into())
+            .collect();
+        Ok(Animations(new_anims, new_bezs))
+    }
+    async fn get_async() -> HResult<Self>
+    where
+        Self: Sized,
+    {
+        let out = call_hyprctl_data_cmd_async(DataCommands::Animations).await;
+        let des: AnimationsRaw = serde_json::from_str(&out)?;
+        let AnimationsRaw(anims, beziers) = des;
+        let new_anims: Vec<Animation> = anims
+            .iter()
+            .map(|item| Animation {
+                name: item.name.clone(),
+                overriden: item.overriden,
+                bezier: item.bezier.clone().into(),
+                enabled: item.enabled,
+                speed: item.speed,
+                style: item.style.clone().into(),
+            })
+            .collect();
+        let new_bezs: Vec<BezierIdent> = beziers
+            .iter()
+            .map(|item| item.name.clone().into())
+            .collect();
+        Ok(Animations(new_anims, new_bezs))
+    }
+}
+
+//impl_on!(Animations);

@@ -23,6 +23,10 @@ pub struct EventListener {
     pub state: State,
 }
 
+// Mark the EventListener as thread-safe
+unsafe impl Send for EventListener {}
+unsafe impl Sync for EventListener {}
+
 impl Default for EventListener {
     fn default() -> Self {
         Self::new()
@@ -42,7 +46,7 @@ impl EventListener {
             prelude::*,
         };
         EventListener {
-            events: init_events!(),
+            events: init_events!(Events),
             state: State {
                 active_workspace: match Workspace::get_active() {
                     Ok(work) => WorkspaceType::Regular(work.id.to_string()),
@@ -101,10 +105,14 @@ impl EventListener {
                 even.0.clone(),
                 self
             ),
-            Event::ActiveWindowChanged(Some(even)) => {
-                mut_arm!(Some(even.clone()), active_window_changed_events, self)
+            Event::ActiveWindowChangedMerged(Some(event)) => {
+                mut_arm!(Some(event.clone()), active_window_changed_events, self)
             }
-            Event::ActiveWindowChanged(None) => mut_arm!(None, active_window_changed_events, self),
+            Event::ActiveWindowChangedMerged(None) => {
+                mut_arm!(None, active_window_changed_events, self)
+            }
+            Event::ActiveWindowChangedV1(_) => (),
+            Event::ActiveWindowChangedV2(_) => (),
             Event::FullscreenStateChanged(bool) => mut_state_arm!(
                 *bool,
                 fullscreen_state_changed_events,
@@ -152,16 +160,14 @@ impl EventListener {
                     self
                 )
             }
-            Event::ActiveWindowChanged(Some(WindowEventData(class, title))) => {
-                mut_arm_sync!(
-                    Some(WindowEventData(class.clone(), title.clone())),
-                    active_window_changed_events,
-                    self
-                )
+            Event::ActiveWindowChangedMerged(Some(event)) => {
+                mut_arm_sync!(Some(event.clone()), active_window_changed_events, self)
             }
-            Event::ActiveWindowChanged(None) => {
+            Event::ActiveWindowChangedMerged(None) => {
                 mut_arm_sync!(None, active_window_changed_events, self)
             }
+            Event::ActiveWindowChangedV1(_) => (),
+            Event::ActiveWindowChangedV2(_) => (),
             Event::FullscreenStateChanged(bool) => mut_state_arm_sync!(
                 *bool,
                 fullscreen_state_changed_events,
@@ -213,9 +219,11 @@ impl EventListener {
 
         let mut stream = UnixStream::connect(socket_path).await?;
 
-        let mut buf = [0; 4096];
+        let mut active_window_buf: Option<Option<(String, String)>> = None;
 
         loop {
+            let mut buf = [0; 4096];
+
             let num_read = stream.read(&mut buf).await?;
             if num_read == 0 {
                 break;
@@ -226,7 +234,25 @@ impl EventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                self.event_executor(event).await?;
+                if let Event::ActiveWindowChangedV1(event) = event {
+                    active_window_buf = Some(event.clone());
+                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
+                    match active_window_buf.clone() {
+                        Some(Some((class, title))) => {
+                            self.event_executor(&Event::ActiveWindowChangedMerged(Some(
+                                WindowEventData(class.to_string(), title.to_string(), addr.clone()),
+                            )))
+                            .await?;
+                        }
+                        Some(None) => {}
+                        None => {}
+                    };
+                } else if let Event::ActiveWindowChangedV2(None) = event {
+                    self.event_executor(&Event::ActiveWindowChangedMerged(None))
+                        .await?;
+                } else {
+                    self.event_executor(event).await?;
+                }
             }
         }
 
@@ -250,10 +276,11 @@ impl EventListener {
 
         let mut stream = UnixStream::connect(socket_path)?;
 
-        let mut buf = [0; 4096];
+        let mut active_window_buf: Option<Option<(String, String)>> = None;
 
         loop {
-            //stream.readable()?;
+            let mut buf = [0; 4096];
+
             let num_read = stream.read(&mut buf)?;
             if num_read == 0 {
                 break;
@@ -264,7 +291,23 @@ impl EventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                self.event_executor_sync(event)?;
+                if let Event::ActiveWindowChangedV1(event) = event {
+                    active_window_buf = Some(event.clone());
+                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
+                    match active_window_buf.clone() {
+                        Some(Some((class, title))) => {
+                            self.event_executor_sync(&Event::ActiveWindowChangedMerged(Some(
+                                WindowEventData(class.to_string(), title.to_string(), addr.clone()),
+                            )))?;
+                        }
+                        Some(None) => {}
+                        None => {}
+                    };
+                } else if let Event::ActiveWindowChangedV2(None) = event {
+                    self.event_executor_sync(&Event::ActiveWindowChangedMerged(None))?;
+                } else {
+                    self.event_executor_sync(event)?;
+                }
             }
         }
 

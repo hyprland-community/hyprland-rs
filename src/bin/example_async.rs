@@ -1,9 +1,8 @@
-use hyprland::data::{Client, Clients, Monitors};
-use hyprland::dispatch::*;
-use hyprland::event_listener::EventListenerMutable as EventListener;
+use hyprland::data::{Animations, Client, Clients, Monitors};
+use hyprland::event_listener::AsyncEventListener;
 use hyprland::keyword::*;
 use hyprland::prelude::*;
-use hyprland::shared::WorkspaceType;
+use hyprland::{async_closure, dispatch::*};
 
 #[tokio::main]
 async fn main() -> hyprland::shared::HResult<()> {
@@ -37,37 +36,43 @@ async fn main() -> hyprland::shared::HResult<()> {
     dbg!("Active window!!");
     // and all open windows
     let clients = Clients::get_async().await?;
-
     // and printing them all out!
     println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}");
-
+    let animations = Animations::get_async().await?;
+    println!("{animations:#?}");
     // Create a event listener
-    let mut event_listener = EventListener::new();
+    let mut event_listener = AsyncEventListener::new();
 
     // This changes the workspace to 5 if the workspace is switched to 9
     // this is a performance and mutable state test
-    event_listener.add_workspace_change_handler(|id, state| {
-        if id == WorkspaceType::Regular('9'.to_string()) {
-            state.active_workspace = WorkspaceType::Regular('2'.to_string());
-        }
-    });
-    // This makes it so you can't turn on fullscreen lol
-    event_listener.add_fullscreen_state_change_handler(|fstate, state| {
-        if fstate {
-            state.fullscreen_state = false;
-        }
-    });
-    // Makes a monitor unfocusable
-    event_listener.add_active_monitor_change_handler(|data, state| {
-        let hyprland::event_listener::MonitorEventData(monitor, _) = data;
-
-        if monitor == *"DP-1".to_string() {
-            state.active_monitor = "eDP-1".to_string()
-        }
-    });
+    // event_listener.add_workspace_change_handler(|id, state| {
+    //     if id == WorkspaceType::Regular('9'.to_string()) {
+    //         state.active_workspace = WorkspaceType::Regular('2'.to_string());
+    //     }
+    // });
+    // // This makes it so you can't turn on fullscreen lol
+    // event_listener.add_fullscreen_state_change_handler(|fstate, state| {
+    //     if fstate {
+    //         state.fullscreen_state = false;
+    //     }
+    // });
+    // // Makes a monitor unfocusable
+    // event_listener.add_active_monitor_change_handler(|data, state| {
+    //     let hyprland::event_listener::MonitorEventData(monitor, _) = data;
+    //
+    //     if monitor == *"DP-1".to_string() {
+    //         state.active_monitor = "eDP-1".to_string()
+    //     }
+    // });
 
     // add event, yes functions and closures both work!
-    event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
+
+    event_listener.add_workspace_change_handler(
+        async_closure! { move |id| println!("workspace changed to {id:#?}")},
+    );
+    event_listener.add_active_window_change_handler(
+        async_closure! { move |data| println!("window changed to {data:#?}")},
+    );
     // Waybar example
     // event_listener.add_active_window_change_handler(|data| {
     //     use hyprland::event_listener::WindowEventData;

@@ -4,6 +4,17 @@
 //     };
 // }
 
+// #[macro_export]
+// macro_rules! asyncfn {
+//     ($code:expr) => {
+//         Box::pin(async move {
+//             {
+//                 $code
+//             }
+//         })
+//     };
+// }
+
 macro_rules! add_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
@@ -29,6 +40,37 @@ listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| print
 listener.start_listener();"#),
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) + 'static) {
                     self.events.[<$name _events>].push(EventTypes::Regular(Box::new(f)));
+                }
+            }
+        }
+    };
+}
+
+macro_rules! add_async_listener {
+    ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
+        paste! {
+            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+```rust, no_run
+use hyprland::event_listener::EventListener;
+let mut listener = EventListener::new();
+listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.start_listener();"#),
+                pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) -> VoidFuture + Send + Sync + 'static) {
+                    self.events.[<$name $end _events>].push(AsyncEventTypes::Regular(Box::pin(f)));
+                }
+            }
+        }
+    };
+    ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
+        paste! {
+            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+```rust, no_run
+use hyprland::event_listener::EventListener;
+let mut listener = EventListener::new();
+listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.start_listener();"#),
+                pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) -> VoidFuture + Send + Sync + 'static) {
+                    self.events.[<$name _events>].push(AsyncEventTypes::Regular(Box::pin(f)));
                 }
             }
         }
@@ -117,9 +159,18 @@ macro_rules! arm {
     }};
 }
 
+macro_rules! arm_async {
+    ($val:expr,$nam:ident,$se:ident) => {{
+        let events = &$se.events.$nam;
+        for item in events.iter() {
+            execute_closure_async(item, $val).await;
+        }
+    }};
+}
+
 macro_rules! init_events {
-    () => {
-        Events {
+    ($name:ident) => {
+        $name {
             workspace_changed_events: vec![],
             workspace_added_events: vec![],
             workspace_destroyed_events: vec![],

@@ -1,6 +1,7 @@
 use crate::shared::*;
 use regex::{Error as RegexError, Regex, RegexSet};
 use std::io;
+use std::pin::Pin;
 
 /// This trait provides shared behaviour for listener types
 #[async_trait]
@@ -17,8 +18,20 @@ pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
     Regular(Box<T>),
 }
 
+pub(crate) enum AsyncEventTypes<T: ?Sized, U: ?Sized> {
+    MutableState(Pin<Box<U>>),
+    Regular(Pin<Box<T>>),
+}
+
+pub(crate) type VoidFuture = std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send>>;
+
 pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
+pub(crate) type AsyncClosure<T> = AsyncEventTypes<
+    dyn Sync + Send + Fn(T) -> VoidFuture,
+    dyn Sync + Send + Fn(T, &mut State) -> VoidFuture,
+>;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
+pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
 #[allow(clippy::type_complexity)]
 pub(crate) struct Events {
@@ -42,6 +55,28 @@ pub(crate) struct Events {
     pub(crate) urgent_state_events: Closures<Address>,
 }
 
+#[allow(clippy::type_complexity)]
+pub(crate) struct AsyncEvents {
+    pub(crate) workspace_changed_events: AsyncClosures<WorkspaceType>,
+    pub(crate) workspace_added_events: AsyncClosures<WorkspaceType>,
+    pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceType>,
+    pub(crate) workspace_moved_events: AsyncClosures<MonitorEventData>,
+    pub(crate) active_monitor_changed_events: AsyncClosures<MonitorEventData>,
+    pub(crate) active_window_changed_events: AsyncClosures<Option<WindowEventData>>,
+    pub(crate) fullscreen_state_changed_events: AsyncClosures<bool>,
+    pub(crate) monitor_removed_events: AsyncClosures<String>,
+    pub(crate) monitor_added_events: AsyncClosures<String>,
+    pub(crate) keyboard_layout_change_events: AsyncClosures<LayoutEvent>,
+    pub(crate) sub_map_changed_events: AsyncClosures<String>,
+    pub(crate) window_open_events: AsyncClosures<WindowOpenEvent>,
+    pub(crate) window_close_events: AsyncClosures<Address>,
+    pub(crate) window_moved_events: AsyncClosures<WindowMoveEvent>,
+    pub(crate) layer_open_events: AsyncClosures<String>,
+    pub(crate) layer_closed_events: AsyncClosures<String>,
+    pub(crate) float_state_events: AsyncClosures<WindowFloatEventData>,
+    pub(crate) urgent_state_events: AsyncClosures<Address>,
+}
+
 /// The data for the event executed when moving a window to a new workspace
 #[derive(Clone, Debug)]
 pub struct WindowMoveEvent(
@@ -51,6 +86,8 @@ pub struct WindowMoveEvent(
     pub String,
 );
 
+unsafe impl Send for WindowMoveEvent {}
+unsafe impl Sync for WindowMoveEvent {}
 /// The data for the event executed when opening a new window
 #[derive(Clone, Debug)]
 pub struct WindowOpenEvent(
@@ -64,6 +101,8 @@ pub struct WindowOpenEvent(
     pub String,
 );
 
+unsafe impl Send for WindowOpenEvent {}
+unsafe impl Sync for WindowOpenEvent {}
 /// The data for the event executed when changing keyboard layouts
 #[derive(Clone, Debug)]
 pub struct LayoutEvent(
@@ -73,6 +112,8 @@ pub struct LayoutEvent(
     pub String,
 );
 
+unsafe impl Send for LayoutEvent {}
+unsafe impl Sync for LayoutEvent {}
 /// The mutable state available to Closures
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct State {
@@ -84,6 +125,8 @@ pub struct State {
     pub fullscreen_state: bool,
 }
 
+unsafe impl Send for State {}
+unsafe impl Sync for State {}
 impl State {
     /// Execute changes in state
     pub async fn execute_state(self, old: State) -> HResult<Self> {
@@ -157,6 +200,12 @@ pub(crate) fn execute_closure<T>(f: &Closure<T>, val: T) {
     }
 }
 
+pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
+    match f {
+        AsyncEventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+        AsyncEventTypes::Regular(fun) => fun(val).await,
+    }
+}
 pub(crate) async fn execute_closure_mut<T>(state: State, f: &Closure<T>, val: T) -> HResult<State> {
     let old_state = state.clone();
     let mut new_state = state.clone();
@@ -189,8 +238,12 @@ pub struct WindowEventData(
     pub String,
     /// The window title
     pub String,
+    /// The window address
+    pub Address,
 );
 
+unsafe impl Send for WindowEventData {}
+unsafe impl Sync for WindowEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone)]
 pub struct MonitorEventData(
@@ -200,6 +253,8 @@ pub struct MonitorEventData(
     pub WorkspaceType,
 );
 
+unsafe impl Send for MonitorEventData {}
+unsafe impl Sync for MonitorEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone)]
 pub struct WindowFloatEventData(
@@ -209,6 +264,8 @@ pub struct WindowFloatEventData(
     pub bool,
 );
 
+unsafe impl Send for WindowFloatEventData {}
+unsafe impl Sync for WindowFloatEventData {}
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
@@ -216,7 +273,9 @@ pub(crate) enum Event {
     WorkspaceDeleted(WorkspaceType),
     WorkspaceAdded(WorkspaceType),
     WorkspaceMoved(MonitorEventData),
-    ActiveWindowChanged(Option<WindowEventData>),
+    ActiveWindowChangedV1(Option<(String, String)>),
+    ActiveWindowChangedV2(Option<Address>),
+    ActiveWindowChangedMerged(Option<WindowEventData>),
     ActiveMonitorChanged(MonitorEventData),
     FullscreenStateChanged(bool),
     MonitorAdded(String),
@@ -292,6 +351,7 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
             r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
             r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
             r"activewindow>>(?P<class>.*),(?P<title>.*)",
+            r"activewindowv2>>(?P<address>.*)",
             r"fullscreen>>(?P<state>0|1)",
             r"monitorremoved>>(?P<monitor>.*)",
             r"monitoradded>>(?P<monitor>.*)",
@@ -375,30 +435,39 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                     let class = &captures["class"];
                     let title = &captures["title"];
                     if !class.is_empty() && !title.is_empty() {
-                        events.push(Event::ActiveWindowChanged(Some(WindowEventData(
+                        events.push(Event::ActiveWindowChangedV1(Some((
                             class.to_string(),
                             title.to_string(),
                         ))));
                     } else {
-                        events.push(Event::ActiveWindowChanged(None));
+                        events.push(Event::ActiveWindowChangedV1(None));
                     }
                 }
                 6 => {
+                    // ActiveWindowChangedV2
+                    let addr = &captures["address"];
+                    if addr != "," {
+                        events.push(Event::ActiveWindowChangedV2(Some(Address::new(addr))));
+                    } else {
+                        events.push(Event::ActiveWindowChangedV2(None));
+                    }
+                }
+                7 => {
                     // FullscreenStateChanged
                     let state = &captures["state"] != "0";
                     events.push(Event::FullscreenStateChanged(state))
                 }
-                7 => {
+                8 => {
                     // MonitorRemoved
                     let monitor = &captures["monitor"];
                     events.push(Event::MonitorRemoved(monitor.to_string()));
                 }
-                8 => {
+                9 => {
                     // MonitorAdded
                     let monitor = &captures["monitor"];
                     events.push(Event::MonitorAdded(monitor.to_string()));
                 }
-                9 => {
+                10 => {
                     // WindowOpened
                     let addr = &captures["address"];
                     let workspace = &captures["workspace"];
@@ -411,12 +480,12 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                         title.to_string(),
                     )));
                 }
-                10 => {
+                11 => {
                     // WindowClosed
                     let addr = &captures["address"];
                     events.push(Event::WindowClosed(Address::new(addr)));
                 }
-                11 => {
+                12 => {
                     // WindowMoved
                     let addr = &captures["address"];
                     let work = &captures["workspace"];
@@ -425,7 +494,7 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                         work.to_string(),
                     )));
                 }
-                12 => {
+                13 => {
                     // LayoutChanged
                     let keeb = &captures["keyboard"];
                     let layout = &captures["layout"];
@@ -434,22 +503,22 @@ pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
                         layout.to_string(),
                     )));
                 }
-                13 => {
+                14 => {
                     // SubMapChanged
                     let submap = &captures["submap"];
                     events.push(Event::SubMapChanged(submap.to_string()));
                 }
-                14 => {
+                15 => {
                     // OpenLayer
                     let namespace = &captures["namespace"];
                     events.push(Event::LayerOpened(namespace.to_string()));
                 }
-                15 => {
+                16 => {
                     // CloseLayer
                     let namespace = &captures["namespace"];
                     events.push(Event::LayerClosed(namespace.to_string()));
                 }
-                16 => {
+                17 => {
                     // FloatStateChanged
                     let addr = &captures["address"];
                     let state = &captures["floatstate"] == "0";
