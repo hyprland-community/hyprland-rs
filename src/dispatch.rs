@@ -326,7 +326,7 @@ pub enum DispatchType<'a> {
     /// This dispatcher brings the active window to the top of the stack
     BringActiveToTop,
     /// This toggles the special workspace (AKA scratchpad)
-    ToggleSpecialWorkspace,
+    ToggleSpecialWorkspace(Option<String>),
     /// This dispatcher jump to urgent or the last window
     FocusUrgentOrLast,
 }
@@ -404,7 +404,6 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         ChangeSplitRatio(ratio) => format!("splitratio {ratio}"),
         ToggleOpaque => "toggleopaque".to_string(),
         MoveCursorToCorner(corner) => format!("movecursortocorner{sep}{}", corner.clone() as u8),
-
         WorkspaceOption(opt) => format!("workspaceopt{sep}{opt}"),
         Exit => "exit".to_string(),
         ForceRendererReload => "forcerendererreload".to_string(),
@@ -414,7 +413,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         MoveWorkspaceToMonitor(work, mon) => {
             format!("moveworkspacetomonitor{sep}{work} {mon}",)
         }
-        ToggleSpecialWorkspace => "togglespecialworkspace".to_string(),
+        ToggleSpecialWorkspace(Some(name)) => format!("togglespecialworkspace {name}"),
+        ToggleSpecialWorkspace(None) => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
             format!(
                 "renameworkspace{sep}{id} {}",
