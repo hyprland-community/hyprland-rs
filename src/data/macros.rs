@@ -25,6 +25,13 @@ macro_rules! create_data_struct {
             held: Vec<$held>,
         }
 
+        impl $name {
+            /// Get the iterator from the `held` Vec without having to move/clone data
+            pub fn iter(&self) -> impl Iterator<Item = &$held> {
+                self.held.iter()
+            }
+        }
+
         #[async_trait]
         impl HyprData for $name {
             fn get() -> HResult<Self> {
@@ -65,10 +72,19 @@ macro_rules! create_data_struct {
         }
     };
 
-    (sing $name:ident,$kind:path,$held:ty,$c:literal) => {
+    (sing $name:ident,$kind:path,$held:ty,$c:literal $(, iter_item = $it_it:ty)*) => {
         #[doc = $c]
         #[derive(Debug)]
         pub struct $name($held);
+
+        impl $name {
+            $(
+                /// Get the iterator from the `held` Vec without having to move/clone data
+                pub fn iter(&self) -> impl Iterator<Item = $it_it> {
+                    self.0.iter()
+                }
+            )*
+        }
 
         #[async_trait]
         impl HyprData for $name {
