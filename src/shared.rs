@@ -179,10 +179,21 @@ pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> HResult<Str
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(content).await?;
-    let mut response = [0; 8192];
-    let num_read = stream.read(&mut response).await?;
-    let response = &response[..num_read];
-    Ok(String::from_utf8(response.to_vec())?)
+
+    let mut response = String::new();
+
+    const BUF_SIZE: usize = 8192;
+    let mut buf = [0; BUF_SIZE];
+    loop {
+        let num_read = stream.read(&mut buf).await?;
+        let buf = &buf[..num_read];
+        response += &String::from_utf8(buf.to_vec())?;
+        if num_read == 0 || num_read != BUF_SIZE {
+            break;
+        }
+    }
+
+    Ok(response)
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
@@ -192,10 +203,21 @@ pub(crate) fn write_to_socket_sync(path: String, content: &[u8]) -> HResult<Stri
     let mut stream = UnixStream::connect(path)?;
 
     stream.write_all(content)?;
-    let mut response = [0; 8192];
-    let num_read = stream.read(&mut response)?;
-    let response = &response[..num_read];
-    Ok(String::from_utf8(response.to_vec())?)
+
+    let mut response = String::new();
+
+    const BUF_SIZE: usize = 8192;
+    let mut buf = [0; BUF_SIZE];
+    loop {
+        let num_read = stream.read(&mut buf)?;
+        let buf = &buf[..num_read];
+        response += &String::from_utf8(buf.to_vec())?;
+        if num_read == 0 || num_read != BUF_SIZE {
+            break;
+        }
+    }
+
+    Ok(response)
 }
 
 /// This pub(crate) enum holds the different sockets that Hyprland has
