@@ -215,15 +215,15 @@ pub struct Client {
     pub fullscreen: bool,
     /// What type of fullscreen?
     #[serde(rename = "fullscreenMode")]
-    pub fullscreen_mode: u8,
+    pub fullscreen_mode: i8,
     /// The monitor the window is on
-    pub monitor: u8,
+    pub monitor: i8,
     /// The window class
     pub class: String,
     /// The window title
     pub title: String,
     /// The process Id of the client
-    pub pid: u32,
+    pub pid: i32,
     /// Is this window running under XWayland?
     pub xwayland: bool,
     /// Is this window pinned?
