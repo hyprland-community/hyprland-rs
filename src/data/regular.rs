@@ -223,7 +223,7 @@ pub struct Client {
     /// The window title
     pub title: String,
     /// The process Id of the client
-    pub pid: u32,
+    pub pid: i32,
     /// Is this window running under XWayland?
     pub xwayland: bool,
     /// Is this window pinned?
