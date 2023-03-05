@@ -217,7 +217,7 @@ pub struct Client {
     #[serde(rename = "fullscreenMode")]
     pub fullscreen_mode: u8,
     /// The monitor the window is on
-    pub monitor: u8,
+    pub monitor: i8,
     /// The window class
     pub class: String,
     /// The window title
