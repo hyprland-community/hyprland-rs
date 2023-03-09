@@ -215,9 +215,9 @@ pub struct Client {
     pub fullscreen: bool,
     /// What type of fullscreen?
     #[serde(rename = "fullscreenMode")]
-    pub fullscreen_mode: u8,
+    pub fullscreen_mode: i8,
     /// The monitor the window is on
-    pub monitor: u8,
+    pub monitor: i8,
     /// The window class
     pub class: String,
     /// The window title
@@ -229,7 +229,7 @@ pub struct Client {
     /// Is this window pinned?
     pub pinned: bool,
     /// Group members
-    pub grouped: Vec<Box<Self>>,
+    pub grouped: Vec<Box<Address>>,
     /// The swallowed window
     pub swallowing: Option<Box<Self>>,
 }
