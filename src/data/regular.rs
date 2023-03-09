@@ -229,7 +229,7 @@ pub struct Client {
     /// Is this window pinned?
     pub pinned: bool,
     /// Group members
-    pub grouped: Vec<Box<Self>>,
+    pub grouped: Vec<Box<Address>>,
     /// The swallowed window
     pub swallowing: Option<Box<Self>>,
 }
