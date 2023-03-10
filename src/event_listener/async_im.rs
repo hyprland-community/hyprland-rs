@@ -94,7 +94,7 @@ impl AsyncEventListener {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener_async(&self) -> HResult<()> {
+    pub async fn start_listener_async(&self) -> crate::Result<()> {
         use crate::unix_async::*;
 
         let socket_path = get_socket_path(SocketType::Listener);

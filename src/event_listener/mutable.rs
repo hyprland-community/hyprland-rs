@@ -67,7 +67,7 @@ impl EventListener {
         }
     }
 
-    async fn event_executor(&mut self, event: &Event) -> HResult<()> {
+    async fn event_executor(&mut self, event: &Event) -> crate::Result<()> {
         match event {
             Event::WorkspaceChanged(id) => mut_state_arm!(
                 id.clone(),
@@ -118,7 +118,7 @@ impl EventListener {
         Ok(())
     }
 
-    fn event_executor_sync(&mut self, event: &Event) -> HResult<()> {
+    fn event_executor_sync(&mut self, event: &Event) -> crate::Result<()> {
         match event {
             Event::WorkspaceChanged(id) => mut_state_arm_sync!(
                 id.clone(),
@@ -193,7 +193,7 @@ impl EventListener {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener_async(&mut self) -> HResult<()> {
+    pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
         let socket_path = get_socket_path(SocketType::Listener);
@@ -249,7 +249,7 @@ impl EventListener {
     /// listener.add_workspace_change_handler(|id, _| println!("changed workspace to {id:?}"));
     /// listener.start_listener();
     /// ```
-    pub fn start_listener(mut self) -> HResult<()> {
+    pub fn start_listener(mut self) -> crate::Result<()> {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 

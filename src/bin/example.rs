@@ -5,7 +5,7 @@ use hyprland::keyword::*;
 use hyprland::prelude::*;
 use hyprland::shared::WorkspaceType;
 
-fn main() -> hyprland::shared::HResult<()> {
+fn main() -> hyprland::Result<()> {
     // We can call dispatchers with the dispatch macro, and struct!
     // You can decide what you want to use, below are some examples of their usage
 

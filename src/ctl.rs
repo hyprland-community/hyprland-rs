@@ -8,7 +8,7 @@ use crate::shared::*;
 pub mod reload {
     use super::*;
     /// Reload hyprland config
-    pub fn call() -> HResult<()> {
+    pub fn call() -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &"reload".to_string().into_bytes(),
@@ -16,7 +16,7 @@ pub mod reload {
         Ok(())
     }
     /// Reload hyprland config (async)
-    pub async fn call_async() -> HResult<()> {
+    pub async fn call_async() -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &"reload".to_string().into_bytes(),
@@ -29,7 +29,7 @@ pub mod reload {
 pub mod kill {
     use super::*;
     /// Enter kill mode (similar to xkill)
-    pub fn call() -> HResult<()> {
+    pub fn call() -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &"kill".to_string().into_bytes(),
@@ -37,7 +37,7 @@ pub mod kill {
         Ok(())
     }
     /// Enter kill mode (similar to xkill) (async)
-    pub async fn call_async() -> HResult<()> {
+    pub async fn call_async() -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &"kill".to_string().into_bytes(),
@@ -51,7 +51,7 @@ pub mod kill {
 pub mod set_cursor {
     use super::*;
     /// Set the cursor theme
-    pub fn call<Str: FDisplay>(theme: Str, size: u16) -> HResult<()> {
+    pub fn call<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("setcursor {theme} {size}").into_bytes(),
@@ -59,7 +59,7 @@ pub mod set_cursor {
         Ok(())
     }
     /// Set the cursor theme (async)
-    pub async fn call_async<Str: FDisplay>(theme: Str, size: u16) -> HResult<()> {
+    pub async fn call_async<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &format!("setcursor {theme} {size}").into_bytes(),
@@ -90,7 +90,7 @@ pub mod output {
     }
 
     /// Create virtual displays
-    pub fn create(backend: OutputBackends) -> HResult<()> {
+    pub fn create(backend: OutputBackends) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("output create {backend}").into_bytes(),
@@ -98,7 +98,7 @@ pub mod output {
         Ok(())
     }
     /// Remove virtual displays
-    pub fn remove<Str: FDisplay>(name: Str) -> HResult<()> {
+    pub fn remove<Str: FDisplay>(name: Str) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("output remove {name}").into_bytes(),
@@ -125,7 +125,7 @@ pub mod switch_xkb_layout {
     }
 
     /// Switch the xkb layout index for a keyboard
-    pub fn call<Str: FDisplay>(device: Str, cmd: SwitchXKBLayoutCmdTypes) -> HResult<()> {
+    pub fn call<Str: FDisplay>(device: Str, cmd: SwitchXKBLayoutCmdTypes) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("switchxkblayout {device} {cmd}").into_bytes(),
@@ -136,7 +136,7 @@ pub mod switch_xkb_layout {
     pub async fn call_async<Str: FDisplay>(
         device: Str,
         cmd: SwitchXKBLayoutCmdTypes,
-    ) -> HResult<()> {
+    ) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &format!("switchxkblayout {device} {cmd}").into_bytes(),
@@ -150,7 +150,7 @@ pub mod switch_xkb_layout {
 pub mod set_error {
     use super::*;
     /// Creates a error that Hyprland will display
-    pub fn call(color: Color, msg: String) -> HResult<()> {
+    pub fn call(color: Color, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("seterror {color} {msg}").into_bytes(),
@@ -158,7 +158,7 @@ pub mod set_error {
         Ok(())
     }
     /// Creates a error that Hyprland will display (async)
-    pub async fn call_async(color: Color, msg: String) -> HResult<()> {
+    pub async fn call_async(color: Color, msg: String) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &format!("seterror {color} {msg}").into_bytes(),
@@ -313,7 +313,7 @@ pub mod set_prop {
     }
 
     /// Sets a window prob
-    pub fn call(ident: String, prop: PropType, lock: bool) -> HResult<()> {
+    pub fn call(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("setprop {ident} {prop} {}", if lock { "lock" } else { "" }).into_bytes(),
@@ -321,7 +321,7 @@ pub mod set_prop {
         Ok(())
     }
     /// Sets a window prob (async)
-    pub async fn call_async(ident: String, prop: PropType, lock: bool) -> HResult<()> {
+    pub async fn call_async(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &format!("setprop {ident} {prop} {}", if lock { "lock" } else { "" }).into_bytes(),
@@ -337,7 +337,7 @@ pub mod plugin {
     use std::path::Path;
 
     /// Loads a plugin, by path
-    pub fn load(path: &Path) -> HResult<()> {
+    pub fn load(path: &Path) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &format!("plugin load {}", path.display()).into_bytes(),
@@ -345,7 +345,7 @@ pub mod plugin {
         Ok(())
     }
     /// Loads a plugin, by path (async)
-    pub async fn load_async(path: &Path) -> HResult<()> {
+    pub async fn load_async(path: &Path) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &format!("plugin load {}", path.display()).into_bytes(),
@@ -354,14 +354,14 @@ pub mod plugin {
         Ok(())
     }
     /// Returns a list of all plugins
-    pub fn list() -> HResult<String> {
+    pub fn list() -> crate::Result<String> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             &"plugin list".to_string().into_bytes(),
         )
     }
     /// Returns a list of all plugins (async)
-    pub async fn list_async() -> HResult<String> {
+    pub async fn list_async() -> crate::Result<String> {
         write_to_socket(
             get_socket_path(SocketType::Command),
             &"plugin list".to_string().into_bytes(),

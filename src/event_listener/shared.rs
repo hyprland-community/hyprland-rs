@@ -8,10 +8,10 @@ use std::pin::Pin;
 #[async_trait]
 pub trait Listener {
     /// This method starts the event listener
-    fn start_listener() -> HResult<()>;
+    fn start_listener() -> crate::Result<()>;
 
     /// This method starts the event listener (async)
-    async fn start_listener_async() -> HResult<()>;
+    async fn start_listener_async() -> crate::Result<()>;
 }
 
 pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
@@ -204,7 +204,7 @@ unsafe impl Send for State {}
 unsafe impl Sync for State {}
 impl State {
     /// Execute changes in state
-    pub async fn execute_state(self, old: State) -> HResult<Self> {
+    pub async fn execute_state(self, old: State) -> crate::Result<Self> {
         let state = self.clone();
         if self != old {
             use crate::dispatch::{Dispatch, DispatchType};
@@ -237,7 +237,7 @@ impl State {
         Ok(state.clone())
     }
     /// Execute changes in state
-    pub fn execute_state_sync(self, old: State) -> HResult<Self> {
+    pub fn execute_state_sync(self, old: State) -> crate::Result<Self> {
         let state = self.clone();
         if self != old {
             use crate::dispatch::{Dispatch, DispatchType};
@@ -293,7 +293,11 @@ pub(crate) async fn execute_closure_async_state<T: Clone>(
         AsyncEventTypes::Regular(_) => panic!("Using mutable handler with immutable listener"),
     }
 }
-pub(crate) async fn execute_closure_mut<T>(state: State, f: &Closure<T>, val: T) -> HResult<State> {
+pub(crate) async fn execute_closure_mut<T>(
+    state: State,
+    f: &Closure<T>,
+    val: T,
+) -> crate::Result<State> {
     let old_state = state.clone();
     let mut new_state = state.clone();
     match f {
@@ -306,7 +310,11 @@ pub(crate) async fn execute_closure_mut<T>(state: State, f: &Closure<T>, val: T)
 }
 
 #[allow(clippy::redundant_clone)]
-pub(crate) fn execute_closure_mut_sync<T>(state: State, f: &Closure<T>, val: T) -> HResult<State> {
+pub(crate) fn execute_closure_mut_sync<T>(
+    state: State,
+    f: &Closure<T>,
+    val: T,
+) -> crate::Result<State> {
     let old_state = state.clone();
     let mut new_state = state.clone();
     match f {
@@ -429,7 +437,7 @@ macro_rules! report_unknown {
 }
 
 /// This internal function parses event strings
-pub(crate) fn event_parser(event: String) -> HResult<Vec<Event>> {
+pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     lazy_static! {
         static ref EVENT_SET: RegexSet = check_for_regex_set_error(RegexSet::new([
             r"\bworkspace>>(?P<workspace>.*)",

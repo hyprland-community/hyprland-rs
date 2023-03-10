@@ -122,7 +122,7 @@ pub struct Monitor {
 
 #[async_trait]
 impl HyprDataActive for Monitor {
-    fn get_active() -> HResult<Self> {
+    fn get_active() -> crate::Result<Self> {
         let mut all = Monitors::get()?;
         if let Some(it) = all.find(|item| item.focused) {
             Ok(it)
@@ -130,7 +130,7 @@ impl HyprDataActive for Monitor {
             panic!("No active monitor?")
         }
     }
-    async fn get_active_async() -> HResult<Self> {
+    async fn get_active_async() -> crate::Result<Self> {
         let mut all = Monitors::get_async().await?;
         if let Some(it) = all.find(|item| item.focused) {
             Ok(it)
@@ -171,7 +171,7 @@ pub struct Workspace {
 
 #[async_trait]
 impl HyprDataActive for Workspace {
-    fn get_active() -> HResult<Self> {
+    fn get_active() -> crate::Result<Self> {
         let mut all = Workspaces::get()?;
         let mon = Monitor::get_active()?;
 
@@ -181,7 +181,7 @@ impl HyprDataActive for Workspace {
             panic!("No active monitor?")
         }
     }
-    async fn get_active_async() -> HResult<Self> {
+    async fn get_active_async() -> crate::Result<Self> {
         let all = Workspaces::get_async();
         let mon = Monitor::get_active_async();
         let (all, mon) = futures::join!(all, mon);
@@ -248,12 +248,12 @@ pub(crate) struct ActiveWindow(
 
 #[async_trait]
 impl HyprDataActiveOptional for Client {
-    fn get_active() -> HResult<Option<Self>> {
+    fn get_active() -> crate::Result<Option<Self>> {
         let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow);
         let deserialized: ActiveWindow = serde_json::from_str(&data)?;
         Ok(deserialized.0)
     }
-    async fn get_active_async() -> HResult<Option<Self>> {
+    async fn get_active_async() -> crate::Result<Option<Self>> {
         let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await;
         let deserialized: ActiveWindow = serde_json::from_str(&data)?;
         Ok(deserialized.0)
@@ -580,7 +580,7 @@ pub struct Animations(Vec<Animation>, Vec<BezierIdent>);
 
 #[async_trait]
 impl HyprData for Animations {
-    fn get() -> HResult<Self>
+    fn get() -> crate::Result<Self>
     where
         Self: Sized,
     {
@@ -604,7 +604,7 @@ impl HyprData for Animations {
             .collect();
         Ok(Animations(new_anims, new_bezs))
     }
-    async fn get_async() -> HResult<Self>
+    async fn get_async() -> crate::Result<Self>
     where
         Self: Sized,
     {
@@ -629,5 +629,3 @@ impl HyprData for Animations {
         Ok(Animations(new_anims, new_bezs))
     }
 }
-
-//impl_on!(Animations);

@@ -415,7 +415,7 @@ fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     }
 }
 
-pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<String> {
+pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Result<String> {
     use DispatchType::*;
     let sep = if dispatch { " " } else { "," };
     let string_to_pass = match &cmd {
@@ -517,7 +517,7 @@ impl Dispatch {
     /// Dispatch::call(DispatchType::Exec("kitty"))
     /// # }
     /// ```
-    pub fn call(dispatch_type: DispatchType) -> HResult<()> {
+    pub fn call(dispatch_type: DispatchType) -> crate::Result<()> {
         let socket_path = get_socket_path(SocketType::Command);
         let output = write_to_socket_sync(
             socket_path,
@@ -544,7 +544,7 @@ impl Dispatch {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn call_async(dispatch_type: DispatchType<'_>) -> HResult<()> {
+    pub async fn call_async(dispatch_type: DispatchType<'_>) -> crate::Result<()> {
         let socket_path = get_socket_path(SocketType::Command);
         let output = write_to_socket(
             socket_path,

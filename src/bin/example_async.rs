@@ -6,7 +6,7 @@ use hyprland::prelude::*;
 use hyprland::{async_closure, dispatch::*};
 
 #[tokio::main]
-async fn main() -> hyprland::shared::HResult<()> {
+async fn main() -> hyprland::Result<()> {
     // We can call dispatchers with the dispatch function!
 
     // Here we are telling hyprland to open kitty using the dispatch macro!

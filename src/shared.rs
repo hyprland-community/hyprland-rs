@@ -58,7 +58,7 @@ impl fmt::Display for HyprError {
 impl error::Error for HyprError {}
 
 /// This type provides the result type used everywhere in Hyprland-rs
-//pub type HResult<T> = Result<T, Box<dyn std::error::Error>>;
+#[deprecated(since = "0.3.1", note = "New location: hyprland::Result")]
 pub type HResult<T> = Result<T, HyprError>;
 
 /// The address struct holds a address as a tuple with a single value
@@ -70,11 +70,11 @@ pub struct Address(String);
 #[async_trait]
 pub trait HyprData {
     /// This method gets the data
-    fn get() -> HResult<Self>
+    fn get() -> crate::Result<Self>
     where
         Self: Sized;
     /// This method gets the data (async)
-    async fn get_async() -> HResult<Self>
+    async fn get_async() -> crate::Result<Self>
     where
         Self: Sized;
 }
@@ -83,11 +83,11 @@ pub trait HyprData {
 #[async_trait]
 pub trait HyprDataActive {
     /// This method gets the active data
-    fn get_active() -> HResult<Self>
+    fn get_active() -> crate::Result<Self>
     where
         Self: Sized;
     /// This method gets the active data (async)
-    async fn get_active_async() -> HResult<Self>
+    async fn get_active_async() -> crate::Result<Self>
     where
         Self: Sized;
 }
@@ -96,11 +96,11 @@ pub trait HyprDataActive {
 #[async_trait]
 pub trait HyprDataActiveOptional {
     /// This method gets the active data
-    fn get_active() -> HResult<Option<Self>>
+    fn get_active() -> crate::Result<Option<Self>>
     where
         Self: Sized;
     /// This method gets the active data (async)
-    async fn get_active_async() -> HResult<Option<Self>>
+    async fn get_active_async() -> crate::Result<Option<Self>>
     where
         Self: Sized;
 }
@@ -189,7 +189,7 @@ impl Address {
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> HResult<String> {
+pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> crate::Result<String> {
     use crate::unix_async::*;
 
     let mut stream = UnixStream::connect(path).await?;
@@ -213,7 +213,7 @@ pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> HResult<Str
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) fn write_to_socket_sync(path: String, content: &[u8]) -> HResult<String> {
+pub(crate) fn write_to_socket_sync(path: String, content: &[u8]) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
     let mut stream = UnixStream::connect(path)?;

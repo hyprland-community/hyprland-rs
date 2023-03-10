@@ -2,12 +2,12 @@ macro_rules! impl_on {
     ($name:ident) => {
         #[async_trait]
         impl HyprData for $name {
-            fn get() -> HResult<Self> {
+            fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd(DataCommands::$name);
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
-            async fn get_async() -> HResult<Self> {
+            async fn get_async() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd_async(DataCommands::$name).await;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
@@ -34,7 +34,7 @@ macro_rules! create_data_struct {
 
         #[async_trait]
         impl HyprData for $name {
-            fn get() -> HResult<Self> {
+            fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd($kind);
                 let deserialized: Vec<$held> = serde_json::from_str(&data)?;
                 Ok(Self {
@@ -42,7 +42,7 @@ macro_rules! create_data_struct {
                     pos: 0,
                 })
             }
-            async fn get_async() -> HResult<Self> {
+            async fn get_async() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd_async($kind).await;
                 let deserialized: Vec<$held> = serde_json::from_str(&data)?;
                 Ok(Self {
@@ -88,12 +88,12 @@ macro_rules! create_data_struct {
 
         #[async_trait]
         impl HyprData for $name {
-            fn get() -> HResult<Self> {
+            fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd($kind);
                 let deserialized: $held = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
-            async fn get_async() -> HResult<Self> {
+            async fn get_async() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd_async($kind).await;
                 let deserialized: $held = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))

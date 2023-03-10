@@ -81,7 +81,7 @@ impl EventListener {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener_async(&self) -> HResult<()> {
+    pub async fn start_listener_async(&self) -> crate::Result<()> {
         use crate::unix_async::*;
 
         let socket_path = get_socket_path(SocketType::Listener);
@@ -132,7 +132,7 @@ impl EventListener {
     /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id:?}"));
     /// listener.start_listener();
     /// ```
-    pub fn start_listener(self) -> HResult<()> {
+    pub fn start_listener(self) -> crate::Result<()> {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 

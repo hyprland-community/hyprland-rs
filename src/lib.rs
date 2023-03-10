@@ -63,3 +63,6 @@ pub(crate) mod unix_async {
         net::UnixStream,
     };
 }
+
+/// This type provides the result type used everywhere in Hyprland-rs
+pub type Result<T> = std::result::Result<T, shared::HyprError>;

@@ -2,7 +2,6 @@
 //!
 use crate::dispatch::{gen_dispatch_str, DispatchType};
 use crate::keyword::Keyword;
-use crate::shared::*;
 
 /// Module providing stuff for adding an removing keybinds
 pub mod binds {
@@ -126,7 +125,7 @@ pub mod binds {
     pub struct Binder;
 
     impl Binder {
-        pub(crate) fn gen_str(binding: Binding) -> HResult<String> {
+        pub(crate) fn gen_str(binding: Binding) -> crate::Result<String> {
             Ok(format!(
                 "{mods},{key},{dispatcher}",
                 mods = binding.mods.join(),
@@ -135,7 +134,7 @@ pub mod binds {
             ))
         }
         /// Binds a keybinding
-        pub fn bind(binding: Binding) -> HResult<()> {
+        pub fn bind(binding: Binding) -> crate::Result<()> {
             Keyword::set(
                 format!("bind{}", binding.flags.join()),
                 Self::gen_str(binding)?,
@@ -143,7 +142,7 @@ pub mod binds {
             Ok(())
         }
         /// Binds a keybinding (async)
-        pub async fn bind_async(binding: Binding<'_>) -> HResult<()> {
+        pub async fn bind_async(binding: Binding<'_>) -> crate::Result<()> {
             Keyword::set_async(
                 format!("bind{}", binding.flags.join()),
                 Self::gen_str(binding)?,
