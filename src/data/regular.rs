@@ -86,7 +86,7 @@ pub enum Transforms {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Monitor {
     /// The monitor id
-    pub id: u8,
+    pub id: i16,
     /// The monitor's name
     pub name: String,
     /// The monitor's description
@@ -106,7 +106,7 @@ pub struct Monitor {
     #[serde(rename = "activeWorkspace")]
     pub active_workspace: WorkspaceBasic,
     /// Reserved is the amount of space (in pre-scale pixels) that a layer surface has claimed
-    pub reserved: (u8, u8, u8, u8),
+    pub reserved: (u16, u16, u16, u16),
     /// The display's scale
     pub scale: f32,
     /// I think like the rotation?
@@ -157,7 +157,7 @@ pub struct Workspace {
     /// The monitor the workspace is on
     pub monitor: String,
     /// The amount of windows in the workspace
-    pub windows: u8,
+    pub windows: u16,
     /// A bool that shows if there is a fullscreen window in the workspace
     #[serde(rename = "hasfullscreen")]
     pub fullscreen: bool,
@@ -221,7 +221,7 @@ pub struct Client {
     #[serde(rename = "fullscreenMode")]
     pub fullscreen_mode: i8,
     /// The monitor the window is on
-    pub monitor: i8,
+    pub monitor: i16,
     /// The window class
     pub class: String,
     /// The window title
@@ -426,7 +426,7 @@ pub struct Bind {
     /// Can it be held?
     pub repeat: bool,
     /// It's modmask
-    pub modmask: u8,
+    pub modmask: u16,
     /// The submap its apart of
     pub submap: String,
     /// The key
