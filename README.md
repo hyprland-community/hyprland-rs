@@ -107,15 +107,6 @@ fn main() -> hyprland::Result<()> {
 
     // add event, yes functions and closures both work!
     event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
-    // Waybar example
-    // event_listener.add_active_window_change_handler(|data| {
-    //     use hyprland::event_listener::WindowEventData;
-    //     let string = match data {
-    //         Some(WindowEventData(class, title)) => format!("{class}: {title}"),
-    //         None => "".to_string()
-    //     };
-    //     println!(r#"{{"text": "{string}", class: "what is this?"}}"#);
-    // });
 
     // and execute the function
     // here we are using the blocking variant
