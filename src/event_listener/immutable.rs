@@ -43,63 +43,29 @@ impl EventListener {
             events: init_events!(Events),
         }
     }
-
-    add_listener!(workspace_change d, WorkspaceType, "on workspace change", "changed workspace to" => id);
-    add_listener!(workspace_added, WorkspaceType, "a workspace is created", "workspace was added" => id);
-    add_listener!(workspace_destroy ed, WorkspaceType, "a workspace is destroyed", "workspace was destroyed" => id);
-    add_listener!(workspace_moved, MonitorEventData, "a workspace is moved", "workspace was moved" => id);
-    add_listener!(active_monitor_change d, MonitorEventData, "the active monitor is changed", "Active monitor changed to" => data);
-    add_listener!(active_window_change d, Option<WindowEventData>, "the active window is changed", "Active window changed" => data);
-    add_listener!(fullscreen_state_change d, bool, "the active monitor is changed", "Fullscreen is on" => state);
-    add_listener!(monitor_added, String, "a new monitor is added", "Monitor added" => data);
-    add_listener!(monitor_removed, String, "a monitor is removed", "Monitor removed" => data);
-    add_listener!(window_open, WindowOpenEvent, "a window is opened", "Window opened" => data);
-    add_listener!(window_close, Address, "a window is closed", "Window closed" => data);
-    add_listener!(window_moved, WindowMoveEvent, "a window is moved", "Window moved" => data);
-    add_listener!(keyboard_layout_change, LayoutEvent, "the keyboard layout is changed", "Layout changed" => data);
-    add_listener!(sub_map_change d, String, "the sub map is changed", "Submap changed" => data);
-    add_listener!(layer_open, String, "a new layer is opened", "Layer opened" => data);
-    add_listener!(layer_closed, String, "a layer is closed", "Layer closed" => data);
-    add_listener!(float_state, WindowFloatEventData, "the float state of a window is changed", "Float state changed" => data);
-    add_listener!(urgent_state, Address, "the urgent state of a window is changed", "urgent state changed" => data);
-
     fn event_executor(&self, event: &Event) {
+        use Event::*;
         match event {
-            Event::WorkspaceChanged(id) => arm!(id.clone(), workspace_changed_events, self),
-            Event::WorkspaceAdded(id) => arm!(id.clone(), workspace_added_events, self),
-            Event::WorkspaceDeleted(id) => arm!(id.clone(), workspace_destroyed_events, self),
-            Event::WorkspaceMoved(evend) => arm!(evend.clone(), workspace_moved_events, self),
-            Event::ActiveMonitorChanged(evend) => {
-                arm!(evend.clone(), active_monitor_changed_events, self)
-            }
-            Event::ActiveWindowChangedMerged(Some(event)) => {
-                arm!(Some(event.clone()), active_window_changed_events, self)
-            }
-            Event::ActiveWindowChangedMerged(None) => {
-                arm!(None, active_window_changed_events, self)
-            }
-            Event::ActiveWindowChangedV1(_) => (),
-            Event::ActiveWindowChangedV2(_) => (),
-            Event::FullscreenStateChanged(bool) => {
-                arm!(*bool, fullscreen_state_changed_events, self)
-            }
-            Event::MonitorAdded(monitor) => arm!(monitor.clone(), monitor_added_events, self),
-            Event::MonitorRemoved(monitor) => {
-                arm!(monitor.clone(), monitor_removed_events, self)
-            }
-            Event::WindowClosed(addr) => arm!(addr.clone(), window_close_events, self),
-            Event::WindowMoved(even) => arm!(even.clone(), window_moved_events, self),
-            Event::WindowOpened(even) => arm!(even.clone(), window_open_events, self),
-            Event::LayoutChanged(even) => {
-                arm!(even.clone(), keyboard_layout_change_events, self)
-            }
-            Event::SubMapChanged(map) => arm!(map.clone(), sub_map_changed_events, self),
-            Event::LayerOpened(namespace) => arm!(namespace.clone(), layer_open_events, self),
-            Event::LayerClosed(namespace) => {
-                arm!(namespace.clone(), layer_closed_events, self)
-            }
-            Event::FloatStateChanged(even) => arm!(even.clone(), float_state_events, self),
-            Event::UrgentStateChanged(even) => arm!(even.clone(), urgent_state_events, self),
+            WorkspaceChanged(id) => arm!(id, workspace_changed_events, self),
+            WorkspaceAdded(id) => arm!(id, workspace_added_events, self),
+            WorkspaceDeleted(id) => arm!(id, workspace_destroyed_events, self),
+            WorkspaceMoved(evend) => arm!(evend, workspace_moved_events, self),
+            ActiveMonitorChanged(evend) => arm!(evend, active_monitor_changed_events, self),
+            ActiveWindowChangedMerged(opt) => arm!(opt, active_window_changed_events, self),
+            ActiveWindowChangedV1(_) => (),
+            ActiveWindowChangedV2(_) => (),
+            FullscreenStateChanged(bool) => arm!(bool, fullscreen_state_changed_events, self),
+            MonitorAdded(monitor) => arm!(monitor, monitor_added_events, self),
+            MonitorRemoved(monitor) => arm!(monitor, monitor_removed_events, self),
+            WindowClosed(addr) => arm!(addr, window_close_events, self),
+            WindowMoved(even) => arm!(even, window_moved_events, self),
+            WindowOpened(even) => arm!(even, window_open_events, self),
+            LayoutChanged(even) => arm!(even, keyboard_layout_change_events, self),
+            SubMapChanged(map) => arm!(map, sub_map_changed_events, self),
+            LayerOpened(namespace) => arm!(namespace, layer_open_events, self),
+            LayerClosed(namespace) => arm!(namespace, layer_closed_events, self),
+            FloatStateChanged(even) => arm!(even, float_state_events, self),
+            UrgentStateChanged(even) => arm!(even, urgent_state_events, self),
         }
     }
 

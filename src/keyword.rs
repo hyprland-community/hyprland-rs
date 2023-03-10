@@ -13,9 +13,10 @@
 //!
 //!    Ok(())
 //! }
-//! ````
+//! ```
 
 use crate::shared::*;
+use derive_more::Display;
 use num_traits::AsPrimitive;
 use serde::{Deserialize, Serialize};
 
@@ -28,24 +29,17 @@ pub(crate) struct OptionRaw {
 }
 
 /// This enum holds the possible values of a keyword/option
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Display)]
 pub enum OptionValue {
     /// A integer (64-bit)
+    #[display(fmt = "{}", "_0")]
     Int(i64),
     /// A floating point (64-point)
+    #[display(fmt = "{}", "_0")]
     Float(f64),
     /// A string
+    #[display(fmt = "{}", "_0")]
     String(String),
-}
-
-impl ToString for OptionValue {
-    fn to_string(&self) -> String {
-        match self {
-            Self::Int(v) => v.to_string(),
-            Self::Float(v) => v.to_string(),
-            Self::String(v) => v.to_string(),
-        }
-    }
 }
 
 impl From<OptionValue> for String {
@@ -54,48 +48,43 @@ impl From<OptionValue> for String {
     }
 }
 
-impl From<String> for OptionValue {
-    fn from(str: String) -> Self {
-        OptionValue::String(str)
-    }
-}
+trait IsString {}
+impl IsString for String {}
+impl IsString for &str {}
 
-impl From<&str> for OptionValue {
-    fn from(str: &str) -> Self {
+impl<Str: ToString + IsString> From<Str> for OptionValue {
+    fn from(str: Str) -> Self {
         OptionValue::String(str.to_string())
     }
 }
 
-macro_rules! int_to_opt {
-    ($ty:ty) => {
-        impl From<$ty> for OptionValue {
-            fn from(num: $ty) -> Self {
-                OptionValue::Int(num.as_())
-            }
-        }
-    };
-}
-
 macro_rules! ints_to_opt {
-    ( $( $t:ty ),* ) => {
-        $(int_to_opt!($t);)*
+    ($($ty:ty), *) => {
+        $(
+            impl From<$ty> for OptionValue {
+                fn from(num: $ty) -> Self {
+                    OptionValue::Int(num.as_())
+                }
+            }
+        )*
     };
 }
 
 ints_to_opt!(u8, i8, u16, i16, u32, i32, u64, i64);
 
-macro_rules! float_to_opt {
-    ($ty:ty) => {
-        impl From<$ty> for OptionValue {
-            fn from(num: $ty) -> Self {
-                OptionValue::Float(num.as_())
+macro_rules! floats_to_opt {
+    ($($ty:ty),*) => {
+        $(
+            impl From<$ty> for OptionValue {
+                fn from(num: $ty) -> Self {
+                    OptionValue::Float(num.as_())
+                }
             }
-        }
+        )*
     };
 }
 
-float_to_opt!(f32);
-float_to_opt!(f64);
+floats_to_opt!(f32, f64);
 
 /// This struct holds a keyword
 #[derive(Serialize, Deserialize, Debug, Clone)]

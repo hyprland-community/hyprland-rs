@@ -2,6 +2,7 @@ use hyprland::data::{Animations, Client, Clients, Monitors};
 use hyprland::event_listener::AsyncEventListener;
 use hyprland::keyword::*;
 use hyprland::prelude::*;
+//use hyprland::shared::WorkspaceType;
 use hyprland::{async_closure, dispatch::*};
 
 #[tokio::main]
@@ -43,28 +44,37 @@ async fn main() -> hyprland::shared::HResult<()> {
     // Create a event listener
     let mut event_listener = AsyncEventListener::new();
 
-    // This changes the workspace to 5 if the workspace is switched to 9
-    // this is a performance and mutable state test
-    // event_listener.add_workspace_change_handler(|id, state| {
+    //This changes the workspace to 5 if the workspace is switched to 9
+    //this is a performance and mutable state test
+    // event_listener.add_workspace_change_handler(async_closure! {|id, state| {
     //     if id == WorkspaceType::Regular('9'.to_string()) {
-    //         state.active_workspace = WorkspaceType::Regular('2'.to_string());
+    //         *state.workspace = '2'.to_string();
     //     }
-    // });
-    // // This makes it so you can't turn on fullscreen lol
-    // event_listener.add_fullscreen_state_change_handler(|fstate, state| {
-    //     if fstate {
-    //         state.fullscreen_state = false;
-    //     }
-    // });
-    // // Makes a monitor unfocusable
-    // event_listener.add_active_monitor_change_handler(|data, state| {
-    //     let hyprland::event_listener::MonitorEventData(monitor, _) = data;
-    //
-    //     if monitor == *"DP-1".to_string() {
-    //         state.active_monitor = "eDP-1".to_string()
-    //     }
-    // });
+    // }});
+    /*
+    event_listener.add_workspace_change_handler(|id, state| {
+        Box::pin(async move {
+            if id == WorkspaceType::Regular('9'.to_string()) {
+                *state.workspace = '2'.to_string();
+            }
+        })
+    });
 
+    // This makes it so you can't turn on fullscreen lol
+    event_listener.add_fullscreen_state_change_handler(async_closure! {|fstate, state| {
+        if fstate {
+            *state.fullscreen = false;
+        }
+    }});
+    // Makes a monitor unfocusable
+    event_listener.add_active_monitor_change_handler(async_closure! {|data, state| {
+        let hyprland::event_listener::MonitorEventData(monitor, _) = data;
+
+        if monitor == *"DP-1".to_string() {
+            *state.monitor = "eDP-1".to_string()
+        }
+    }});
+    */
     // add event, yes functions and closures both work!
 
     event_listener.add_workspace_change_handler(

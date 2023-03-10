@@ -2,6 +2,7 @@
 //!
 //! This module provides shared private and public functions, structs, enum, and types
 pub use async_trait::async_trait;
+use derive_more::Display;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env::{var, VarError};
 use std::{error, fmt, io};
@@ -114,20 +115,35 @@ pub trait HyprDataVec<T>: HyprData {
 /// > its a type because it might change at some point
 pub type WorkspaceId = i32;
 
+fn ser_spec_opt(opt: &Option<String>) -> String {
+    match opt {
+        Some(name) => format!("special:{name}"),
+        None => "special".to_string(),
+    }
+}
+
 /// This enum holds workspace data
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Display)]
 #[serde(untagged)]
 pub enum WorkspaceType {
     /// A named workspace
+    #[display(fmt = "{}", "_0")]
     Regular(
         /// The name
         String,
     ),
     /// The special workspace
+    #[display(fmt = "{}", "ser_spec_opt(_0)")]
     Special(
         /// The name, if exists
         Option<String>,
     ),
+}
+
+impl From<&WorkspaceType> for String {
+    fn from(value: &WorkspaceType) -> Self {
+        value.to_string()
+    }
 }
 
 // impl From<i8> for WorkspaceType {

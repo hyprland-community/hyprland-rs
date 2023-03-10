@@ -1,5 +1,6 @@
 use crate::shared::*;
 use regex::{Error as RegexError, Regex, RegexSet};
+use std::fmt::Debug;
 use std::io;
 use std::pin::Pin;
 
@@ -19,16 +20,19 @@ pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
 }
 
 pub(crate) enum AsyncEventTypes<T: ?Sized, U: ?Sized> {
+    #[allow(dead_code)]
     MutableState(Pin<Box<U>>),
     Regular(Pin<Box<T>>),
 }
 
 pub(crate) type VoidFuture = std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send>>;
+pub(crate) type VoidFutureMut =
+    std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send + 'static>>;
 
 pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
 pub(crate) type AsyncClosure<T> = AsyncEventTypes<
     dyn Sync + Send + Fn(T) -> VoidFuture,
-    dyn Sync + Send + Fn(T, &mut State) -> VoidFuture,
+    dyn Sync + Send + Fn(T, &mut StateV2) -> VoidFutureMut,
 >;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
@@ -125,6 +129,77 @@ pub struct State {
     pub fullscreen_state: bool,
 }
 
+use std::ops::{Deref, DerefMut};
+/// Wrapper type that adds handler for events
+#[derive(Clone)]
+pub struct MutWrapper<'a, 'b, T>(T, &'a (dyn Fn(T) + 'a), &'b (dyn Fn(T) -> VoidFuture + 'b));
+impl<T> MutWrapper<'_, '_, T> {
+    #[allow(dead_code)]
+    pub(crate) fn update(&mut self, v: T) {
+        self.0 = v;
+    }
+}
+impl<T: PartialEq> PartialEq for MutWrapper<'_, '_, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+impl<T: Debug> Debug for MutWrapper<'_, '_, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+impl<T: Eq> Eq for MutWrapper<'_, '_, T> {}
+
+impl<T> Deref for MutWrapper<'_, '_, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<T: Clone> DerefMut for MutWrapper<'_, '_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.1(self.0.clone());
+        &mut self.0
+    }
+}
+
+/// The mutable state available to Closures
+#[derive(PartialEq, Eq, Clone, Debug)]
+pub struct StateV2 {
+    /// The active workspace
+    pub workspace: MutWrapper<'static, 'static, String>,
+    /// The active monitor
+    pub monitor: MutWrapper<'static, 'static, String>,
+    /// The fullscreen state
+    pub fullscreen: MutWrapper<'static, 'static, bool>,
+}
+
+unsafe impl Send for StateV2 {}
+unsafe impl Sync for StateV2 {}
+impl StateV2 {
+    /// Init new state
+    pub fn new<Str: ToString>(work: Str, mon: Str, full: bool) -> Self {
+        use crate::dispatch::*;
+        use hyprland_macros::async_closure;
+        Self {
+            workspace: MutWrapper(
+                work.to_string(),
+                &|work| {
+                    if let Ok(()) =
+                        crate::dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Name(&work))
+                    {
+                    }
+                },
+                &async_closure! { |work| if let Ok(()) =
+                crate::dispatch!(async; Workspace, WorkspaceIdentifierWithSpecial::Name(&work)).await {}},
+            ),
+            monitor: MutWrapper(mon.to_string(), &|_| {}, &async_closure! {|_| {}}),
+            fullscreen: MutWrapper(full, &|_| {}, &async_closure! {|_| {}}),
+        }
+    }
+}
+
 unsafe impl Send for State {}
 unsafe impl Sync for State {}
 impl State {
@@ -193,10 +268,10 @@ impl State {
     }
 }
 
-pub(crate) fn execute_closure<T>(f: &Closure<T>, val: T) {
+pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: &T) {
     match f {
         EventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
-        EventTypes::Regular(fun) => fun(val),
+        EventTypes::Regular(fun) => fun(val.clone()),
     }
 }
 
@@ -204,6 +279,18 @@ pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     match f {
         AsyncEventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
         AsyncEventTypes::Regular(fun) => fun(val).await,
+    }
+}
+
+#[allow(dead_code)]
+pub(crate) async fn execute_closure_async_state<T: Clone>(
+    f: &AsyncClosure<T>,
+    val: &T,
+    state: &mut StateV2,
+) {
+    match f {
+        AsyncEventTypes::MutableState(fun) => fun(val.clone(), state).await,
+        AsyncEventTypes::Regular(_) => panic!("Using mutable handler with immutable listener"),
     }
 }
 pub(crate) async fn execute_closure_mut<T>(state: State, f: &Closure<T>, val: T) -> HResult<State> {

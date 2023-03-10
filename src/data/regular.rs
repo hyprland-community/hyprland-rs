@@ -116,6 +116,8 @@ pub struct Monitor {
     /// The dpms status of a monitor
     #[serde(rename = "dpmsStatus")]
     pub dpms_status: bool,
+    /// VRR state
+    pub vrr: bool,
 }
 
 #[async_trait]
@@ -180,8 +182,10 @@ impl HyprDataActive for Workspace {
         }
     }
     async fn get_active_async() -> HResult<Self> {
-        let mut all = Workspaces::get_async().await?;
-        let mon = Monitor::get_active_async().await?;
+        let all = Workspaces::get_async();
+        let mon = Monitor::get_active_async();
+        let (all, mon) = futures::join!(all, mon);
+        let (mut all, mon) = (all?, mon?);
 
         if let Some(it) = all.find(|item| item.id == mon.active_workspace.id) {
             Ok(it)

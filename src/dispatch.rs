@@ -239,6 +239,14 @@ pub enum WindowMove<'a> {
 /// This enum holds every dispatcher
 #[derive(Debug, Clone)]
 pub enum DispatchType<'a> {
+    /// This lets you use dispatchers not supported by hyprland-rs yet, please make issues before
+    /// using
+    Custom(
+        /// Name of event
+        &'a str,
+        /// Args
+        &'a str,
+    ),
     /// This dispatcher changes the current cursor
     SetCursor(
         /// The cursor theme
@@ -348,23 +356,18 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
     use DispatchType::*;
     let sep = if dispatch { " " } else { "," };
     let string_to_pass = match &cmd {
+        Custom(name, args) => format!("{name}{sep}{args}"),
         Exec(sh) => format!("exec{sep}{sh}"),
         Pass(win) => format!("pass{sep}{win}"),
         KillActiveWindow => "killactive".to_string(),
-        CloseWindow(win) => {
-            format!("closewindow{sep}{win}")
-        }
+        CloseWindow(win) => format!("closewindow{sep}{win}"),
         Workspace(work) => format!("workspace{sep}{work}"),
         MoveToWorkspace(work, Some(win)) => format!("movetoworkspace {work} {win}"),
         MoveToWorkspace(work, None) => format!("movetoworkspace {work}"),
         MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent {work} {win}"),
         MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent {work}"),
-        MoveFocusedWindowToWorkspace(work) => {
-            format!("workspace{sep}{work}",)
-        }
-        MoveFocusedWindowToWorkspaceSilent(work) => {
-            format!("workspace{sep}{work}",)
-        }
+        MoveFocusedWindowToWorkspace(work) => format!("workspace{sep}{work}"),
+        MoveFocusedWindowToWorkspaceSilent(work) => format!("workspace{sep}{work}"),
         ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
         ToggleFloating(None) => "togglefloating".to_string(),
         ToggleFullscreen(ftype) => format!("fullscreen{sep}{ftype}"),
@@ -387,16 +390,10 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
             }
         ),
         CenterWindow => "centerwindow".to_string(),
-        ResizeActive(pos) => {
-            format!("resizeactive{sep}{pos}")
-        }
+        ResizeActive(pos) => format!("resizeactive{sep}{pos}"),
         MoveActive(pos) => format!("moveactive {pos}"),
-        ResizeWindowPixel(pos, win) => {
-            format!("resizeactive{sep}{pos} {win}")
-        }
-        MoveWindowPixel(pos, win) => {
-            format!("moveactive{sep}{pos} {win}")
-        }
+        ResizeWindowPixel(pos, win) => format!("resizeactive{sep}{pos} {win}"),
+        MoveWindowPixel(pos, win) => format!("moveactive{sep}{pos} {win}"),
         CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
         SwapWindow(dir) => format!("swapnext{sep}{dir}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
@@ -407,12 +404,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         WorkspaceOption(opt) => format!("workspaceopt{sep}{opt}"),
         Exit => "exit".to_string(),
         ForceRendererReload => "forcerendererreload".to_string(),
-        MoveCurrentWorkspaceToMonitor(mon) => {
-            format!("movecurrentworkspacetomonitor{sep}{mon}")
-        }
-        MoveWorkspaceToMonitor(work, mon) => {
-            format!("moveworkspacetomonitor{sep}{work} {mon}",)
-        }
+        MoveCurrentWorkspaceToMonitor(mon) => format!("movecurrentworkspacetomonitor{sep}{mon}"),
+        MoveWorkspaceToMonitor(work, mon) => format!("moveworkspacetomonitor{sep}{work} {mon}"),
         ToggleSpecialWorkspace(Some(name)) => format!("togglespecialworkspace {name}"),
         ToggleSpecialWorkspace(None) => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
@@ -423,9 +416,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         }
         SwapActiveWorkspaces(mon, mon2) => format!("swapactiveworkspaces{sep}{mon} {mon2}",),
         BringActiveToTop => "bringactivetotop".to_string(),
-        SetCursor(theme, size) => {
-            format!("{theme} {}", *size)
-        }
+        SetCursor(theme, size) => format!("{theme} {}", *size),
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
     };
     if let SetCursor(_, _) = cmd {

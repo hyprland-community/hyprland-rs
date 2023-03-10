@@ -330,3 +330,42 @@ pub mod set_prop {
         Ok(())
     }
 }
+
+/// Provides functions for communication with plugin system
+pub mod plugin {
+    use super::*;
+    use std::path::Path;
+
+    /// Loads a plugin, by path
+    pub fn load(path: &Path) -> HResult<()> {
+        write_to_socket_sync(
+            get_socket_path(SocketType::Command),
+            &format!("plugin load {}", path.display()).into_bytes(),
+        )?;
+        Ok(())
+    }
+    /// Loads a plugin, by path (async)
+    pub async fn load_async(path: &Path) -> HResult<()> {
+        write_to_socket(
+            get_socket_path(SocketType::Command),
+            &format!("plugin load {}", path.display()).into_bytes(),
+        )
+        .await?;
+        Ok(())
+    }
+    /// Returns a list of all plugins
+    pub fn list() -> HResult<String> {
+        write_to_socket_sync(
+            get_socket_path(SocketType::Command),
+            &"plugin list".to_string().into_bytes(),
+        )
+    }
+    /// Returns a list of all plugins (async)
+    pub async fn list_async() -> HResult<String> {
+        write_to_socket(
+            get_socket_path(SocketType::Command),
+            &"plugin list".to_string().into_bytes(),
+        )
+        .await
+    }
+}
