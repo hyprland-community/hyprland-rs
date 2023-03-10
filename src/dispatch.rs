@@ -16,7 +16,8 @@
 
 use crate::shared::*;
 use std::string::ToString;
-use strum::Display;
+//use strum::Display;
+use derive_more::Display;
 
 /// This enum is for identifying a window
 #[derive(Debug, Clone)]
@@ -47,13 +48,13 @@ impl std::fmt::Display for WindowIdentifier<'_> {
 #[derive(Debug, Clone, Display)]
 pub enum FullscreenType {
     /// Fills the whole screen
-    #[strum(serialize = "0")]
+    #[display(fmt = "0")]
     Real,
     /// Maximizes the window
-    #[strum(serialize = "1")]
+    #[display(fmt = "1")]
     Maximize,
     /// Passes no param
-    #[strum(serialize = "")]
+    #[display(fmt = "")]
     NoParam,
 }
 
@@ -61,13 +62,13 @@ pub enum FullscreenType {
 #[derive(Debug, Clone, Display)]
 #[allow(missing_docs)]
 pub enum Direction {
-    #[strum(serialize = "u")]
+    #[display(fmt = "u")]
     Up,
-    #[strum(serialize = "d")]
+    #[display(fmt = "d")]
     Down,
-    #[strum(serialize = "r")]
+    #[display(fmt = "r")]
     Right,
-    #[strum(serialize = "l")]
+    #[display(fmt = "l")]
     Left,
 }
 
@@ -94,9 +95,9 @@ impl std::fmt::Display for Position {
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Display)]
 pub enum CycleDirection {
-    #[strum(serialize = "")]
+    #[display(fmt = "")]
     Next,
-    #[strum(serialize = "prev")]
+    #[display(fmt = "prev")]
     Previous,
 }
 
@@ -142,10 +143,10 @@ pub enum Corner {
 #[derive(Debug, Clone, Display)]
 pub enum WorkspaceOptions {
     /// Makes all windows pseudo tiled
-    #[strum(serialize = "allfloat")]
+    #[display(fmt = "allfloat")]
     AllPseudo,
     /// Makes all windows float
-    #[strum(serialize = "allpseudo")]
+    #[display(fmt = "allpseudo")]
     AllFloat,
 }
 
@@ -337,6 +338,68 @@ pub enum DispatchType<'a> {
     ToggleSpecialWorkspace(Option<String>),
     /// This dispatcher jump to urgent or the last window
     FocusUrgentOrLast,
+
+    // LAYOUT DISPATCHERS
+    // DWINDLE
+    /// Toggles the split (top/side) of the current window. `preserve_split` must be enabled for toggling to work.
+    ToggleSplit,
+
+    // MASTER
+    /// Swaps the current window with master.
+    /// If the current window is the master,
+    /// swaps it with the first child.
+    SwapWithMaster(SwapWithMasterParam),
+    /// Focuses the master window.
+    FocusMaster(FocusMasterParam),
+    /// Adds a master to the master side. That will be the active window,
+    /// if it’s not a master, or the first non-master window.
+    AddMaster,
+    /// Removes a master from the master side. That will be the
+    /// active window, if it’s a master, or the last master window.
+    RemoveMaster,
+    /// Sets the orientation for the current workspace to left
+    /// (master area left, slave windows to the right, vertically stacked)
+    OrientationLeft,
+    /// Sets the orientation for the current workspace to right
+    /// (master area right, slave windows to the left, vertically stacked)
+    OrientationRight,
+    /// Sets the orientation for the current workspace to top
+    /// (master area top, slave windows to the bottom, horizontally stacked)
+    OrientationTop,
+    /// Sets the orientation for the current workspace to bottom
+    /// (master area bottom, slave windows to the top, horizontally stacked)
+    OrientationBottom,
+    /// Sets the orientation for the current workspace to center
+    /// (master area center, slave windows alternate to the left and right, vertically stacked)
+    OrientationCenter,
+    /// Cycle to the next orientation for the current workspace (clockwise)
+    OrientationNext,
+    /// Cycle to the previous orientation for the current workspace (counter-clockwise)
+    OrientationPrev,
+}
+/// Param for [SwapWithMaster] dispatcher
+#[derive(Debug, Clone, Display)]
+pub enum SwapWithMasterParam {
+    /// New focus is the new master window
+    #[display(fmt = "master")]
+    Master,
+    /// New focus is the new child
+    #[display(fmt = "child")]
+    Child,
+    /// Keep the focus of the previously focused window
+    #[display(fmt = "auto")]
+    Auto,
+}
+
+/// Param for [FocusMaster] dispatcher
+#[derive(Debug, Clone, Display)]
+pub enum FocusMasterParam {
+    /// Focus stays at master, (even if it was selected before)
+    #[display(fmt = "master")]
+    Master,
+    /// If the current window is the master, focuses the first child
+    #[display(fmt = "auto")]
+    Auto,
 }
 
 fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
@@ -418,6 +481,18 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> HResult<Str
         BringActiveToTop => "bringactivetotop".to_string(),
         SetCursor(theme, size) => format!("{theme} {}", *size),
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
+        ToggleSplit => "togglesplit".to_string(),
+        SwapWithMaster(param) => format!("swapwithmaster{sep}{param}"),
+        FocusMaster(param) => format!("focusmaster{sep}{param}"),
+        AddMaster => "addmaster".to_string(),
+        RemoveMaster => "removemaster".to_string(),
+        OrientationLeft => "orientationleft".to_string(),
+        OrientationRight => "orientationright".to_string(),
+        OrientationTop => "orientationtop".to_string(),
+        OrientationBottom => "orientationbottom".to_string(),
+        OrientationCenter => "orientationcenter".to_string(),
+        OrientationNext => "orientationnext".to_string(),
+        OrientationPrev => "orientationprev".to_string(),
     };
     if let SetCursor(_, _) = cmd {
         Ok(format!("setcursor {string_to_pass}"))
