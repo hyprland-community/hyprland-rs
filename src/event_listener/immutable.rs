@@ -66,6 +66,7 @@ impl EventListener {
             LayerClosed(namespace) => arm!(namespace, layer_closed_events, self),
             FloatStateChanged(even) => arm!(even, float_state_events, self),
             UrgentStateChanged(even) => arm!(even, urgent_state_events, self),
+            Minimize(data) => arm!(data, minimize_events, self),
         }
     }
 

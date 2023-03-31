@@ -114,6 +114,7 @@ impl EventListener {
             Event::LayerClosed(even) => mut_arm!(even.clone(), layer_closed_events, self),
             Event::FloatStateChanged(even) => mut_arm!(even.clone(), float_state_events, self),
             Event::UrgentStateChanged(even) => mut_arm!(even.clone(), urgent_state_events, self),
+            Event::Minimize(data) => mut_arm!(data.clone(), minimize_events, self),
         }
         Ok(())
     }
@@ -177,6 +178,7 @@ impl EventListener {
             Event::UrgentStateChanged(even) => {
                 mut_arm_sync!(even.clone(), urgent_state_events, self)
             }
+            Event::Minimize(data) => mut_arm_sync!(data.clone(), minimize_events, self),
         }
         Ok(())
     }

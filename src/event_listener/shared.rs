@@ -57,6 +57,7 @@ pub(crate) struct Events {
     pub(crate) layer_closed_events: Closures<String>,
     pub(crate) float_state_events: Closures<WindowFloatEventData>,
     pub(crate) urgent_state_events: Closures<Address>,
+    pub(crate) minimize_events: Closures<MinimizeEventData>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -79,7 +80,17 @@ pub(crate) struct AsyncEvents {
     pub(crate) layer_closed_events: AsyncClosures<String>,
     pub(crate) float_state_events: AsyncClosures<WindowFloatEventData>,
     pub(crate) urgent_state_events: AsyncClosures<Address>,
+    pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
 }
+
+/// Event data for a minimize event
+#[derive(Clone, Debug)]
+pub struct MinimizeEventData(
+    /// Window address
+    pub Address,
+    /// Minimize state
+    pub bool,
+);
 
 /// The data for the event executed when moving a window to a new workspace
 #[derive(Clone, Debug)]
@@ -384,6 +395,7 @@ pub(crate) enum Event {
     LayerClosed(String),
     FloatStateChanged(WindowFloatEventData),
     UrgentStateChanged(Address),
+    Minimize(MinimizeEventData),
 }
 
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
@@ -458,6 +470,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             r"openlayer>>(?P<namespace>.*)",
             r"closelayer>>(?P<namespace>.*)",
             r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
+            r"minimize>>(?P<address>.*),(?P<state>[0-1])",
             r"(?P<Event>.*)>>.*?"
         ]));
         static ref EVENT_REGEXES: Vec<Regex> = EVENT_SET
@@ -627,6 +640,15 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     let addr = &captures["address"];
                     events.push(Event::UrgentStateChanged(Address::new(addr)));
                 }
+                19 => {
+                    // MinimizeStateChanged
+                    let addr = &captures["address"];
+                    let state = &captures["state"] == "1";
+                    events.push(Event::Minimize(MinimizeEventData(
+                        Address::new(addr),
+                        state,
+                    )));
+                }
                 _ => unreachable!(), //panic!("There are only 16 items in the array? prob a regex issue 🤷"),
             }
         } else if matches_event.len() == 1 {
@@ -642,7 +664,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                         s.as_str()
                     ),
                     None => eprintln!(
-                        "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: (Unable to get)"
+                        "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {item}"
                     ),
                 };
             }

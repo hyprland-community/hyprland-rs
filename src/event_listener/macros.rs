@@ -288,6 +288,7 @@ macro_rules! init_events {
             layer_closed_events: vec![],
             float_state_events: vec![],
             urgent_state_events: vec![],
+            minimize_events: vec![],
         }
     };
 }
