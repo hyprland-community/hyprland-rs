@@ -20,6 +20,9 @@ opt-level = "z"
 strip = true
 lto = true
 
+[workspace]
+members = ["hyprland-macros"]
+
 [dependencies]
 hyprland-macros = { path = "./hyprland-macros/" }
 serde = {version = "1", features = ["derive"]}
