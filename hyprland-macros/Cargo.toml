@@ -1,16 +1,18 @@
 [package]
 name = "hyprland-macros"
-version = "0.1.0"
+description = "Macros used in hyprland-rs"
+version.workspace = true
+license.workspace = true
+readme = "README.md"
 edition = "2021"
+homepage = "https://github.com/hyprland-community/hyprland-rs/tree/master/hyprland-macros"
 
 [package.metadata.nix]
 build = true
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 proc-macro = true
 
 [dependencies]
-syn = "2"
+syn = { version = "2", features = ["full", "parsing"]}
 quote = "1"
