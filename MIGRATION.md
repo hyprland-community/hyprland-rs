@@ -15,6 +15,13 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 9. [Update start listener calls](#update-start-listener-calls)
 10. Follow Rustc and Clippy for everything else! 
 
+## `0.3.0` ⟶ `0.3.1`
+* Change some types in the data
+structs, because they changed (Only int types)
+* Fix some dispatchers (ex. `ToggleSpecialWorkspace`)
+* Update active window event, cuz I merged it with activewindowv2
+* Update location of `Result` type, cuz I changed it
+
 ## More in-depth steps
 
 ### 0.3 Update
