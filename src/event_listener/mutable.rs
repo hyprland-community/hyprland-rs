@@ -115,6 +115,7 @@ impl EventListener {
             Event::FloatStateChanged(even) => mut_arm!(even.clone(), float_state_events, self),
             Event::UrgentStateChanged(even) => mut_arm!(even.clone(), urgent_state_events, self),
             Event::Minimize(data) => mut_arm!(data.clone(), minimize_events, self),
+            Event::Screencopy(data) => mut_arm!(*data, screencopy_events, self),
         }
         Ok(())
     }
@@ -179,6 +180,7 @@ impl EventListener {
                 mut_arm_sync!(even.clone(), urgent_state_events, self)
             }
             Event::Minimize(data) => mut_arm_sync!(data.clone(), minimize_events, self),
+            Event::Screencopy(data) => mut_arm_sync!(*data, screencopy_events, self),
         }
         Ok(())
     }

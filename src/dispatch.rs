@@ -101,6 +101,16 @@ pub enum CycleDirection {
     Previous,
 }
 
+/// This enum holds a direction for switch windows in a group
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Display)]
+pub enum WindowSwitchDirection {
+    #[display(fmt = "b")]
+    Back,
+    #[display(fmt = "f")]
+    Forward,
+}
+
 /// This enum is used for identifying monitors
 #[derive(Debug, Clone)]
 pub enum MonitorIdentifier<'a> {
@@ -260,6 +270,8 @@ pub enum DispatchType<'a> {
     /// This dispatcher passes a keybind to a window when called in a
     /// keybind, its used for global keybinds. And should **ONLY** be used with keybinds
     Pass(WindowIdentifier<'a>),
+    /// Executes a Global Shortcut using the GlobalShortcuts portal.
+    Global(&'a str),
     /// This dispatcher kills the active window/client
     KillActiveWindow,
     /// This dispatcher closes the specified window
@@ -338,6 +350,8 @@ pub enum DispatchType<'a> {
     ToggleSpecialWorkspace(Option<String>),
     /// This dispatcher jump to urgent or the last window
     FocusUrgentOrLast,
+    /// Switch focus from current to previously focused window
+    FocusCurrentOrLast,
 
     // LAYOUT DISPATCHERS
     // DWINDLE
@@ -376,7 +390,34 @@ pub enum DispatchType<'a> {
     OrientationNext,
     /// Cycle to the previous orientation for the current workspace (counter-clockwise)
     OrientationPrev,
+
+    // Group Dispatchers
+    /// Toggles the current active window into a group
+    ToggleGroup,
+    /// Switches to the next window in a group.
+    ChangeGroupActive(WindowSwitchDirection),
+    /// Locks the groups
+    LockGroups(LockType),
+    /// Moves the active window into a group in a specified direction
+    MoveIntoGroup(Direction),
+    /// Moves the active window out of a group.
+    MoveOutOfGroup,
 }
+
+/// Enum used with [DispatchType::LockGroups], to determine how to lock/unlock
+#[derive(Debug, Clone, Copy, Display, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LockType {
+    /// Lock Group
+    #[display(fmt = "lock")]
+    Lock,
+    /// Unlock Group
+    #[display(fmt = "unlock")]
+    Unlock,
+    /// Toggle lock state of Group
+    #[display(fmt = "toggle")]
+    ToggleLock,
+}
+
 /// Param for [SwapWithMaster] dispatcher
 #[derive(Debug, Clone, Display)]
 pub enum SwapWithMasterParam {
@@ -422,6 +463,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         Custom(name, args) => format!("{name}{sep}{args}"),
         Exec(sh) => format!("exec{sep}{sh}"),
         Pass(win) => format!("pass{sep}{win}"),
+        Global(name) => format!("global{sep}{name}"),
         KillActiveWindow => "killactive".to_string(),
         CloseWindow(win) => format!("closewindow{sep}{win}"),
         Workspace(work) => format!("workspace{sep}{work}"),
@@ -481,6 +523,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         BringActiveToTop => "bringactivetotop".to_string(),
         SetCursor(theme, size) => format!("{theme} {}", *size),
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
+        FocusCurrentOrLast => "focuscurrentorlast".to_string(),
         ToggleSplit => "togglesplit".to_string(),
         SwapWithMaster(param) => format!("swapwithmaster{sep}{param}"),
         FocusMaster(param) => format!("focusmaster{sep}{param}"),
@@ -493,6 +536,11 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         OrientationCenter => "orientationcenter".to_string(),
         OrientationNext => "orientationnext".to_string(),
         OrientationPrev => "orientationprev".to_string(),
+        ToggleGroup => "togglegroup".to_string(),
+        ChangeGroupActive(dir) => format!("changegroupactive{sep}{dir}"),
+        LockGroups(how) => format!("lockgroups{sep}{how}"),
+        MoveIntoGroup(dir) => format!("moveintogroup{sep}{dir}"),
+        MoveOutOfGroup => "moveoutofgroup".to_string(),
     };
     if let SetCursor(_, _) = cmd {
         Ok(format!("setcursor {string_to_pass}"))

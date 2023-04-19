@@ -80,6 +80,7 @@ impl AsyncEventListener {
             Event::FloatStateChanged(even) => arm_async!(even.clone(), float_state_events, self),
             Event::UrgentStateChanged(even) => arm_async!(even.clone(), urgent_state_events, self),
             Event::Minimize(data) => arm_async!(data.clone(), minimize_events, self),
+            Event::Screencopy(data) => arm_async!(*data, screencopy_events, self),
         }
     }
 

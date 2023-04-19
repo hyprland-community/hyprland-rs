@@ -58,6 +58,7 @@ pub(crate) struct Events {
     pub(crate) float_state_events: Closures<WindowFloatEventData>,
     pub(crate) urgent_state_events: Closures<Address>,
     pub(crate) minimize_events: Closures<MinimizeEventData>,
+    pub(crate) screencopy_events: Closures<ScreencopyEventData>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -81,6 +82,7 @@ pub(crate) struct AsyncEvents {
     pub(crate) float_state_events: AsyncClosures<WindowFloatEventData>,
     pub(crate) urgent_state_events: AsyncClosures<Address>,
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
+    pub(crate) screencopy_events: AsyncClosures<ScreencopyEventData>,
 }
 
 /// Event data for a minimize event
@@ -89,6 +91,15 @@ pub struct MinimizeEventData(
     /// Window address
     pub Address,
     /// Minimize state
+    pub bool,
+);
+
+/// Event data for screencopy event
+#[derive(Debug, Clone, Copy)]
+pub struct ScreencopyEventData(
+    /// State/Is it turning on?
+    pub bool,
+    /// Owner type, is it a monitor?
     pub bool,
 );
 
@@ -143,6 +154,7 @@ pub struct State {
 use std::ops::{Deref, DerefMut};
 /// Wrapper type that adds handler for events
 #[derive(Clone)]
+#[doc(hidden)]
 pub struct MutWrapper<'a, 'b, T>(T, &'a (dyn Fn(T) + 'a), &'b (dyn Fn(T) -> VoidFuture + 'b));
 impl<T> MutWrapper<'_, '_, T> {
     #[allow(dead_code)]
@@ -177,6 +189,7 @@ impl<T: Clone> DerefMut for MutWrapper<'_, '_, T> {
 
 /// The mutable state available to Closures
 #[derive(PartialEq, Eq, Clone, Debug)]
+#[doc(hidden)]
 pub struct StateV2 {
     /// The active workspace
     pub workspace: MutWrapper<'static, 'static, String>,
@@ -396,6 +409,7 @@ pub(crate) enum Event {
     FloatStateChanged(WindowFloatEventData),
     UrgentStateChanged(Address),
     Minimize(MinimizeEventData),
+    Screencopy(ScreencopyEventData),
 }
 
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
@@ -439,6 +453,7 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
 
 macro_rules! report_unknown {
     ($event:tt) => {
+        #[cfg(not(feature = "silent"))]
         eprintln!(
             "A unknown event was passed into Hyprland-rs
             PLEASE MAKE AN ISSUE!!
@@ -447,6 +462,10 @@ macro_rules! report_unknown {
         );
     };
 }
+
+use std::collections::BTreeSet;
+use std::sync::Mutex;
+static CHECK_TABLE: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
@@ -471,6 +490,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             r"closelayer>>(?P<namespace>.*)",
             r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
             r"minimize>>(?P<address>.*),(?P<state>[0-1])",
+            r"screencopy>>(?P<state>[0-1]),(?P<owner>[0-1])",
             r"(?P<Event>.*)>>.*?"
         ]));
         static ref EVENT_REGEXES: Vec<Regex> = EVENT_SET
@@ -649,6 +669,12 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                         state,
                     )));
                 }
+                20 => {
+                    // ScreenCopyStateChanged
+                    let state = &captures["state"] == "1";
+                    let owner = &captures["owner"] == "1";
+                    events.push(Event::Screencopy(ScreencopyEventData(state, owner)));
+                }
                 _ => unreachable!(), //panic!("There are only 16 items in the array? prob a regex issue 🤷"),
             }
         } else if matches_event.len() == 1 {
@@ -656,16 +682,33 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 panic!("One event matched, that isn't the unrecognised event type, sus")
             } else {
                 // Unknown Event
+                #[cfg(not(feature = "silent"))]
                 match &captures.name("event") {
-                    Some(s) => eprintln!(
-                        "A unknown event was passed into Hyprland-rs
+                    Some(s) => {
+                        let table = CHECK_TABLE.lock();
+                        if let Ok(mut tbl) = table {
+                            let should_run = tbl.insert(s.as_str().to_string());
+                            if should_run == true {
+                                eprintln!(
+                                    "A unknown event was passed into Hyprland-rs
                     PLEASE MAKE AN ISSUE!!
                     The event was: {}",
-                        s.as_str()
-                    ),
-                    None => eprintln!(
+                                    s.as_str()
+                                );
+                            }
+                        }
+                    }
+                    None => {
+                        let table = CHECK_TABLE.lock();
+                        if let Ok(mut tbl) = table {
+                            let should_run = tbl.insert("unknown".to_string());
+                            if should_run == true {
+                                eprintln!(
                         "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {item}"
-                    ),
+                    );
+                            }
+                        }
+                    }
                 };
             }
         } else {

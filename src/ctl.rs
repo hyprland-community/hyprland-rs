@@ -168,6 +168,44 @@ pub mod set_error {
     }
 }
 
+/// Creates a notification with Hyprland
+pub mod notify {
+    use super::*;
+    use std::time::Duration;
+    #[repr(u8)]
+    #[allow(missing_docs)]
+    pub enum Icon {
+        Warning = 0,
+        Info = 1,
+        Hint = 2,
+        Error = 3,
+        Confused = 4,
+        Ok = 5,
+    }
+    /// Creates a notification with Hyprland
+    pub fn call(icon: Icon, time: Duration, color: Color, msg: String) -> crate::Result<()> {
+        write_to_socket_sync(
+            get_socket_path(SocketType::Command),
+            &format!("notify {} {} {color} {msg}", icon as u8, time.as_millis()).into_bytes(),
+        )?;
+        Ok(())
+    }
+    /// Creates a error that Hyprland will display (async)
+    pub async fn call_async(
+        icon: Icon,
+        time: Duration,
+        color: Color,
+        msg: String,
+    ) -> crate::Result<()> {
+        write_to_socket(
+            get_socket_path(SocketType::Command),
+            &format!("notify {} {} {color} {msg}", icon as u8, time.as_millis()).into_bytes(),
+        )
+        .await?;
+        Ok(())
+    }
+}
+
 /// A 8-bit color with a alpha channel
 #[derive(MDisplay, Constructor)]
 #[display(fmt = "rgba({},{},{},{})", "_0", "_1", "_2", "_3")]

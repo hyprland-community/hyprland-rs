@@ -36,3 +36,5 @@ add_listener!(layer_open, String, "a new layer is opened", "Layer opened" => dat
 add_listener!(layer_closed, String, "a layer is closed", "Layer closed" => data);
 add_listener!(float_state, WindowFloatEventData, "the float state of a window is changed", "Float state changed" => data);
 add_listener!(urgent_state, Address, "the urgent state of a window is changed", "urgent state changed" => data);
+add_listener!(minimize, MinimizeEventData, "the minimize state of a window is changed", "minimize state changed" => data);
+add_listener!(screencopy, ScreencopyEventData, "the screencopy state of a window is changed", "screencopy state changed" => data);

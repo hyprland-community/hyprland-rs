@@ -24,7 +24,7 @@ lto = true
 members = ["hyprland-macros"]
 
 [workspace.package]
-version = "0.3.1"
+version = "0.3.2"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
 keywords = ["hyprland", "ipc", "hypr", "wayland", "linux"]
@@ -63,4 +63,4 @@ ctl = []
 keyword = []
 config = ["dispatch", "keyword"]
 listener = ["data", "dispatch"]
-
+silent = []
