@@ -210,7 +210,7 @@ pub struct Client {
     /// The window location
     pub at: (i16, i16),
     /// The window size
-    pub size: (u16, u16),
+    pub size: (i16, i16),
     /// The workspace its on
     pub workspace: WorkspaceBasic,
     /// Is this window floating?
@@ -277,9 +277,9 @@ pub struct LayerClient {
     /// The layer's y position
     pub y: i32,
     /// The layer's width
-    pub w: u16,
+    pub w: i16,
     /// The layer's height
-    pub h: u16,
+    pub h: i16,
     /// The layer's namespace
     pub namespace: String,
 }
