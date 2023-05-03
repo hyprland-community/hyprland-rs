@@ -276,6 +276,8 @@ pub enum DispatchType<'a> {
     KillActiveWindow,
     /// This dispatcher closes the specified window
     CloseWindow(WindowIdentifier<'a>),
+    /// This dispatcher return the active workspace
+    ActiveWorkspace,
     /// This dispatcher changes the current workspace
     Workspace(WorkspaceIdentifierWithSpecial<'a>),
     /// This dispatcher moves a window (focused if not specified) to a workspace
@@ -466,6 +468,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         Global(name) => format!("global{sep}{name}"),
         KillActiveWindow => "killactive".to_string(),
         CloseWindow(win) => format!("closewindow{sep}{win}"),
+        ActiveWorkspace => "activeworkspace".to_string(),
         Workspace(work) => format!("workspace{sep}{work}"),
         MoveToWorkspace(work, Some(win)) => format!("movetoworkspace {work} {win}"),
         MoveToWorkspace(work, None) => format!("movetoworkspace {work}"),
