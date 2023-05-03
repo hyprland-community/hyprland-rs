@@ -11,7 +11,10 @@ pub mod reload {
     pub fn call() -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &"reload".to_string().into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: "reload".to_string(),
+            },
         )?;
         Ok(())
     }
@@ -19,7 +22,10 @@ pub mod reload {
     pub async fn call_async() -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &"reload".to_string().into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: "reload".to_string(),
+            },
         )
         .await?;
         Ok(())
@@ -32,7 +38,10 @@ pub mod kill {
     pub fn call() -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &"kill".to_string().into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: "kill".to_string(),
+            },
         )?;
         Ok(())
     }
@@ -40,7 +49,10 @@ pub mod kill {
     pub async fn call_async() -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &"kill".to_string().into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: "kill".to_string(),
+            },
         )
         .await?;
         Ok(())
@@ -54,7 +66,10 @@ pub mod set_cursor {
     pub fn call<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("setcursor {theme} {size}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("setcursor {theme} {size}"),
+            },
         )?;
         Ok(())
     }
@@ -62,7 +77,10 @@ pub mod set_cursor {
     pub async fn call_async<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &format!("setcursor {theme} {size}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("setcursor {theme} {size}"),
+            },
         )
         .await?;
         Ok(())
@@ -93,7 +111,10 @@ pub mod output {
     pub fn create(backend: OutputBackends) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("output create {backend}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("output create {backend}"),
+            },
         )?;
         Ok(())
     }
@@ -101,7 +122,10 @@ pub mod output {
     pub fn remove<Str: FDisplay>(name: Str) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("output remove {name}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("output remove {name}"),
+            },
         )?;
         Ok(())
     }
@@ -128,7 +152,10 @@ pub mod switch_xkb_layout {
     pub fn call<Str: FDisplay>(device: Str, cmd: SwitchXKBLayoutCmdTypes) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("switchxkblayout {device} {cmd}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("switchxkblayout {device} {cmd}"),
+            },
         )?;
         Ok(())
     }
@@ -139,7 +166,10 @@ pub mod switch_xkb_layout {
     ) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &format!("switchxkblayout {device} {cmd}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("switchxkblayout {device} {cmd}"),
+            },
         )
         .await?;
         Ok(())
@@ -153,7 +183,10 @@ pub mod set_error {
     pub fn call(color: Color, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("seterror {color} {msg}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("seterror {color} {msg}"),
+            },
         )?;
         Ok(())
     }
@@ -161,7 +194,10 @@ pub mod set_error {
     pub async fn call_async(color: Color, msg: String) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &format!("seterror {color} {msg}").into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("seterror {color} {msg}"),
+            },
         )
         .await?;
         Ok(())
@@ -186,7 +222,10 @@ pub mod notify {
     pub fn call(icon: Icon, time: Duration, color: Color, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("notify {} {} {color} {msg}", icon as u8, time.as_millis()).into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("notify {} {} {color} {msg}", icon as u8, time.as_millis()),
+            },
         )?;
         Ok(())
     }
@@ -199,7 +238,10 @@ pub mod notify {
     ) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &format!("notify {} {} {color} {msg}", icon as u8, time.as_millis()).into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("notify {} {} {color} {msg}", icon as u8, time.as_millis()),
+            },
         )
         .await?;
         Ok(())
@@ -354,7 +396,10 @@ pub mod set_prop {
     pub fn call(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("setprop {ident} {prop} {}", if lock { "lock" } else { "" }).into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("setprop {ident} {prop} {}", if lock { "lock" } else { "" }),
+            },
         )?;
         Ok(())
     }
@@ -362,7 +407,10 @@ pub mod set_prop {
     pub async fn call_async(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &format!("setprop {ident} {prop} {}", if lock { "lock" } else { "" }).into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("setprop {ident} {prop} {}", if lock { "lock" } else { "" }),
+            },
         )
         .await?;
         Ok(())
@@ -378,7 +426,10 @@ pub mod plugin {
     pub fn load(path: &Path) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &format!("plugin load {}", path.display()).into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("plugin load {}", path.display()),
+            },
         )?;
         Ok(())
     }
@@ -386,7 +437,10 @@ pub mod plugin {
     pub async fn load_async(path: &Path) -> crate::Result<()> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &format!("plugin load {}", path.display()).into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: format!("plugin load {}", path.display()),
+            },
         )
         .await?;
         Ok(())
@@ -395,14 +449,20 @@ pub mod plugin {
     pub fn list() -> crate::Result<String> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            &"plugin list".to_string().into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: "plugin list".to_string(),
+            },
         )
     }
     /// Returns a list of all plugins (async)
     pub async fn list_async() -> crate::Result<String> {
         write_to_socket(
             get_socket_path(SocketType::Command),
-            &"plugin list".to_string().into_bytes(),
+            CommandContent {
+                flag: CommandFlag::Empty,
+                data: "plugin list".to_string(),
+            },
         )
         .await
     }

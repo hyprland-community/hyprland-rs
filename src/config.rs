@@ -264,5 +264,5 @@ fn test_binds() {
         Ok(v) => v,
         Err(e) => panic!("Error occured: {e}"),
     };
-    assert_eq!(built_bind, "SUPER,v,togglefloating");
+    assert_eq!(built_bind, "SUPER,v,/togglefloating");
 }

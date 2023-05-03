@@ -5,22 +5,28 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// This private function is to call socket commands
 async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
-    let cmd_string = cmd.to_string();
-
     let socket_path = get_socket_path(SocketType::Command);
 
-    match write_to_socket(socket_path, format!("j/{cmd_string}").as_bytes()).await {
+    let command = CommandContent {
+        flag: CommandFlag::JSON,
+        data: cmd.to_string(),
+    };
+
+    match write_to_socket(socket_path, command).await {
         Ok(data) => data,
         Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
     }
 }
 
 fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
-    let cmd_string = cmd.to_string();
-
     let socket_path = get_socket_path(SocketType::Command);
 
-    match write_to_socket_sync(socket_path, format!("j/{cmd_string}").as_bytes()) {
+    let command = CommandContent {
+        flag: CommandFlag::JSON,
+        data: cmd.to_string(),
+    };
+
+    match write_to_socket_sync(socket_path, command) {
         Ok(data) => data,
         Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
     }
