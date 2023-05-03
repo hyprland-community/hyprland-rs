@@ -491,6 +491,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
             r"minimize>>(?P<address>.*),(?P<state>[0-1])",
             r"screencopy>>(?P<state>[0-1]),(?P<owner>[0-1])",
+            r"urgent>>(?P<address>.*)",
             r"(?P<Event>.*)>>.*?"
         ]));
         static ref EVENT_REGEXES: Vec<Regex> = EVENT_SET
@@ -656,9 +657,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     )));
                 }
                 18 => {
-                    // UrgentStateChanged
-                    let addr = &captures["address"];
-                    events.push(Event::UrgentStateChanged(Address::new(addr)));
+                    // ScreenCopyStateChanged
+                    let state = &captures["state"] == "1";
+                    let owner = &captures["owner"] == "1";
+                    events.push(Event::Screencopy(ScreencopyEventData(state, owner)));
                 }
                 19 => {
                     // MinimizeStateChanged
@@ -670,10 +672,9 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     )));
                 }
                 20 => {
-                    // ScreenCopyStateChanged
-                    let state = &captures["state"] == "1";
-                    let owner = &captures["owner"] == "1";
-                    events.push(Event::Screencopy(ScreencopyEventData(state, owner)));
+                    // UrgentStateChanged
+                    let addr = &captures["address"];
+                    events.push(Event::UrgentStateChanged(Address::new(addr)));
                 }
                 _ => unreachable!(), //panic!("There are only 16 items in the array? prob a regex issue 🤷"),
             }
