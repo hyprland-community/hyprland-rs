@@ -689,7 +689,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                         let table = CHECK_TABLE.lock();
                         if let Ok(mut tbl) = table {
                             let should_run = tbl.insert(s.as_str().to_string());
-                            if should_run == true {
+                            if should_run {
                                 eprintln!(
                                     "A unknown event was passed into Hyprland-rs
                     PLEASE MAKE AN ISSUE!!
@@ -703,7 +703,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                         let table = CHECK_TABLE.lock();
                         if let Ok(mut tbl) = table {
                             let should_run = tbl.insert("unknown".to_string());
-                            if should_run == true {
+                            if should_run {
                                 eprintln!(
                         "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {item}"
                     );
