@@ -456,7 +456,7 @@ fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     }
 }
 
-pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Result<String> {
+pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Result<CommandContent> {
     use DispatchType::*;
     let sep = if dispatch { " " } else { "," };
     let string_to_pass = match &cmd {
@@ -543,11 +543,20 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         MoveOutOfGroup => "moveoutofgroup".to_string(),
     };
     if let SetCursor(_, _) = cmd {
-        Ok(format!("setcursor {string_to_pass}"))
+        Ok(CommandContent {
+            flag: CommandFlag::JSON,
+            data: format!("setcursor {string_to_pass}"),
+        })
     } else if dispatch {
-        Ok(format!("dispatch {string_to_pass}"))
+        Ok(CommandContent {
+            flag: CommandFlag::JSON,
+            data: format!("dispatch {string_to_pass}"),
+        })
     } else {
-        Ok(string_to_pass)
+        Ok(CommandContent {
+            flag: CommandFlag::Empty,
+            data: string_to_pass,
+        })
     }
 }
 
@@ -567,10 +576,7 @@ impl Dispatch {
     /// ```
     pub fn call(dispatch_type: DispatchType) -> crate::Result<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let output = write_to_socket_sync(
-            socket_path,
-            gen_dispatch_str(dispatch_type, true)?.as_bytes(),
-        );
+        let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type, true)?);
 
         match output {
             Ok(msg) => match msg.as_str() {
@@ -594,11 +600,7 @@ impl Dispatch {
     /// ```
     pub async fn call_async(dispatch_type: DispatchType<'_>) -> crate::Result<()> {
         let socket_path = get_socket_path(SocketType::Command);
-        let output = write_to_socket(
-            socket_path,
-            gen_dispatch_str(dispatch_type, true)?.as_bytes(),
-        )
-        .await;
+        let output = write_to_socket(socket_path, gen_dispatch_str(dispatch_type, true)?).await;
 
         match output {
             Ok(msg) => match msg.as_str() {

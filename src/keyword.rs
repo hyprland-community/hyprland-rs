@@ -97,10 +97,16 @@ pub struct Keyword {
 
 macro_rules! keyword {
     ($k:tt,$v:tt) => {
-        format!("keyword {} {}", $k, $v)
+        CommandContent {
+            flag: CommandFlag::Empty,
+            data: format!("keyword {} {}", $k, $v),
+        }
     };
     (g $l:tt) => {
-        format!("j/getoption {}", $l)
+        CommandContent {
+            flag: CommandFlag::JSON,
+            data: format!("getoption {}", $l),
+        }
     };
 }
 
@@ -125,7 +131,7 @@ impl Keyword {
         let socket_path = get_socket_path(SocketType::Command);
         let _ = write_to_socket_sync(
             socket_path,
-            keyword!((key.to_string()), (value.into().to_string())).as_bytes(),
+            keyword!((key.to_string()), (value.into().to_string())),
         )?;
         Ok(())
     }
@@ -137,7 +143,7 @@ impl Keyword {
         let socket_path = get_socket_path(SocketType::Command);
         let _ = write_to_socket(
             socket_path,
-            keyword!((key.to_string()), (value.into().to_string())).as_bytes(),
+            keyword!((key.to_string()), (value.into().to_string())),
         )
         .await?;
         Ok(())
@@ -145,7 +151,7 @@ impl Keyword {
     /// This function returns the value of a keyword
     pub fn get<Str: ToString>(key: Str) -> crate::Result<Self> {
         let socket_path = get_socket_path(SocketType::Command);
-        let data = write_to_socket_sync(socket_path, keyword!(g(key.to_string())).as_bytes())?;
+        let data = write_to_socket_sync(socket_path, keyword!(g(key.to_string())))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword {
             option: deserialized.option.clone(),
@@ -156,7 +162,7 @@ impl Keyword {
     /// This function returns the value of a keyword (async)
     pub async fn get_async<Str: ToString>(key: Str) -> crate::Result<Self> {
         let socket_path = get_socket_path(SocketType::Command);
-        let data = write_to_socket(socket_path, keyword!(g(key.to_string())).as_bytes()).await?;
+        let data = write_to_socket(socket_path, keyword!(g(key.to_string()))).await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword {
             option: deserialized.option.clone(),

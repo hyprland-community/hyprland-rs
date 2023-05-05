@@ -189,12 +189,15 @@ impl Address {
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> crate::Result<String> {
+pub(crate) async fn write_to_socket(
+    path: String,
+    content: CommandContent,
+) -> crate::Result<String> {
     use crate::unix_async::*;
 
     let mut stream = UnixStream::connect(path).await?;
 
-    stream.write_all(content).await?;
+    stream.write_all(&content.as_bytes()).await?;
 
     let mut response = vec![];
 
@@ -213,12 +216,12 @@ pub(crate) async fn write_to_socket(path: String, content: &[u8]) -> crate::Resu
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) fn write_to_socket_sync(path: String, content: &[u8]) -> crate::Result<String> {
+pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
     let mut stream = UnixStream::connect(path)?;
 
-    stream.write_all(content)?;
+    stream.write_all(&content.as_bytes())?;
 
     let mut response = vec![];
 
@@ -279,5 +282,58 @@ where
     match Deserialize::deserialize(deserializer)? {
         Aux::T(t) => Ok(Some(t)),
         Aux::Empty(_) | Aux::Null => Ok(None),
+    }
+}
+
+/// This enum defines the possible command flags that can be used.
+pub enum CommandFlag {
+    /// The JSON flag.
+    JSON,
+    /// An empty flag.
+    Empty,
+}
+
+/// This struct defines the content of a command, which consists of a flag and a data string.
+pub struct CommandContent {
+    /// The flag for the command.
+    pub flag: CommandFlag,
+    /// The data string for the command.
+    pub data: String,
+}
+
+impl CommandContent {
+    /// Converts the command content to a byte vector.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hyprland::shared::*;
+    ///
+    /// let content = CommandContent { flag: CommandFlag::JSON, data: "foo".to_string() };
+    /// let bytes = content.as_bytes();
+    /// assert_eq!(bytes, b"j/foo");
+    /// ```
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.to_string().into_bytes()
+    }
+}
+
+impl fmt::Display for CommandContent {
+    /// Formats the command content as a string for display.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hyprland::shared::*;
+    ///
+    /// let content = CommandContent { flag: CommandFlag::JSON, data: "foo".to_string() };
+    /// let s = format!("{}", content);
+    /// assert_eq!(s, "j/foo");
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.flag {
+            CommandFlag::JSON => write!(f, "j/{}", &self.data),
+            CommandFlag::Empty => write!(f, "/{}", &self.data),
+        }
     }
 }
