@@ -542,21 +542,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         MoveIntoGroup(dir) => format!("moveintogroup{sep}{dir}"),
         MoveOutOfGroup => "moveoutofgroup".to_string(),
     };
+
     if let SetCursor(_, _) = cmd {
-        Ok(CommandContent {
-            flag: CommandFlag::JSON,
-            data: format!("setcursor {string_to_pass}"),
-        })
+        Ok(command!(JSON, "setcursor {string_to_pass}"))
     } else if dispatch {
-        Ok(CommandContent {
-            flag: CommandFlag::JSON,
-            data: format!("dispatch {string_to_pass}"),
-        })
+        Ok(command!(JSON, "dispatch {string_to_pass}"))
     } else {
-        Ok(CommandContent {
-            flag: CommandFlag::Empty,
-            data: string_to_pass,
-        })
+        Ok(command!(Empty, "{string_to_pass}"))
     }
 }
 
