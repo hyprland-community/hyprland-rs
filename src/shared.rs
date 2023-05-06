@@ -285,6 +285,23 @@ where
     }
 }
 
+/// Creates a `CommandContent` instance with the given flag and formatted data.
+///
+/// # Arguments
+///
+/// * `$flag` - A `CommandFlag` variant (`JSON` or `Empty`) that represents the flag for the command.
+/// * `$($k:tt)*` - A format string and its arguments to be used as the data in the `CommandContent` instance.
+#[macro_export]
+macro_rules! command {
+    ($flag:ident, $($k:tt)*) => {{
+        CommandContent {
+            flag: CommandFlag::$flag,
+            data: format!($($k)*),
+        }
+    }};
+}
+pub use command;
+
 /// This enum defines the possible command flags that can be used.
 pub enum CommandFlag {
     /// The JSON flag.
