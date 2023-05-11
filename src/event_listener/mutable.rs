@@ -83,7 +83,7 @@ impl EventListener {
                 even.clone(),
                 active_monitor_changed_events,
                 active_monitor,
-                even.0.clone(),
+                even.monitor_name.clone(),
                 self
             ),
             Event::ActiveWindowChangedMerged(Some(event)) => {
@@ -134,12 +134,18 @@ impl EventListener {
                 mut_arm_sync!(id.clone(), workspace_destroyed_events, self)
             }
             Event::WorkspaceMoved(id) => mut_arm_sync!(id.clone(), workspace_moved_events, self),
-            Event::ActiveMonitorChanged(MonitorEventData(monitor, id)) => {
+            Event::ActiveMonitorChanged(MonitorEventData {
+                monitor_name,
+                workspace,
+            }) => {
                 mut_state_arm_sync!(
-                    MonitorEventData(monitor.clone(), id.clone()),
+                    MonitorEventData {
+                        monitor_name: monitor_name.clone(),
+                        workspace: workspace.clone()
+                    },
                     active_monitor_changed_events,
                     active_monitor,
-                    monitor.clone(),
+                    monitor_name.clone(),
                     self
                 )
             }
@@ -225,7 +231,11 @@ impl EventListener {
                     match active_window_buf.clone() {
                         Some(Some((class, title))) => {
                             self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData(class.to_string(), title.to_string(), addr.clone()),
+                                WindowEventData {
+                                    window_class: class.to_string(),
+                                    window_title: title.to_string(),
+                                    window_address: addr.clone(),
+                                },
                             )))
                             .await?;
                         }
@@ -282,7 +292,11 @@ impl EventListener {
                     match active_window_buf.clone() {
                         Some(Some((class, title))) => {
                             self.event_executor_sync(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData(class.to_string(), title.to_string(), addr.clone()),
+                                WindowEventData {
+                                    window_class: class.to_string(),
+                                    window_title: title.to_string(),
+                                    window_address: addr.clone(),
+                                },
                             )))?;
                         }
                         Some(None) => {}

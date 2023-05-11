@@ -108,7 +108,11 @@ impl EventListener {
                     match active_window_buf.clone() {
                         Some(Some((class, title))) => {
                             self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData(class.to_string(), title.to_string(), addr.clone()),
+                                WindowEventData {
+                                    window_class: class.to_string(),
+                                    window_title: title.to_string(),
+                                    window_address: addr.clone(),
+                                },
                             )));
                         }
                         Some(None) => {}
@@ -160,7 +164,11 @@ impl EventListener {
                     match active_window_buf.clone() {
                         Some(Some((class, title))) => {
                             self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData(class.to_string(), title.to_string(), addr.clone()),
+                                WindowEventData {
+                                    window_class: class.to_string(),
+                                    window_title: title.to_string(),
+                                    window_address: addr.clone(),
+                                },
                             )));
                         }
                         Some(None) => {}
