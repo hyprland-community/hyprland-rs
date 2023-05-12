@@ -15,6 +15,10 @@ Steps (This order is recommended so lsp doesn't scream at you lol)
 9. [Update start listener calls](#update-start-listener-calls)
 10. Follow Rustc and Clippy for everything else! 
 
+## `0.3.*` ⟶ `0.3.3`
+* Changes some integer types
+* Switch to new event structs (no longer tuple!)
+
 ## `0.3.0` ⟶ `0.3.1`
 * Change some types in the data
 structs, because they changed (Only int types)
