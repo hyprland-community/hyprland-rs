@@ -1,4 +1,4 @@
-use hyprland::data::{Client, Clients, Monitors};
+use hyprland::data::{Client, Clients, Monitors, Workspace};
 use hyprland::dispatch::*;
 use hyprland::event_listener::EventListenerMutable as EventListener;
 use hyprland::keyword::*;

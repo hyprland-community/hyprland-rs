@@ -45,4 +45,4 @@ This crate provides 6 modules (+1 for shared things)
 
 ## Example Usage
 
-Check the examples in the [`src/bin/` directory](https://github.com/hyprland-community/hyprland-rs/tree/master/src/bin)
+Check the examples in the [`src/bin/` directory](https://github.com/hyprland-community/hyprland-rs/tree/master/examples)
