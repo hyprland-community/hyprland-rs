@@ -34,9 +34,7 @@ async fn main() -> hyprland::Result<()> {
     // and all open windows
     let clients = Clients::get_async().await?;
     // and the active workspace
-    dbg!("works!");
     let work = Workspace::get_active_async().await?;
-    dbg!("works!");
     // and printing them all out!
     println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}\nworkspace:{work:#?}");
     let animations = Animations::get_async().await?;

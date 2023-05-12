@@ -38,8 +38,11 @@ fn main() -> hyprland::Result<()> {
     // and all open windows
     let clients = Clients::get()?;
 
+    // and the active workspace
+    let work = Workspace::get_active()?;
+
     // and printing them all out!
-    println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}");
+    println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}\nworkspace: {work:#?}");
 
     // Create a event listener
     let mut event_listener = EventListener::new();
