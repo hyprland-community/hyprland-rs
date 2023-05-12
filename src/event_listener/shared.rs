@@ -87,56 +87,56 @@ pub(crate) struct AsyncEvents {
 
 /// Event data for a minimize event
 #[derive(Clone, Debug)]
-pub struct MinimizeEventData(
+pub struct MinimizeEventData {
     /// Window address
-    pub Address,
-    /// Minimize state
-    pub bool,
-);
+    pub window_address: Address,
+    /// whether it's minimized or not
+    pub is_minimized: bool,
+}
 
 /// Event data for screencopy event
 #[derive(Debug, Clone, Copy)]
-pub struct ScreencopyEventData(
+pub struct ScreencopyEventData {
     /// State/Is it turning on?
-    pub bool,
+    pub is_turning_on: bool,
     /// Owner type, is it a monitor?
-    pub bool,
-);
+    pub is_monitor: bool,
+}
 
 /// The data for the event executed when moving a window to a new workspace
 #[derive(Clone, Debug)]
-pub struct WindowMoveEvent(
+pub struct WindowMoveEvent {
     /// Window address
-    pub Address,
+    pub window_address: Address,
     /// The workspace name
-    pub String,
-);
+    pub workspace_name: String,
+}
 
 unsafe impl Send for WindowMoveEvent {}
 unsafe impl Sync for WindowMoveEvent {}
 /// The data for the event executed when opening a new window
 #[derive(Clone, Debug)]
-pub struct WindowOpenEvent(
+pub struct WindowOpenEvent {
     /// Window address
-    pub Address,
+    pub window_address: Address,
     /// The workspace name
-    pub String,
+    pub workspace_name: String,
     /// Window class
-    pub String,
+    pub window_class: String,
     /// Window title
-    pub String,
-);
+    pub window_title: String,
+}
 
 unsafe impl Send for WindowOpenEvent {}
 unsafe impl Sync for WindowOpenEvent {}
 /// The data for the event executed when changing keyboard layouts
 #[derive(Clone, Debug)]
-pub struct LayoutEvent(
+pub struct LayoutEvent {
     /// Keyboard name
-    pub String,
+    pub keyboard_name: String,
     /// Layout name
-    pub String,
-);
+    pub layout_name: String,
+}
 
 unsafe impl Send for LayoutEvent {}
 unsafe impl Sync for LayoutEvent {}
@@ -352,36 +352,36 @@ pub(crate) fn execute_closure_mut_sync<T>(
 
 /// This tuple struct holds window event data
 #[derive(Debug, Clone)]
-pub struct WindowEventData(
+pub struct WindowEventData {
     /// The window class
-    pub String,
+    pub window_class: String,
     /// The window title
-    pub String,
+    pub window_title: String,
     /// The window address
-    pub Address,
-);
+    pub window_address: Address,
+}
 
 unsafe impl Send for WindowEventData {}
 unsafe impl Sync for WindowEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone)]
-pub struct MonitorEventData(
+pub struct MonitorEventData {
     /// The monitor name
-    pub String,
+    pub monitor_name: String,
     /// The workspace
-    pub WorkspaceType,
-);
+    pub workspace: WorkspaceType,
+}
 
 unsafe impl Send for MonitorEventData {}
 unsafe impl Sync for MonitorEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone)]
-pub struct WindowFloatEventData(
+pub struct WindowFloatEventData {
     /// The window address
-    pub Address,
+    pub window_address: Address,
     /// The float state
-    pub bool,
-);
+    pub is_floating: bool,
+}
 
 unsafe impl Send for WindowFloatEventData {}
 unsafe impl Sync for WindowFloatEventData {}
@@ -545,19 +545,19 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     // WorkspaceMoved
                     let workspace = parse_string_as_work(captures["workspace"].to_string());
                     let monitor = &captures["monitor"];
-                    events.push(Event::WorkspaceMoved(MonitorEventData(
-                        monitor.to_string(),
+                    events.push(Event::WorkspaceMoved(MonitorEventData {
+                        monitor_name: monitor.to_string(),
                         workspace,
-                    )));
+                    }));
                 }
                 4 => {
                     // ActiveMonitorChanged
                     let monitor = &captures["monitor"];
                     let workspace = &captures["workspace"];
-                    events.push(Event::ActiveMonitorChanged(MonitorEventData(
-                        monitor.to_string(),
-                        WorkspaceType::Regular(workspace.to_string()),
-                    )));
+                    events.push(Event::ActiveMonitorChanged(MonitorEventData {
+                        monitor_name: monitor.to_string(),
+                        workspace: WorkspaceType::Regular(workspace.to_string()),
+                    }));
                 }
                 5 => {
                     // ActiveWindowChanged
@@ -602,12 +602,12 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     let workspace = &captures["workspace"];
                     let class = &captures["class"];
                     let title = &captures["title"];
-                    events.push(Event::WindowOpened(WindowOpenEvent(
-                        Address::new(addr),
-                        workspace.to_string(),
-                        class.to_string(),
-                        title.to_string(),
-                    )));
+                    events.push(Event::WindowOpened(WindowOpenEvent {
+                        window_address: Address::new(addr),
+                        workspace_name: workspace.to_string(),
+                        window_class: class.to_string(),
+                        window_title: title.to_string(),
+                    }));
                 }
                 11 => {
                     // WindowClosed
@@ -618,19 +618,19 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     // WindowMoved
                     let addr = &captures["address"];
                     let work = &captures["workspace"];
-                    events.push(Event::WindowMoved(WindowMoveEvent(
-                        Address::new(addr),
-                        work.to_string(),
-                    )));
+                    events.push(Event::WindowMoved(WindowMoveEvent {
+                        window_address: Address::new(addr),
+                        workspace_name: work.to_string(),
+                    }));
                 }
                 13 => {
                     // LayoutChanged
-                    let keeb = &captures["keyboard"];
+                    let keyboard_name = &captures["keyboard"];
                     let layout = &captures["layout"];
-                    events.push(Event::LayoutChanged(LayoutEvent(
-                        keeb.to_string(),
-                        layout.to_string(),
-                    )));
+                    events.push(Event::LayoutChanged(LayoutEvent {
+                        keyboard_name: keyboard_name.to_string(),
+                        layout_name: layout.to_string(),
+                    }));
                 }
                 14 => {
                     // SubMapChanged
@@ -650,26 +650,29 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 17 => {
                     // FloatStateChanged
                     let addr = &captures["address"];
-                    let state = &captures["floatstate"] == "0";
-                    events.push(Event::FloatStateChanged(WindowFloatEventData(
-                        Address::new(addr),
-                        state,
-                    )));
+                    let state = &captures["floatstate"] == "0"; // FIXME: does 0 mean it's floating?
+                    events.push(Event::FloatStateChanged(WindowFloatEventData {
+                        window_address: Address::new(addr),
+                        is_floating: state,
+                    }));
                 }
                 18 => {
                     // ScreenCopyStateChanged
                     let state = &captures["state"] == "1";
                     let owner = &captures["owner"] == "1";
-                    events.push(Event::Screencopy(ScreencopyEventData(state, owner)));
+                    events.push(Event::Screencopy(ScreencopyEventData {
+                        is_turning_on: state,
+                        is_monitor: owner,
+                    }));
                 }
                 19 => {
                     // MinimizeStateChanged
                     let addr = &captures["address"];
                     let state = &captures["state"] == "1";
-                    events.push(Event::Minimize(MinimizeEventData(
-                        Address::new(addr),
-                        state,
-                    )));
+                    events.push(Event::Minimize(MinimizeEventData {
+                        window_address: Address::new(addr),
+                        is_minimized: state,
+                    }));
                 }
                 20 => {
                     // UrgentStateChanged

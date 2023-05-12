@@ -59,9 +59,9 @@ fn main() -> hyprland::Result<()> {
     });
     // Makes a monitor unfocusable
     event_listener.add_active_monitor_change_handler(|data, state| {
-        let hyprland::event_listener::MonitorEventData(monitor, _) = data;
+        let hyprland::event_listener::MonitorEventData { monitor_name, .. } = data;
 
-        if monitor == *"DP-1".to_string() {
+        if monitor_name == *"DP-1".to_string() {
             state.active_monitor = "eDP-1".to_string()
         }
     });
