@@ -413,10 +413,7 @@ pub mod plugin {
     pub fn list() -> crate::Result<String> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
-            CommandContent {
-                flag: CommandFlag::Empty,
-                data: "plugin list".to_string(),
-            },
+            command!(Empty, "plugin list"),
         )
     }
     /// Returns a list of all plugins (async)

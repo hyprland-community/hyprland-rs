@@ -39,6 +39,8 @@ pub(crate) enum DataCommands {
     Monitors,
     #[display(fmt = "workspaces")]
     Workspaces,
+    #[display(fmt = "activeworkspace")]
+    ActiveWorkspace,
     #[display(fmt = "clients")]
     Clients,
     #[display(fmt = "activewindow")]
@@ -178,26 +180,14 @@ pub struct Workspace {
 #[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> crate::Result<Self> {
-        let mut all = Workspaces::get()?;
-        let mon = Monitor::get_active()?;
-
-        if let Some(it) = all.find(|item| item.id == mon.active_workspace.id) {
-            Ok(it)
-        } else {
-            panic!("No active monitor?")
-        }
+        let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace);
+        let deserialized: Workspace = serde_json::from_str(&data)?;
+        Ok(deserialized)
     }
     async fn get_active_async() -> crate::Result<Self> {
-        let all = Workspaces::get_async();
-        let mon = Monitor::get_active_async();
-        let (all, mon) = futures::join!(all, mon);
-        let (mut all, mon) = (all?, mon?);
-
-        if let Some(it) = all.find(|item| item.id == mon.active_workspace.id) {
-            Ok(it)
-        } else {
-            panic!("No active monitor?")
-        }
+        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWorkspace).await;
+        let deserialized: Workspace = serde_json::from_str(&data)?;
+        Ok(deserialized)
     }
 }
 
@@ -548,8 +538,8 @@ pub struct Bezier {
 struct AnimationRaw {
     /// The name of the animation
     pub name: String,
-    /// Is it overriden?
-    pub overriden: bool,
+    /// Is it overridden?
+    pub overridden: bool,
     /// What bezier does it use?
     pub bezier: String,
     /// Is it enabled?
@@ -565,8 +555,8 @@ struct AnimationRaw {
 pub struct Animation {
     /// The name of the animation
     pub name: String,
-    /// Is it overriden?
-    pub overriden: bool,
+    /// Is it overridden?
+    pub overridden: bool,
     /// What bezier does it use?
     pub bezier: BezierIdent,
     /// Is it enabled?
@@ -597,7 +587,7 @@ impl HyprData for Animations {
             .iter()
             .map(|item| Animation {
                 name: item.name.clone(),
-                overriden: item.overriden,
+                overridden: item.overridden,
                 bezier: item.bezier.clone().into(),
                 enabled: item.enabled,
                 speed: item.speed,
@@ -621,7 +611,7 @@ impl HyprData for Animations {
             .iter()
             .map(|item| Animation {
                 name: item.name.clone(),
-                overriden: item.overriden,
+                overridden: item.overridden,
                 bezier: item.bezier.clone().into(),
                 enabled: item.enabled,
                 speed: item.speed,
