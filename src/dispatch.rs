@@ -330,6 +330,9 @@ pub enum DispatchType<'a> {
     ToggleOpaque,
     /// This dispatcher moves the cursor to a specified corner of a window
     MoveCursorToCorner(Corner),
+    /// This dispatcher moves the cursor to a specified position
+    /// (x, y) where x starts from left to right, and y starts from top to bottom
+    MoveCursor(i64, i64),
     /// This dispatcher applied a option to all windows in a workspace
     WorkspaceOption(WorkspaceOptions),
     /// This dispatcher renames a workspace
@@ -506,6 +509,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ChangeSplitRatio(ratio) => format!("splitratio {ratio}"),
         ToggleOpaque => "toggleopaque".to_string(),
         MoveCursorToCorner(corner) => format!("movecursortocorner{sep}{}", corner.clone() as u8),
+        MoveCursor(x, y) => format!("movecursor{sep}{x} {y}"),
         WorkspaceOption(opt) => format!("workspaceopt{sep}{opt}"),
         Exit => "exit".to_string(),
         ForceRendererReload => "forcerendererreload".to_string(),
