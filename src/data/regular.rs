@@ -231,7 +231,7 @@ pub struct Client {
     /// Group members
     pub grouped: Vec<Box<Address>>,
     /// The swallowed window
-    pub swallowing: Option<Box<Self>>,
+    pub swallowing: Option<Box<Address>>,
 }
 
 /// This enum holds the information for the active window
