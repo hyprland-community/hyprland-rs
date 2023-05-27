@@ -218,8 +218,14 @@ pub struct Client {
     pub fullscreen_mode: i8,
     /// The monitor the window is on
     pub monitor: i16,
+    /// The initial window class
+    #[serde(rename = "initialClass")]
+    pub initial_class: String,
     /// The window class
     pub class: String,
+    /// The initial window title
+    #[serde(rename = "initialTitle")]
+    pub initial_title: String,
     /// The window title
     pub title: String,
     /// The process Id of the client
