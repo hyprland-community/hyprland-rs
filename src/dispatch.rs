@@ -279,10 +279,16 @@ pub enum DispatchType<'a> {
     /// This dispatcher changes the current workspace
     Workspace(WorkspaceIdentifierWithSpecial<'a>),
     /// This dispatcher moves a window (focused if not specified) to a workspace
-    MoveToWorkspace(WorkspaceIdentifier<'a>, Option<WindowIdentifier<'a>>),
+    MoveToWorkspace(
+        WorkspaceIdentifierWithSpecial<'a>,
+        Option<WindowIdentifier<'a>>,
+    ),
     /// This dispatcher moves a window (focused if not specified) to a workspace, without switching to that
     /// workspace
-    MoveToWorkspaceSilent(WorkspaceIdentifier<'a>, Option<WindowIdentifier<'a>>),
+    MoveToWorkspaceSilent(
+        WorkspaceIdentifierWithSpecial<'a>,
+        Option<WindowIdentifier<'a>>,
+    ),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// changes the active workspace aswell
     MoveFocusedWindowToWorkspace(WorkspaceIdentifier<'a>),
@@ -470,10 +476,10 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         KillActiveWindow => "killactive".to_string(),
         CloseWindow(win) => format!("closewindow{sep}{win}"),
         Workspace(work) => format!("workspace{sep}{work}"),
-        MoveToWorkspace(work, Some(win)) => format!("movetoworkspace {work} {win}"),
-        MoveToWorkspace(work, None) => format!("movetoworkspace {work}"),
-        MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent {work} {win}"),
-        MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent {work}"),
+        MoveToWorkspace(work, Some(win)) => format!("movetoworkspace{sep}{work},{win}"),
+        MoveToWorkspace(work, None) => format!("movetoworkspace{sep}{work}"),
+        MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent{sep}{work},{win}"),
+        MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent{sep}{work}"),
         MoveFocusedWindowToWorkspace(work) => format!("workspace{sep}{work}"),
         MoveFocusedWindowToWorkspaceSilent(work) => format!("workspace{sep}{work}"),
         ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
