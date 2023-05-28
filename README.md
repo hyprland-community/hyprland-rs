@@ -11,7 +11,7 @@ An unofficial rust wrapper for Hyprland's IPC
 
 ## Disclaimer
 If something doesn't work, doesn't matter what,
-make sure you are on the latest commit of Hyprland before making an issue!
+make sure you are on the latest version (or commit) of Hyprland before making an issue!
 
 ## Getting started!
 
@@ -24,6 +24,10 @@ Add the code below to the dependencies section of your Cargo.toml file!
 ```toml
 hyprland = "0.3.3"
 ```
+
+### Reading the docs
+Hyprland-rs has a ton of types (and some really long ones)! Its important you know how the ones you will be using work!
+The docs can be found at [docs.rs/hyprland](https://docs.rs/hyprland)
 
 #### Master version
 If Hyprland-rs is broken (or other reason) and is taking too long for a release to come out,
@@ -45,4 +49,4 @@ This crate provides 6 modules (+1 for shared things)
 
 ## Example Usage
 
-Check the examples in the [`src/bin/` directory](https://github.com/hyprland-community/hyprland-rs/tree/master/examples)
+Check the examples in the [`examples` directory](https://github.com/hyprland-community/hyprland-rs/tree/master/examples)
