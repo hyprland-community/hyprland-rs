@@ -116,6 +116,7 @@ impl EventListener {
             Event::UrgentStateChanged(even) => mut_arm!(even.clone(), urgent_state_events, self),
             Event::Minimize(data) => mut_arm!(data.clone(), minimize_events, self),
             Event::Screencopy(data) => mut_arm!(*data, screencopy_events, self),
+            Event::WindowTitleChanged(addr) => mut_arm!(addr.clone(), window_title_changed_events, self),
         }
         Ok(())
     }
@@ -187,6 +188,9 @@ impl EventListener {
             }
             Event::Minimize(data) => mut_arm_sync!(data.clone(), minimize_events, self),
             Event::Screencopy(data) => mut_arm_sync!(*data, screencopy_events, self),
+            Event::WindowTitleChanged(addr) => {
+                mut_arm_sync!(addr.clone(), window_title_changed_events, self)
+            }
         }
         Ok(())
     }

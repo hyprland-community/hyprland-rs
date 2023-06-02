@@ -38,3 +38,4 @@ add_listener!(float_state, WindowFloatEventData, "the float state of a window is
 add_listener!(urgent_state, Address, "the urgent state of a window is changed", "urgent state changed" => data);
 add_listener!(minimize, MinimizeEventData, "the minimize state of a window is changed", "minimize state changed" => data);
 add_listener!(screencopy, ScreencopyEventData, "the screencopy state of a window is changed", "screencopy state changed" => data);
+add_listener!(window_title_change d, Address, "a window title is changed", "A window title changed" => data);
