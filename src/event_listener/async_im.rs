@@ -81,6 +81,7 @@ impl AsyncEventListener {
             Event::UrgentStateChanged(even) => arm_async!(even.clone(), urgent_state_events, self),
             Event::Minimize(data) => arm_async!(data.clone(), minimize_events, self),
             Event::Screencopy(data) => arm_async!(*data, screencopy_events, self),
+            Event::WindowTitleChanged(addr) => arm_async!(addr.clone(), window_title_changed_events, self),
         }
     }
 

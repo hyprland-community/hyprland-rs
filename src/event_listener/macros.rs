@@ -290,6 +290,7 @@ macro_rules! init_events {
             urgent_state_events: vec![],
             minimize_events: vec![],
             screencopy_events: vec![],
+            window_title_changed_events: vec![],
         }
     };
 }

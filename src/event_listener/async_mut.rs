@@ -81,6 +81,7 @@ impl AsyncMutableEventListener {
             Event::LayerClosed(namespace) => arm_async_mut!(namespace, layer_closed_events, self),
             Event::FloatStateChanged(state) => arm_async_mut!(state, float_state_events, self),
             Event::UrgentStateChanged(state) => arm_async_mut!(state, urgent_state_events, self),
+            Event::WindowTitleChanged(addr) => arm_async!(addr, window_title_changed_events, self),
         }
     }
 

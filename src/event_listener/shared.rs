@@ -59,6 +59,7 @@ pub(crate) struct Events {
     pub(crate) urgent_state_events: Closures<Address>,
     pub(crate) minimize_events: Closures<MinimizeEventData>,
     pub(crate) screencopy_events: Closures<ScreencopyEventData>,
+    pub(crate) window_title_changed_events: Closures<Address>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -83,6 +84,7 @@ pub(crate) struct AsyncEvents {
     pub(crate) urgent_state_events: AsyncClosures<Address>,
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
     pub(crate) screencopy_events: AsyncClosures<ScreencopyEventData>,
+    pub(crate) window_title_changed_events: AsyncClosures<Address>,
 }
 
 /// Event data for a minimize event
@@ -410,6 +412,7 @@ pub(crate) enum Event {
     UrgentStateChanged(Address),
     Minimize(MinimizeEventData),
     Screencopy(ScreencopyEventData),
+    WindowTitleChanged(Address),
 }
 
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
@@ -492,6 +495,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             r"minimize>>(?P<address>.*),(?P<state>[0-1])",
             r"screencopy>>(?P<state>[0-1]),(?P<owner>[0-1])",
             r"urgent>>(?P<address>.*)",
+            r"windowtitle>>(?P<address>.*)",
             r"(?P<Event>.*)>>.*?"
         ]));
         static ref EVENT_REGEXES: Vec<Regex> = EVENT_SET
@@ -679,6 +683,12 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     let addr = &captures["address"];
                     events.push(Event::UrgentStateChanged(Address::new(addr)));
                 }
+                21 => {
+                    // WindowTitleChanged
+                    let addr = &captures["address"];
+                    events.push(Event::WindowTitleChanged(Address::new(addr)));
+                }
+
                 _ => unreachable!(), //panic!("There are only 16 items in the array? prob a regex issue 🤷"),
             }
         } else if matches_event.len() == 1 {

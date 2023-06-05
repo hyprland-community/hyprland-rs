@@ -67,7 +67,8 @@ impl EventListener {
             FloatStateChanged(even) => arm!(even, float_state_events, self),
             UrgentStateChanged(even) => arm!(even, urgent_state_events, self),
             Minimize(data) => arm!(data, minimize_events, self),
-            Event::Screencopy(data) => arm!(data, screencopy_events, self),
+            Screencopy(data) => arm!(data, screencopy_events, self),
+            WindowTitleChanged(addr) => arm!(addr, window_title_changed_events, self),
         }
     }
 
