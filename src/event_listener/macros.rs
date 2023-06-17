@@ -289,8 +289,8 @@ macro_rules! init_events {
             float_state_events: vec![],
             urgent_state_events: vec![],
             minimize_events: vec![],
-            screencopy_events: vec![],
             window_title_changed_events: vec![],
+            screencast_events: vec![],
         }
     };
 }

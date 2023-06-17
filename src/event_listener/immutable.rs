@@ -1,7 +1,5 @@
-use crate::shared::*;
+use super::*;
 use std::io;
-
-use crate::event_listener::shared::*;
 
 /// This struct is used for adding event handlers and executing them on events
 /// # The Event Listener
@@ -31,19 +29,8 @@ impl Default for EventListener {
     }
 }
 
-impl EventListener {
-    /// This method creates a new EventListener instance
-    ///
-    /// ```rust
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// ```
-    pub fn new() -> EventListener {
-        EventListener {
-            events: init_events!(Events),
-        }
-    }
-    fn event_executor(&self, event: &Event) {
+impl HasExecutor for EventListener {
+    fn event_executor(&mut self, event: &Event) -> crate::Result<()> {
         use Event::*;
         match event {
             WorkspaceChanged(id) => arm!(id, workspace_changed_events, self),
@@ -67,8 +54,23 @@ impl EventListener {
             FloatStateChanged(even) => arm!(even, float_state_events, self),
             UrgentStateChanged(even) => arm!(even, urgent_state_events, self),
             Minimize(data) => arm!(data, minimize_events, self),
-            Screencopy(data) => arm!(data, screencopy_events, self),
             WindowTitleChanged(addr) => arm!(addr, window_title_changed_events, self),
+            Screencast(data) => arm!(data, screencast_events, self),
+        }
+        Ok(())
+    }
+}
+
+impl EventListener {
+    /// This method creates a new EventListener instance
+    ///
+    /// ```rust
+    /// use hyprland::event_listener::EventListener;
+    /// let mut listener = EventListener::new();
+    /// ```
+    pub fn new() -> EventListener {
+        EventListener {
+            events: init_events!(Events),
         }
     }
 
@@ -84,13 +86,13 @@ impl EventListener {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener_async(&self) -> crate::Result<()> {
+    pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
         let socket_path = get_socket_path(SocketType::Listener);
         let mut stream = UnixStream::connect(socket_path).await?;
 
-        let mut active_window_buf: Option<Option<(String, String)>> = None;
+        let mut active_windows = vec![];
         loop {
             let mut buf = [0; 4096];
 
@@ -103,27 +105,7 @@ impl EventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                if let Event::ActiveWindowChangedV1(event) = event {
-                    active_window_buf = Some(event.clone());
-                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
-                    match active_window_buf.clone() {
-                        Some(Some((class, title))) => {
-                            self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData {
-                                    window_class: class.to_string(),
-                                    window_title: title.to_string(),
-                                    window_address: addr.clone(),
-                                },
-                            )));
-                        }
-                        Some(None) => {}
-                        None => {}
-                    };
-                } else if let Event::ActiveWindowChangedV2(None) = event {
-                    self.event_executor(&Event::ActiveWindowChangedMerged(None));
-                } else {
-                    self.event_executor(event);
-                }
+                self.event_primer(event, &mut active_windows)?;
             }
         }
 
@@ -139,14 +121,14 @@ impl EventListener {
     /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id:?}"));
     /// listener.start_listener();
     /// ```
-    pub fn start_listener(self) -> crate::Result<()> {
+    pub fn start_listener(&mut self) -> crate::Result<()> {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 
         let socket_path = get_socket_path(SocketType::Listener);
         let mut stream = UnixStream::connect(socket_path)?;
 
-        let mut active_window_buf: Option<Option<(String, String)>> = None;
+        let mut active_windows = vec![];
         loop {
             let mut buf = [0; 4096];
 
@@ -159,27 +141,7 @@ impl EventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                if let Event::ActiveWindowChangedV1(event) = event {
-                    active_window_buf = Some(event.clone());
-                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
-                    match active_window_buf.clone() {
-                        Some(Some((class, title))) => {
-                            self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData {
-                                    window_class: class.to_string(),
-                                    window_title: title.to_string(),
-                                    window_address: addr.clone(),
-                                },
-                            )));
-                        }
-                        Some(None) => {}
-                        None => {}
-                    };
-                } else if let Event::ActiveWindowChangedV2(None) = event {
-                    self.event_executor(&Event::ActiveWindowChangedMerged(None));
-                } else {
-                    self.event_executor(event);
-                }
+                self.event_primer(event, &mut active_windows)?;
             }
         }
 

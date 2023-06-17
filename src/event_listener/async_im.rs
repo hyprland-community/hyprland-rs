@@ -29,20 +29,10 @@ impl Default for AsyncEventListener {
         Self::new()
     }
 }
-impl AsyncEventListener {
-    /// This method creates a new EventListener instance
-    ///
-    /// ```rust
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
-    /// ```
-    pub fn new() -> Self {
-        Self {
-            events: init_events!(AsyncEvents),
-        }
-    }
 
-    async fn event_executor(&self, event: &Event) {
+#[async_trait]
+impl HasAsyncExecutor for AsyncEventListener {
+    async fn event_executor_async(&mut self, event: &Event) -> crate::Result<()> {
         match event {
             Event::WorkspaceChanged(id) => arm_async!(id.clone(), workspace_changed_events, self),
             Event::WorkspaceAdded(id) => arm_async!(id.clone(), workspace_added_events, self),
@@ -80,8 +70,25 @@ impl AsyncEventListener {
             Event::FloatStateChanged(even) => arm_async!(even.clone(), float_state_events, self),
             Event::UrgentStateChanged(even) => arm_async!(even.clone(), urgent_state_events, self),
             Event::Minimize(data) => arm_async!(data.clone(), minimize_events, self),
-            Event::Screencopy(data) => arm_async!(*data, screencopy_events, self),
-            Event::WindowTitleChanged(addr) => arm_async!(addr.clone(), window_title_changed_events, self),
+            Event::WindowTitleChanged(addr) => {
+                arm_async!(addr.clone(), window_title_changed_events, self)
+            }
+            Event::Screencast(data) => arm_async!(*data, screencast_events, self),
+        }
+        Ok(())
+    }
+}
+
+impl AsyncEventListener {
+    /// This method creates a new EventListener instance
+    ///
+    /// ```rust
+    /// use hyprland::event_listener::EventListener;
+    /// let mut listener = EventListener::new();
+    /// ```
+    pub fn new() -> Self {
+        Self {
+            events: init_events!(AsyncEvents),
         }
     }
 
@@ -97,13 +104,13 @@ impl AsyncEventListener {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener_async(&self) -> crate::Result<()> {
+    pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
         let socket_path = get_socket_path(SocketType::Listener);
         let mut stream = UnixStream::connect(socket_path).await?;
 
-        let mut active_window_buf: Option<Option<(String, String)>> = None;
+        let mut active_windows = vec![];
         loop {
             let mut buf = [0; 4096];
 
@@ -116,31 +123,7 @@ impl AsyncEventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                if let Event::ActiveWindowChangedV1(event) = event {
-                    active_window_buf = Some(event.clone());
-                    continue;
-                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
-                    match active_window_buf.clone() {
-                        Some(Some((class, title))) => {
-                            self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData {
-                                    window_class: class.to_string(),
-                                    window_title: title.to_string(),
-                                    window_address: addr.clone(),
-                                },
-                            )))
-                            .await;
-                        }
-                        Some(None) => {}
-                        None => {}
-                    };
-                    continue;
-                } else if let Event::ActiveWindowChangedV2(None) = event {
-                    self.event_executor(&Event::ActiveWindowChangedMerged(None))
-                        .await;
-                } else {
-                    self.event_executor(event).await;
-                }
+                self.event_primer_async(event, &mut active_windows).await?;
             }
         }
 

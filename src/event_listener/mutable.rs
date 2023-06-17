@@ -33,95 +33,8 @@ impl Default for EventListener {
     }
 }
 
-impl EventListener {
-    /// This method creates a new EventListener instance
-    ///
-    /// ```rust
-    /// use hyprland::event_listener::EventListenerMutable as EventListener;
-    /// let mut listener = EventListener::new();
-    /// ```
-    pub fn new() -> EventListener {
-        use crate::{
-            data::{FullscreenState, Monitors, Workspace},
-            prelude::*,
-        };
-        EventListener {
-            events: init_events!(Events),
-            state: State {
-                active_workspace: match Workspace::get_active() {
-                    Ok(work) => WorkspaceType::Regular(work.id.to_string()),
-                    Err(e) => panic!("Error parsing data whith serde: {e}"),
-                },
-                active_monitor: match Monitors::get() {
-                    Ok(mut monitors) => match monitors.find(|item| item.focused) {
-                        Some(mon) => mon.name,
-                        None => panic!("No active monitor?"),
-                    },
-                    Err(e) => panic!("A error occured when parsing json with serde {e}"),
-                },
-                fullscreen_state: match FullscreenState::get() {
-                    Ok(fstate) => fstate.bool(),
-                    Err(e) => panic!("Error parsing data whith serde: {e}"),
-                },
-            },
-        }
-    }
-
-    async fn event_executor(&mut self, event: &Event) -> crate::Result<()> {
-        match event {
-            Event::WorkspaceChanged(id) => mut_state_arm!(
-                id.clone(),
-                workspace_changed_events,
-                active_workspace,
-                id.clone(),
-                self
-            ),
-            Event::WorkspaceAdded(id) => mut_arm!(id.clone(), workspace_added_events, self),
-            Event::WorkspaceDeleted(id) => mut_arm!(id.clone(), workspace_destroyed_events, self),
-            Event::WorkspaceMoved(id) => mut_arm!(id.clone(), workspace_moved_events, self),
-            Event::ActiveMonitorChanged(even) => mut_state_arm!(
-                even.clone(),
-                active_monitor_changed_events,
-                active_monitor,
-                even.monitor_name.clone(),
-                self
-            ),
-            Event::ActiveWindowChangedMerged(Some(event)) => {
-                mut_arm!(Some(event.clone()), active_window_changed_events, self)
-            }
-            Event::ActiveWindowChangedMerged(None) => {
-                mut_arm!(None, active_window_changed_events, self)
-            }
-            Event::ActiveWindowChangedV1(_) => (),
-            Event::ActiveWindowChangedV2(_) => (),
-            Event::FullscreenStateChanged(bool) => mut_state_arm!(
-                *bool,
-                fullscreen_state_changed_events,
-                fullscreen_state,
-                *bool,
-                self
-            ),
-            Event::MonitorAdded(monitor) => mut_arm!(monitor.clone(), monitor_added_events, self),
-            Event::MonitorRemoved(monitor) => {
-                mut_arm!(monitor.clone(), monitor_removed_events, self)
-            }
-            Event::WindowClosed(addr) => mut_arm!(addr.clone(), window_close_events, self),
-            Event::WindowMoved(even) => mut_arm!(even.clone(), window_moved_events, self),
-            Event::WindowOpened(even) => mut_arm!(even.clone(), window_open_events, self),
-            Event::LayoutChanged(lay) => mut_arm!(lay.clone(), keyboard_layout_change_events, self),
-            Event::SubMapChanged(map) => mut_arm!(map.clone(), sub_map_changed_events, self),
-            Event::LayerOpened(even) => mut_arm!(even.clone(), layer_open_events, self),
-            Event::LayerClosed(even) => mut_arm!(even.clone(), layer_closed_events, self),
-            Event::FloatStateChanged(even) => mut_arm!(even.clone(), float_state_events, self),
-            Event::UrgentStateChanged(even) => mut_arm!(even.clone(), urgent_state_events, self),
-            Event::Minimize(data) => mut_arm!(data.clone(), minimize_events, self),
-            Event::Screencopy(data) => mut_arm!(*data, screencopy_events, self),
-            Event::WindowTitleChanged(addr) => mut_arm!(addr.clone(), window_title_changed_events, self),
-        }
-        Ok(())
-    }
-
-    fn event_executor_sync(&mut self, event: &Event) -> crate::Result<()> {
+impl HasExecutor for EventListener {
+    fn event_executor(&mut self, event: &Event) -> crate::Result<()> {
         match event {
             Event::WorkspaceChanged(id) => mut_state_arm_sync!(
                 id.clone(),
@@ -187,10 +100,149 @@ impl EventListener {
                 mut_arm_sync!(even.clone(), urgent_state_events, self)
             }
             Event::Minimize(data) => mut_arm_sync!(data.clone(), minimize_events, self),
-            Event::Screencopy(data) => mut_arm_sync!(*data, screencopy_events, self),
             Event::WindowTitleChanged(addr) => {
                 mut_arm_sync!(addr.clone(), window_title_changed_events, self)
             }
+            Event::Screencast(data) => mut_arm_sync!(*data, screencast_events, self),
+        }
+        Ok(())
+    }
+}
+
+impl EventListener {
+    /// This method creates a new EventListener instance
+    ///
+    /// ```rust
+    /// use hyprland::event_listener::EventListenerMutable as EventListener;
+    /// let mut listener = EventListener::new();
+    /// ```
+    pub fn new() -> EventListener {
+        use crate::{
+            data::{FullscreenState, Monitors, Workspace},
+            prelude::*,
+        };
+        EventListener {
+            events: init_events!(Events),
+            state: State {
+                active_workspace: match Workspace::get_active() {
+                    Ok(work) => WorkspaceType::Regular(work.id.to_string()),
+                    Err(e) => panic!("Error parsing data whith serde: {e}"),
+                },
+                active_monitor: match Monitors::get() {
+                    Ok(mut monitors) => match monitors.find(|item| item.focused) {
+                        Some(mon) => mon.name,
+                        None => panic!("No active monitor?"),
+                    },
+                    Err(e) => panic!("A error occured when parsing json with serde {e}"),
+                },
+                fullscreen_state: match FullscreenState::get() {
+                    Ok(fstate) => fstate.bool(),
+                    Err(e) => panic!("Error parsing data whith serde: {e}"),
+                },
+            },
+        }
+    }
+
+    pub(crate) async fn event_executor_async(&mut self, event: &Event) -> crate::Result<()> {
+        match event {
+            Event::WorkspaceChanged(id) => mut_state_arm!(
+                id.clone(),
+                workspace_changed_events,
+                active_workspace,
+                id.clone(),
+                self
+            ),
+            Event::WorkspaceAdded(id) => mut_arm!(id.clone(), workspace_added_events, self),
+            Event::WorkspaceDeleted(id) => mut_arm!(id.clone(), workspace_destroyed_events, self),
+            Event::WorkspaceMoved(id) => mut_arm!(id.clone(), workspace_moved_events, self),
+            Event::ActiveMonitorChanged(even) => mut_state_arm!(
+                even.clone(),
+                active_monitor_changed_events,
+                active_monitor,
+                even.monitor_name.clone(),
+                self
+            ),
+            Event::ActiveWindowChangedMerged(Some(event)) => {
+                mut_arm!(Some(event.clone()), active_window_changed_events, self)
+            }
+            Event::ActiveWindowChangedMerged(None) => {
+                mut_arm!(None, active_window_changed_events, self)
+            }
+            Event::ActiveWindowChangedV1(_) => (),
+            Event::ActiveWindowChangedV2(_) => (),
+            Event::FullscreenStateChanged(bool) => mut_state_arm!(
+                *bool,
+                fullscreen_state_changed_events,
+                fullscreen_state,
+                *bool,
+                self
+            ),
+            Event::MonitorAdded(monitor) => mut_arm!(monitor.clone(), monitor_added_events, self),
+            Event::MonitorRemoved(monitor) => {
+                mut_arm!(monitor.clone(), monitor_removed_events, self)
+            }
+            Event::WindowClosed(addr) => mut_arm!(addr.clone(), window_close_events, self),
+            Event::WindowMoved(even) => mut_arm!(even.clone(), window_moved_events, self),
+            Event::WindowOpened(even) => mut_arm!(even.clone(), window_open_events, self),
+            Event::LayoutChanged(lay) => mut_arm!(lay.clone(), keyboard_layout_change_events, self),
+            Event::SubMapChanged(map) => mut_arm!(map.clone(), sub_map_changed_events, self),
+            Event::LayerOpened(even) => mut_arm!(even.clone(), layer_open_events, self),
+            Event::LayerClosed(even) => mut_arm!(even.clone(), layer_closed_events, self),
+            Event::FloatStateChanged(even) => mut_arm!(even.clone(), float_state_events, self),
+            Event::UrgentStateChanged(even) => mut_arm!(even.clone(), urgent_state_events, self),
+            Event::Minimize(data) => mut_arm!(data.clone(), minimize_events, self),
+            Event::Screencast(data) => mut_arm!(*data, screencast_events, self),
+            Event::WindowTitleChanged(addr) => {
+                mut_arm!(addr.clone(), window_title_changed_events, self)
+            }
+        }
+        Ok(())
+    }
+
+    async fn event_primer_async(
+        &mut self,
+        event: &Event,
+        abuf: &mut Vec<ActiveWindowState>,
+    ) -> crate::Result<()>
+    where
+        Self: std::marker::Sized,
+    {
+        if abuf.is_empty() {
+            abuf.push(ActiveWindowState::new());
+        }
+        if let Event::ActiveWindowChangedV1(data) = event {
+            let mut to_remove = vec![];
+            for (index, awin) in abuf.iter_mut().enumerate() {
+                if awin.title.is_empty() && awin.class.is_empty() {
+                    awin.class = data.clone().map(|i| i.0).into();
+                    awin.title = data.clone().map(|i| i.1).into();
+                }
+                if awin.ready() {
+                    awin.execute_async_mut(self).await?;
+                    to_remove.push(index);
+                    break;
+                }
+            }
+            for index in to_remove {
+                abuf.remove(index);
+            }
+        } else if let Event::ActiveWindowChangedV2(data) = event {
+            let mut to_remove = vec![];
+            for (index, awin) in abuf.iter_mut().enumerate() {
+                if awin.addr.is_empty() {
+                    awin.addr = data.clone().into();
+                }
+                if awin.ready() {
+                    awin.execute_async_mut(self).await?;
+                    to_remove.push(index);
+                    break;
+                }
+            }
+            for index in to_remove {
+                abuf.remove(index);
+            }
+        } else {
+            self.event_executor_async(event).await?;
         }
         Ok(())
     }
@@ -214,7 +266,7 @@ impl EventListener {
 
         let mut stream = UnixStream::connect(socket_path).await?;
 
-        let mut active_window_buf: Option<Option<(String, String)>> = None;
+        let mut active_windows = vec![];
 
         loop {
             let mut buf = [0; 4096];
@@ -229,29 +281,7 @@ impl EventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                if let Event::ActiveWindowChangedV1(event) = event {
-                    active_window_buf = Some(event.clone());
-                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
-                    match active_window_buf.clone() {
-                        Some(Some((class, title))) => {
-                            self.event_executor(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData {
-                                    window_class: class.to_string(),
-                                    window_title: title.to_string(),
-                                    window_address: addr.clone(),
-                                },
-                            )))
-                            .await?;
-                        }
-                        Some(None) => {}
-                        None => {}
-                    };
-                } else if let Event::ActiveWindowChangedV2(None) = event {
-                    self.event_executor(&Event::ActiveWindowChangedMerged(None))
-                        .await?;
-                } else {
-                    self.event_executor(event).await?;
-                }
+                self.event_primer_async(event, &mut active_windows).await?;
             }
         }
 
@@ -275,7 +305,7 @@ impl EventListener {
 
         let mut stream = UnixStream::connect(socket_path)?;
 
-        let mut active_window_buf: Option<Option<(String, String)>> = None;
+        let mut active_windows = vec![];
 
         loop {
             let mut buf = [0; 4096];
@@ -290,27 +320,7 @@ impl EventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed.iter() {
-                if let Event::ActiveWindowChangedV1(event) = event {
-                    active_window_buf = Some(event.clone());
-                } else if let Event::ActiveWindowChangedV2(Some(addr)) = event {
-                    match active_window_buf.clone() {
-                        Some(Some((class, title))) => {
-                            self.event_executor_sync(&Event::ActiveWindowChangedMerged(Some(
-                                WindowEventData {
-                                    window_class: class.to_string(),
-                                    window_title: title.to_string(),
-                                    window_address: addr.clone(),
-                                },
-                            )))?;
-                        }
-                        Some(None) => {}
-                        None => {}
-                    };
-                } else if let Event::ActiveWindowChangedV2(None) = event {
-                    self.event_executor_sync(&Event::ActiveWindowChangedMerged(None))?;
-                } else {
-                    self.event_executor_sync(event)?;
-                }
+                self.event_primer(event, &mut active_windows)?;
             }
         }
 

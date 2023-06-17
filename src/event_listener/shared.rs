@@ -6,12 +6,231 @@ use std::pin::Pin;
 
 /// This trait provides shared behaviour for listener types
 #[async_trait]
-pub trait Listener {
+pub(crate) trait Listener: HasExecutor {
     /// This method starts the event listener
     fn start_listener() -> crate::Result<()>;
+}
 
+/// This trait provides shared behaviour for listener types
+#[async_trait]
+pub(crate) trait AsyncListener: HasAsyncExecutor {
     /// This method starts the event listener (async)
     async fn start_listener_async() -> crate::Result<()>;
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) enum ActiveWindowValue<T> {
+    Queued(T), // aka Some(T)
+    None,      // No current window
+    Empty,     // Empty queue
+}
+
+impl<T> ActiveWindowValue<T> {
+    pub fn reset(&mut self) {
+        *self = Self::Empty;
+    }
+    pub fn is_empty(&self) -> bool {
+        matches!(self, Self::Empty)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ActiveWindowState {
+    pub class: ActiveWindowValue<String>,
+    pub title: ActiveWindowValue<String>,
+    pub addr: ActiveWindowValue<Address>,
+}
+
+pub(crate) trait HasExecutor {
+    fn event_executor(&mut self, event: &Event) -> crate::Result<()>;
+
+    fn event_primer(
+        &mut self,
+        event: &Event,
+        abuf: &mut Vec<ActiveWindowState>,
+    ) -> crate::Result<()>
+    where
+        Self: std::marker::Sized,
+    {
+        if abuf.is_empty() {
+            abuf.push(ActiveWindowState::new());
+        }
+        if let Event::ActiveWindowChangedV1(data) = event {
+            let mut to_remove = vec![];
+            for (index, awin) in abuf.iter_mut().enumerate() {
+                if awin.title.is_empty() && awin.class.is_empty() {
+                    awin.class = data.clone().map(|i| i.0).into();
+                    awin.title = data.clone().map(|i| i.1).into();
+                }
+                if awin.ready() {
+                    awin.execute(self)?;
+                    to_remove.push(index);
+                    break;
+                }
+            }
+            for index in to_remove {
+                abuf.remove(index);
+            }
+        } else if let Event::ActiveWindowChangedV2(data) = event {
+            let mut to_remove = vec![];
+            for (index, awin) in abuf.iter_mut().enumerate() {
+                if awin.addr.is_empty() {
+                    awin.addr = data.clone().into();
+                }
+                if awin.ready() {
+                    awin.execute(self)?;
+                    to_remove.push(index);
+                    break;
+                }
+            }
+            for index in to_remove {
+                abuf.remove(index);
+            }
+        } else {
+            self.event_executor(event)?;
+        }
+        Ok(())
+    }
+}
+
+#[async_trait]
+pub(crate) trait HasAsyncExecutor {
+    async fn event_executor_async(&mut self, event: &Event) -> crate::Result<()>;
+
+    async fn event_primer_async(
+        &mut self,
+        event: &Event,
+        abuf: &mut Vec<ActiveWindowState>,
+    ) -> crate::Result<()>
+    where
+        Self: std::marker::Sized,
+    {
+        if abuf.is_empty() {
+            abuf.push(ActiveWindowState::new());
+        }
+        if let Event::ActiveWindowChangedV1(data) = event {
+            let mut to_remove = vec![];
+            for (index, awin) in abuf.iter_mut().enumerate() {
+                if awin.title.is_empty() && awin.class.is_empty() {
+                    awin.class = data.clone().map(|i| i.0).into();
+                    awin.title = data.clone().map(|i| i.1).into();
+                }
+                if awin.ready() {
+                    awin.execute_async(self).await?;
+                    to_remove.push(index);
+                    break;
+                }
+            }
+            for index in to_remove {
+                abuf.remove(index);
+            }
+        } else if let Event::ActiveWindowChangedV2(data) = event {
+            let mut to_remove = vec![];
+            for (index, awin) in abuf.iter_mut().enumerate() {
+                if awin.addr.is_empty() {
+                    awin.addr = data.clone().into();
+                }
+                if awin.ready() {
+                    awin.execute_async(self).await?;
+                    to_remove.push(index);
+                    break;
+                }
+            }
+            for index in to_remove {
+                abuf.remove(index);
+            }
+        } else {
+            self.event_executor_async(event).await?;
+        }
+        Ok(())
+    }
+}
+
+impl ActiveWindowState {
+    pub fn execute<T: HasExecutor>(&mut self, listener: &mut T) -> crate::Result<()> {
+        use ActiveWindowValue::{None, Queued};
+        let data = (&self.title, &self.class, &self.addr);
+        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+            listener.event_executor(&Event::ActiveWindowChangedMerged(Some(WindowEventData {
+                window_class: class.to_string(),
+                window_title: title.to_string(),
+                window_address: addr.clone(),
+            })))?;
+            self.reset();
+        } else if let (None, None, None) = data {
+            listener.event_executor(&Event::ActiveWindowChangedMerged(Option::None))?;
+        }
+        Ok(())
+    }
+    pub async fn execute_async<T: HasAsyncExecutor>(
+        &mut self,
+        listener: &mut T,
+    ) -> crate::Result<()> {
+        use ActiveWindowValue::{None, Queued};
+        let data = (&self.title, &self.class, &self.addr);
+        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+            listener
+                .event_executor_async(&Event::ActiveWindowChangedMerged(Some(WindowEventData {
+                    window_class: class.to_string(),
+                    window_title: title.to_string(),
+                    window_address: addr.clone(),
+                })))
+                .await?;
+            self.reset();
+        } else if let (None, None, None) = data {
+            listener
+                .event_executor_async(&Event::ActiveWindowChangedMerged(Option::None))
+                .await?;
+        }
+        Ok(())
+    }
+    pub async fn execute_async_mut(
+        &mut self,
+        listener: &mut super::EventListenerMutable,
+    ) -> crate::Result<()> {
+        use ActiveWindowValue::{None, Queued};
+        let data = (&self.title, &self.class, &self.addr);
+        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+            listener
+                .event_executor_async(&Event::ActiveWindowChangedMerged(Some(WindowEventData {
+                    window_class: class.to_string(),
+                    window_title: title.to_string(),
+                    window_address: addr.clone(),
+                })))
+                .await?;
+            self.reset();
+        } else if let (None, None, None) = data {
+            listener
+                .event_executor_async(&Event::ActiveWindowChangedMerged(Option::None))
+                .await?;
+        }
+        Ok(())
+    }
+
+    pub fn ready(&self) -> bool {
+        !self.class.is_empty() && !self.title.is_empty() && !self.addr.is_empty()
+    }
+    pub fn reset(&mut self) {
+        self.class.reset();
+        self.title.reset();
+        self.addr.reset();
+    }
+    pub fn new() -> Self {
+        Self {
+            class: ActiveWindowValue::Empty,
+            title: ActiveWindowValue::Empty,
+            addr: ActiveWindowValue::Empty,
+        }
+    }
+}
+
+impl<T> From<Option<T>> for ActiveWindowValue<T> {
+    fn from(value: Option<T>) -> Self {
+        match value {
+            Some(v) => ActiveWindowValue::Queued(v),
+            None => ActiveWindowValue::None,
+        }
+    }
 }
 
 pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
@@ -58,8 +277,8 @@ pub(crate) struct Events {
     pub(crate) float_state_events: Closures<WindowFloatEventData>,
     pub(crate) urgent_state_events: Closures<Address>,
     pub(crate) minimize_events: Closures<MinimizeEventData>,
-    pub(crate) screencopy_events: Closures<ScreencopyEventData>,
     pub(crate) window_title_changed_events: Closures<Address>,
+    pub(crate) screencast_events: Closures<ScreencastEventData>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -83,8 +302,8 @@ pub(crate) struct AsyncEvents {
     pub(crate) float_state_events: AsyncClosures<WindowFloatEventData>,
     pub(crate) urgent_state_events: AsyncClosures<Address>,
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
-    pub(crate) screencopy_events: AsyncClosures<ScreencopyEventData>,
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
+    pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
 }
 
 /// Event data for a minimize event
@@ -96,9 +315,9 @@ pub struct MinimizeEventData {
     pub is_minimized: bool,
 }
 
-/// Event data for screencopy event
+/// Event data for screencast event
 #[derive(Debug, Clone, Copy)]
-pub struct ScreencopyEventData {
+pub struct ScreencastEventData {
     /// State/Is it turning on?
     pub is_turning_on: bool,
     /// Owner type, is it a monitor?
@@ -411,8 +630,8 @@ pub(crate) enum Event {
     FloatStateChanged(WindowFloatEventData),
     UrgentStateChanged(Address),
     Minimize(MinimizeEventData),
-    Screencopy(ScreencopyEventData),
     WindowTitleChanged(Address),
+    Screencast(ScreencastEventData),
 }
 
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
@@ -493,7 +712,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             r"closelayer>>(?P<namespace>.*)",
             r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
             r"minimize>>(?P<address>.*),(?P<state>[0-1])",
-            r"screencopy>>(?P<state>[0-1]),(?P<owner>[0-1])",
+            r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])",
             r"urgent>>(?P<address>.*)",
             r"windowtitle>>(?P<address>.*)",
             r"(?P<Event>.*)>>.*?"
@@ -661,10 +880,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     }));
                 }
                 18 => {
-                    // ScreenCopyStateChanged
+                    // ScreenCastStateChanged
                     let state = &captures["state"] == "1";
                     let owner = &captures["owner"] == "1";
-                    events.push(Event::Screencopy(ScreencopyEventData {
+                    events.push(Event::Screencast(ScreencastEventData {
                         is_turning_on: state,
                         is_monitor: owner,
                     }));

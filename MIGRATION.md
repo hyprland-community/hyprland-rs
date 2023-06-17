@@ -26,6 +26,9 @@ structs, because they changed (Only int types)
 * Update active window event, cuz I merged it with activewindowv2
 * Update location of `Result` type, cuz I changed it
 
+## `0.3.3` ⟶ `0.3.4`
+* EventListener now requires mutable reference to start
+
 ## More in-depth steps
 
 ### 0.3 Update
