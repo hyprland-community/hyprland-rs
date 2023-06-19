@@ -172,9 +172,11 @@ pub mod set_error {
 pub mod notify {
     use super::*;
     use std::time::Duration;
-    #[repr(u8)]
+
     #[allow(missing_docs)]
+    #[derive(Copy, Clone)]
     pub enum Icon {
+        NoIcon = -1,
         Warning = 0,
         Info = 1,
         Hint = 2,
@@ -189,7 +191,7 @@ pub mod notify {
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
-                icon as u8,
+                icon as i32,
                 time.as_millis()
             ),
         )?;
@@ -207,7 +209,7 @@ pub mod notify {
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
-                icon as u8,
+                icon as i32,
                 time.as_millis()
             ),
         )
@@ -217,21 +219,22 @@ pub mod notify {
 }
 
 /// A 8-bit color with a alpha channel
-#[derive(MDisplay, Constructor)]
+#[derive(Copy, Clone, MDisplay, Constructor)]
 #[display(fmt = "rgba({},{},{},{})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
 
 /// A special 8-bit color with an alpha channel for notify
-#[derive(MDisplay, Constructor)]
+#[derive(Copy, Clone, MDisplay, Constructor)]
 #[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
 pub struct NColorRgba(u8, u8, u8, u8);
 
 /// A special 8-bit color for notify
-#[derive(MDisplay, Constructor)]
+#[derive(Copy, Clone, MDisplay, Constructor)]
 #[display(fmt = "rgb({:02x}{:02x}{:02x})", "_0", "_1", "_2")]
 pub struct NColorRgb(u8, u8, u8);
 
 /// An enum for special colors of notify
+#[derive(Copy, Clone)]
 pub enum NColor {
     /// Rgb(xx,xx,xx)
     Rgb(NColorRgb),
