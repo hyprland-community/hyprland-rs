@@ -221,23 +221,30 @@ pub mod notify {
 #[display(fmt = "rgba({},{},{},{})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
 
-/// A special 
+/// A special 8-bit color with an alpha channel for notify
 #[derive(MDisplay, Constructor)]
 #[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
 pub struct NColorRgba(u8, u8, u8, u8);
 
+/// A special 8-bit color for notify
 #[derive(MDisplay, Constructor)]
 #[display(fmt = "rgb({:02x}{:02x}{:02x})", "_0", "_1", "_2")]
 pub struct NColorRgb(u8, u8, u8);
 
+/// An enum for special colors of notify
 pub enum NColor {
+    /// Rgb(xx,xx,xx)
     Rgb(NColorRgb),
+    /// Rgba(xx,xx,xx,xx)
     Rgba(NColorRgba)
 }
 
 impl std::fmt::Display for NColor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{self}")
+        write!(f, "{}", match self {
+            Self::Rgb(value) => format!("{value}"),
+            Self::Rgba(value) => format!("{value}"),
+        })
     }
 }
 
