@@ -183,7 +183,7 @@ pub mod notify {
         Ok = 5,
     }
     /// Creates a notification with Hyprland
-    pub fn call(icon: Icon, time: Duration, color: Color, msg: String) -> crate::Result<()> {
+    pub fn call(icon: Icon, time: Duration, color: NColor, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             command!(
@@ -199,7 +199,7 @@ pub mod notify {
     pub async fn call_async(
         icon: Icon,
         time: Duration,
-        color: Color,
+        color: NColor,
         msg: String,
     ) -> crate::Result<()> {
         write_to_socket(
@@ -220,6 +220,19 @@ pub mod notify {
 #[derive(MDisplay, Constructor)]
 #[display(fmt = "rgba({},{},{},{})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
+
+#[derive(MDisplay, Constructor)]
+#[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
+pub struct NColorRgba(u8, u8, u8, u8);
+
+#[derive(MDisplay, Constructor)]
+#[display(fmt = "rgb({:02x}{:02x}{:02x})", "_0", "_1", "_2")]
+pub struct NColorRgb(u8, u8, u8);
+
+pub enum NColor {
+    Rgb(NColorRgb),
+    Rgba(NColorRgba)
+}
 
 /// Provides things to setting props
 pub mod set_prop {
