@@ -188,8 +188,8 @@ impl Address {
     }
 }
 
-/// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) async fn write_to_socket(
+/// This pub function is used to write a value to a socket and to get the response
+pub async fn write_to_socket(
     path: String,
     content: CommandContent,
 ) -> crate::Result<String> {
@@ -215,8 +215,8 @@ pub(crate) async fn write_to_socket(
     Ok(String::from_utf8(response)?)
 }
 
-/// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> crate::Result<String> {
+/// This pub function is used to write a value to a socket and to get the response
+pub fn write_to_socket_sync(path: String, content: CommandContent) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
     let mut stream = UnixStream::connect(path)?;
@@ -239,15 +239,15 @@ pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> cra
     Ok(String::from_utf8(response)?)
 }
 
-/// This pub(crate) enum holds the different sockets that Hyprland has
-pub(crate) enum SocketType {
+/// This pub enum holds the different sockets that Hyprland has
+pub enum SocketType {
     /// The socket used to send commands to Hyprland (AKA `.socket.sock`)
     Command,
     /// The socket used to listen for events (AKA `.socket2.sock`)
     Listener,
 }
-/// This pub(crate) function gets the Hyprland socket path
-pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
+/// This pub function gets the Hyprland socket path
+pub fn get_socket_path(socket_type: SocketType) -> String {
     let hypr_instance_sig = match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => var,
         Err(VarError::NotPresent) => panic!("Is hyprland running?"),
@@ -262,7 +262,7 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
     format!("/tmp/hypr/{hypr_instance_sig}/{socket_name}")
 }
 
-pub(crate) fn object_empty_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+pub fn object_empty_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: Deserializer<'de>,
     for<'a> T: Deserialize<'a>,
