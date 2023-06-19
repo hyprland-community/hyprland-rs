@@ -221,6 +221,7 @@ pub mod notify {
 #[display(fmt = "rgba({},{},{},{})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
 
+/// A special 
 #[derive(MDisplay, Constructor)]
 #[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
 pub struct NColorRgba(u8, u8, u8, u8);
@@ -232,6 +233,12 @@ pub struct NColorRgb(u8, u8, u8);
 pub enum NColor {
     Rgb(NColorRgb),
     Rgba(NColorRgba)
+}
+
+impl std::fmt::Display for NColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{self}")
+    }
 }
 
 /// Provides things to setting props
