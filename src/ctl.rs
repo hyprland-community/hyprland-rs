@@ -186,7 +186,7 @@ pub mod notify {
         Ok = 5,
     }
     /// Creates a notification with Hyprland
-    pub fn call(icon: Icon, time: Duration, color: NColor, msg: String) -> crate::Result<()> {
+    pub fn call(icon: Icon, time: Duration, color: Color, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
             get_socket_path(SocketType::Command),
             command!(
@@ -202,7 +202,7 @@ pub mod notify {
     pub async fn call_async(
         icon: Icon,
         time: Duration,
-        color: NColor,
+        color: Color,
         msg: String,
     ) -> crate::Result<()> {
         write_to_socket(
