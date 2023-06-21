@@ -192,7 +192,7 @@ pub mod notify {
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
-                icon as i32,
+                icon as i8,
                 time.as_millis()
             ),
         )?;
@@ -210,7 +210,7 @@ pub mod notify {
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
-                icon as i32,
+                icon as i8,
                 time.as_millis()
             ),
         )
@@ -221,7 +221,7 @@ pub mod notify {
 
 /// A 8-bit color with a alpha channel
 #[derive(Copy, Clone, MDisplay, Constructor)]
-#[display(fmt = "rgba({}{}{}{})", "_0", "_1", "_2", "_3")]
+#[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
 
 /// Provides things to setting props
