@@ -188,7 +188,7 @@ impl Address {
     }
 }
 
-/// This pub function is used to write a value to a socket and to get the response
+/// This pub(crate) function is used to write a value to a socket and to get the response
 pub(crate) async fn write_to_socket(
     path: String,
     content: CommandContent,
@@ -215,7 +215,7 @@ pub(crate) async fn write_to_socket(
     Ok(String::from_utf8(response)?)
 }
 
-/// This pub function is used to write a value to a socket and to get the response
+/// This pub(crate) function is used to write a value to a socket and to get the response
 pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
@@ -239,14 +239,14 @@ pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> cra
     Ok(String::from_utf8(response)?)
 }
 
-/// This pub enum holds the different sockets that Hyprland has
+/// This pub(crate) enum holds the different sockets that Hyprland has
 pub(crate) enum SocketType {
     /// The socket used to send commands to Hyprland (AKA `.socket.sock`)
     Command,
     /// The socket used to listen for events (AKA `.socket2.sock`)
     Listener,
 }
-/// This pub function gets the Hyprland socket path
+/// This pub(crate) function gets the Hyprland socket path
 pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
     let hypr_instance_sig = match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => var,
@@ -262,7 +262,7 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
     format!("/tmp/hypr/{hypr_instance_sig}/{socket_name}")
 }
 
-pub fn object_empty_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+pub(crate) fn object_empty_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
 where
     D: Deserializer<'de>,
     for<'a> T: Deserialize<'a>,
