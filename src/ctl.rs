@@ -172,9 +172,12 @@ pub mod set_error {
 pub mod notify {
     use super::*;
     use std::time::Duration;
-    #[repr(u8)]
+
     #[allow(missing_docs)]
+    #[derive(Copy, Clone)]
+    #[repr(i8)]
     pub enum Icon {
+        NoIcon = -1,
         Warning = 0,
         Info = 1,
         Hint = 2,
@@ -189,7 +192,7 @@ pub mod notify {
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
-                icon as u8,
+                icon as i8,
                 time.as_millis()
             ),
         )?;
@@ -207,7 +210,7 @@ pub mod notify {
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
-                icon as u8,
+                icon as i8,
                 time.as_millis()
             ),
         )
@@ -217,8 +220,8 @@ pub mod notify {
 }
 
 /// A 8-bit color with a alpha channel
-#[derive(MDisplay, Constructor)]
-#[display(fmt = "rgba({},{},{},{})", "_0", "_1", "_2", "_3")]
+#[derive(Copy, Clone, MDisplay, Constructor)]
+#[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
 
 /// Provides things to setting props
