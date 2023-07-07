@@ -10,6 +10,7 @@
 An unofficial rust wrapper for Hyprland's IPC
 
 ## Disclaimer
+
 If something doesn't work, doesn't matter what,
 make sure you are on the latest version (or commit) of Hyprland before making an issue!
 
@@ -22,14 +23,16 @@ Let's get started with Hyprland-rs!
 Add the code below to the dependencies section of your Cargo.toml file!
 
 ```toml
-hyprland = "0.3.4"
+hyprland = "0.3.6"
 ```
 
 ### Reading the docs
+
 Hyprland-rs has a ton of types (and some really long ones)! Its important you know how the ones you will be using work!
 The docs can be found at [docs.rs/hyprland](https://docs.rs/hyprland)
 
 #### Master version
+
 If Hyprland-rs is broken (or other reason) and is taking too long for a release to come out,
 you can use the master branch in Cargo (will not allow the crate to be published to `crates.io`):
 
@@ -40,12 +43,13 @@ hyprland = { git = "https://github.com/hyprland-community/hyprland-rs", branch =
 ### What this crate provides
 
 This crate provides 6 modules (+1 for shared things)
- - `data` for getting information on the compositor
- - `event_listener` which provides the `EventListener` struct for listening for events
- - `dispatch` for calling dispatchers
- - `keyword` for dealing with config option (aka keywords)
- - `config::binds` for changing binds (in future `config` might have config generation)
- - `ctl` for calling hyprctl commands
+
+- `data` for getting information on the compositor
+- `event_listener` which provides the `EventListener` struct for listening for events
+- `dispatch` for calling dispatchers
+- `keyword` for dealing with config option (aka keywords)
+- `config::binds` for changing binds (in future `config` might have config generation)
+- `ctl` for calling hyprctl commands
 
 ## Example Usage
 
