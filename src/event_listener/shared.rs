@@ -641,7 +641,7 @@ fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
         Err(RegexError::CompiledTooBig(size)) => {
             panic!("The compiled regex size is too big ({size})")
         }
-        Err(RegexError::__Nonexhaustive) => unreachable!(),
+        Err(_) => unreachable!(),
     }
 }
 
@@ -652,7 +652,7 @@ fn check_for_regex_set_error(val: Result<RegexSet, RegexError>) -> RegexSet {
         Err(RegexError::CompiledTooBig(size)) => {
             panic!("The compiled regex size is too big ({size})")
         }
-        Err(RegexError::__Nonexhaustive) => unreachable!(),
+        Err(_) => unreachable!(),
     }
 }
 
