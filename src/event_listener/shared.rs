@@ -880,21 +880,21 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     }));
                 }
                 18 => {
-                    // ScreenCastStateChanged
-                    let state = &captures["state"] == "1";
-                    let owner = &captures["owner"] == "1";
-                    events.push(Event::Screencast(ScreencastEventData {
-                        is_turning_on: state,
-                        is_monitor: owner,
-                    }));
-                }
-                19 => {
                     // MinimizeStateChanged
                     let addr = &captures["address"];
                     let state = &captures["state"] == "1";
                     events.push(Event::Minimize(MinimizeEventData {
                         window_address: Address::new(addr),
                         is_minimized: state,
+                    }));
+                }
+                19 => {
+                    // ScreenCastStateChanged
+                    let state = &captures["state"] == "1";
+                    let owner = &captures["owner"] == "1";
+                    events.push(Event::Screencast(ScreencastEventData {
+                        is_turning_on: state,
+                        is_monitor: owner,
                     }));
                 }
                 20 => {
