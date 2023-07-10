@@ -821,7 +821,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
         let (e, captures) = match matched.len() {
             0 => unreachable!(),
             1 => {
-                report_unknown!((item.split('>').collect::<Vec<&str>>()[0]));
+                report_unknown!((item.split('>').next().unwrap_or("unknown")));
                 continue;
             }
             2 => matched
