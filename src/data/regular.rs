@@ -236,6 +236,8 @@ pub struct Client {
     pub pinned: bool,
     /// Group members
     pub grouped: Vec<Box<Address>>,
+    /// Is this window print on screen
+    pub mapped: bool,
     /// The swallowed window
     pub swallowing: Option<Box<Address>>,
 }
