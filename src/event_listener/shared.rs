@@ -698,7 +698,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             r"createworkspace>>(?P<workspace>.*)",
             r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
             r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
-            r"activewindow>>(?P<class>.*),(?P<title>.*)",
+            r"activewindow>>(?P<class>.*?),(?P<title>.*)",
             r"activewindowv2>>(?P<address>.*)",
             r"fullscreen>>(?P<state>0|1)",
             r"monitorremoved>>(?P<monitor>.*)",
