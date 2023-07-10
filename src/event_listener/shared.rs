@@ -794,7 +794,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 ParsedEventType::WindowTitleChanged,
                 r"windowtitle>>(?P<address>.*)"
             ),
-            (ParsedEventType::Unknown, r"(?P<Event>[^>]*)"),
+            (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
         ]
         .into_iter()
         .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
@@ -812,8 +812,12 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             .map(|(pet, r)| {
                 (
                     pet,
-                    r.captures(item)
-                        .unwrap_or_else(|| panic!("Regex has no captures")),
+                    r.captures(item).unwrap_or_else(|| {
+                        panic!(
+                            "Unable to find captures while parsing Hyprland event: {}",
+                            item
+                        )
+                    }),
                 )
             })
             .collect();
