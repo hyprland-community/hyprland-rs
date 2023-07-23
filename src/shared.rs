@@ -5,6 +5,7 @@ pub use async_trait::async_trait;
 use derive_more::Display;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env::{var, VarError};
+use std::hash::{Hash, Hasher};
 use std::{error, fmt, io};
 
 #[derive(Debug)]
@@ -123,7 +124,7 @@ fn ser_spec_opt(opt: &Option<String>) -> String {
 }
 
 /// This enum holds workspace data
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Display)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Display, PartialOrd, Ord)]
 #[serde(untagged)]
 pub enum WorkspaceType {
     /// A named workspace
@@ -163,6 +164,18 @@ impl From<i32> for WorkspaceType {
         match int {
             1.. => WorkspaceType::Regular(int.to_string()),
             _ => panic!("Unrecognised id"),
+        }
+    }
+}
+
+impl Hash for WorkspaceType {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            WorkspaceType::Regular(name) => name.hash(state),
+            WorkspaceType::Special(value) => match value {
+                Some(name) => name.hash(state),
+                None => "".hash(state),
+            },
         }
     }
 }
