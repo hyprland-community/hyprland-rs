@@ -2,6 +2,7 @@
 #![warn(missing_docs)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
+#![deny(unsafe_code)]
 
 #[macro_use]
 extern crate lazy_static;
@@ -66,3 +67,4 @@ pub(crate) mod unix_async {
 
 /// This type provides the result type used everywhere in Hyprland-rs
 pub type Result<T> = std::result::Result<T, shared::HyprError>;
+

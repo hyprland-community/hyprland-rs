@@ -251,7 +251,7 @@ pub(crate) type VoidFutureMut =
 pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
 pub(crate) type AsyncClosure<T> = AsyncEventTypes<
     dyn Sync + Send + Fn(T) -> VoidFuture,
-    dyn Sync + Send + Fn(T, &mut StateV2) -> VoidFutureMut,
+    dyn Sync + Send + Fn(T, &mut State) -> VoidFutureMut,
 >;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
@@ -333,7 +333,9 @@ pub struct WindowMoveEvent {
     pub workspace_name: String,
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for WindowMoveEvent {}
+#[allow(unsafe_code)]
 unsafe impl Sync for WindowMoveEvent {}
 /// The data for the event executed when opening a new window
 #[derive(Clone, Debug)]
@@ -348,7 +350,9 @@ pub struct WindowOpenEvent {
     pub window_title: String,
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for WindowOpenEvent {}
+#[allow(unsafe_code)]
 unsafe impl Sync for WindowOpenEvent {}
 /// The data for the event executed when changing keyboard layouts
 #[derive(Clone, Debug)]
@@ -359,7 +363,9 @@ pub struct LayoutEvent {
     pub layout_name: String,
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for LayoutEvent {}
+#[allow(unsafe_code)]
 unsafe impl Sync for LayoutEvent {}
 /// The mutable state available to Closures
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -372,80 +378,9 @@ pub struct State {
     pub fullscreen_state: bool,
 }
 
-use std::ops::{Deref, DerefMut};
-/// Wrapper type that adds handler for events
-#[derive(Clone)]
-#[doc(hidden)]
-pub struct MutWrapper<'a, 'b, T>(T, &'a (dyn Fn(T) + 'a), &'b (dyn Fn(T) -> VoidFuture + 'b));
-impl<T> MutWrapper<'_, '_, T> {
-    #[allow(dead_code)]
-    pub(crate) fn update(&mut self, v: T) {
-        self.0 = v;
-    }
-}
-impl<T: PartialEq> PartialEq for MutWrapper<'_, '_, T> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-impl<T: Debug> Debug for MutWrapper<'_, '_, T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-impl<T: Eq> Eq for MutWrapper<'_, '_, T> {}
-
-impl<T> Deref for MutWrapper<'_, '_, T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-impl<T: Clone> DerefMut for MutWrapper<'_, '_, T> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.1(self.0.clone());
-        &mut self.0
-    }
-}
-
-/// The mutable state available to Closures
-#[derive(PartialEq, Eq, Clone, Debug)]
-#[doc(hidden)]
-pub struct StateV2 {
-    /// The active workspace
-    pub workspace: MutWrapper<'static, 'static, String>,
-    /// The active monitor
-    pub monitor: MutWrapper<'static, 'static, String>,
-    /// The fullscreen state
-    pub fullscreen: MutWrapper<'static, 'static, bool>,
-}
-
-unsafe impl Send for StateV2 {}
-unsafe impl Sync for StateV2 {}
-impl StateV2 {
-    /// Init new state
-    pub fn new<Str: ToString>(work: Str, mon: Str, full: bool) -> Self {
-        use crate::dispatch::*;
-        use hyprland_macros::async_closure;
-        Self {
-            workspace: MutWrapper(
-                work.to_string(),
-                &|work| {
-                    if let Ok(()) =
-                        crate::dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Name(&work))
-                    {
-                    }
-                },
-                &async_closure! { |work| if let Ok(()) =
-                crate::dispatch!(async; Workspace, WorkspaceIdentifierWithSpecial::Name(&work)).await {}},
-            ),
-            monitor: MutWrapper(mon.to_string(), &|_| {}, &async_closure! {|_| {}}),
-            fullscreen: MutWrapper(full, &|_| {}, &async_closure! {|_| {}}),
-        }
-    }
-}
-
+#[allow(unsafe_code)]
 unsafe impl Send for State {}
+#[allow(unsafe_code)]
 unsafe impl Sync for State {}
 impl State {
     /// Execute changes in state
@@ -531,7 +466,7 @@ pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
 pub(crate) async fn execute_closure_async_state<T: Clone>(
     f: &AsyncClosure<T>,
     val: &T,
-    state: &mut StateV2,
+    state: &mut State,
 ) {
     match f {
         AsyncEventTypes::MutableState(fun) => fun(val.clone(), state).await,
@@ -582,7 +517,9 @@ pub struct WindowEventData {
     pub window_address: Address,
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for WindowEventData {}
+#[allow(unsafe_code)]
 unsafe impl Sync for WindowEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone)]
@@ -593,7 +530,9 @@ pub struct MonitorEventData {
     pub workspace: WorkspaceType,
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for MonitorEventData {}
+#[allow(unsafe_code)]
 unsafe impl Sync for MonitorEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone)]
@@ -604,7 +543,9 @@ pub struct WindowFloatEventData {
     pub is_floating: bool,
 }
 
+#[allow(unsafe_code)]
 unsafe impl Send for WindowFloatEventData {}
+#[allow(unsafe_code)]
 unsafe impl Sync for WindowFloatEventData {}
 /// This enum holds every event type
 #[derive(Debug, Clone)]
