@@ -124,7 +124,7 @@ fn ser_spec_opt(opt: &Option<String>) -> String {
 }
 
 /// This enum holds workspace data
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Display)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Display, PartialOrd, Ord)]
 #[serde(untagged)]
 pub enum WorkspaceType {
     /// A named workspace
