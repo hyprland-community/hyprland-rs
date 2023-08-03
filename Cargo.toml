@@ -24,7 +24,7 @@ lto = true
 members = ["hyprland-macros"]
 
 [workspace.package]
-version = "0.3.9"
+version = "0.3.10"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
 keywords = ["hyprland", "ipc", "hypr", "wayland", "linux"]
