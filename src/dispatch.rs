@@ -35,7 +35,7 @@ pub enum WindowIdentifier<'a> {
 impl std::fmt::Display for WindowIdentifier<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let out = match self {
-            WindowIdentifier::Address(addr) => format!("address:{addr}"),
+            WindowIdentifier::Address(addr) => format!("address:0x{addr}"),
             WindowIdentifier::ProcessId(id) => format!("pid:{id}"),
             WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
             WindowIdentifier::Title(title) => format!("title:{title}"),
