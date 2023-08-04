@@ -84,7 +84,7 @@ pub enum Position {
 impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let out = match self {
-            Position::Delta(x, y) => format!("{x},{y}"),
+            Position::Delta(x, y) => format!("{x} {y}"),
             Position::Exact(w, h) => format!("exact {w} {h}"),
         };
         write!(f, "{out}")
