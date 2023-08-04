@@ -84,7 +84,7 @@ pub enum Position {
 impl std::fmt::Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let out = match self {
-            Position::Delta(x, y) => format!("{x},{y}"),
+            Position::Delta(x, y) => format!("{x} {y}"),
             Position::Exact(w, h) => format!("exact {w} {h}"),
         };
         write!(f, "{out}")
@@ -506,8 +506,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         CenterWindow => "centerwindow".to_string(),
         ResizeActive(pos) => format!("resizeactive{sep}{pos}"),
         MoveActive(pos) => format!("moveactive {pos}"),
-        ResizeWindowPixel(pos, win) => format!("resizeactive{sep}{pos} {win}"),
-        MoveWindowPixel(pos, win) => format!("moveactive{sep}{pos} {win}"),
+        ResizeWindowPixel(pos, win) => format!("resizewindowpixel{sep}{pos},{win}"),
+        MoveWindowPixel(pos, win) => format!("movewindowpixel{sep}{pos},{win}"),
         CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
         SwapWindow(dir) => format!("swapnext{sep}{dir}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
