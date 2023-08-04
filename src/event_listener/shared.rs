@@ -828,7 +828,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 }
             }
             ParsedEventType::ActiveWindowChangedV2 => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 if addr != "," {
                     events.push(Event::ActiveWindowChangedV2(Some(Address::new(addr))));
                 } else {
@@ -848,7 +848,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 events.push(Event::MonitorAdded(monitor.to_string()));
             }
             ParsedEventType::WindowOpened => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 let workspace = &captures["workspace"];
                 let class = &captures["class"];
                 let title = &captures["title"];
@@ -860,11 +860,11 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 }));
             }
             ParsedEventType::WindowClosed => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 events.push(Event::WindowClosed(Address::new(addr)));
             }
             ParsedEventType::WindowMoved => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 let work = &captures["workspace"];
                 events.push(Event::WindowMoved(WindowMoveEvent {
                     window_address: Address::new(addr),
@@ -892,7 +892,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 events.push(Event::LayerClosed(namespace.to_string()));
             }
             ParsedEventType::FloatStateChanged => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 let state = &captures["floatstate"] == "0"; // FIXME: does 0 mean it's floating?
                 events.push(Event::FloatStateChanged(WindowFloatEventData {
                     window_address: Address::new(addr),
@@ -900,7 +900,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 }));
             }
             ParsedEventType::Minimize => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 let state = &captures["state"] == "1";
                 events.push(Event::Minimize(MinimizeEventData {
                     window_address: Address::new(addr),
@@ -916,11 +916,11 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 }));
             }
             ParsedEventType::UrgentStateChanged => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 events.push(Event::UrgentStateChanged(Address::new(addr)));
             }
             ParsedEventType::WindowTitleChanged => {
-                let addr = &captures["address"];
+                let addr = format_event_addr(&captures["address"]);
                 events.push(Event::WindowTitleChanged(Address::new(addr)));
             }
             ParsedEventType::Unknown => {
@@ -957,4 +957,8 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     }
 
     Ok(events)
+}
+
+fn format_event_addr(addr: &str) -> String {
+    format!("0x{addr}")
 }
