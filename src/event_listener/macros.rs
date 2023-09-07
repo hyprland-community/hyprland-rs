@@ -274,6 +274,7 @@ macro_rules! init_events {
             workspace_added_events: vec![],
             workspace_destroyed_events: vec![],
             workspace_moved_events: vec![],
+            workspace_rename_events: vec![],
             active_monitor_changed_events: vec![],
             active_window_changed_events: vec![],
             fullscreen_state_changed_events: vec![],

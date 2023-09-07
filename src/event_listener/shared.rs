@@ -262,6 +262,7 @@ pub(crate) struct Events {
     pub(crate) workspace_added_events: Closures<WorkspaceType>,
     pub(crate) workspace_destroyed_events: Closures<WorkspaceType>,
     pub(crate) workspace_moved_events: Closures<MonitorEventData>,
+    pub(crate) workspace_rename_events: Closures<WorkspaceRenameEventData>,
     pub(crate) active_monitor_changed_events: Closures<MonitorEventData>,
     pub(crate) active_window_changed_events: Closures<Option<WindowEventData>>,
     pub(crate) fullscreen_state_changed_events: Closures<bool>,
@@ -287,6 +288,7 @@ pub(crate) struct AsyncEvents {
     pub(crate) workspace_added_events: AsyncClosures<WorkspaceType>,
     pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceType>,
     pub(crate) workspace_moved_events: AsyncClosures<MonitorEventData>,
+    pub(crate) workspace_rename_events: AsyncClosures<WorkspaceRenameEventData>,
     pub(crate) active_monitor_changed_events: AsyncClosures<MonitorEventData>,
     pub(crate) active_window_changed_events: AsyncClosures<Option<WindowEventData>>,
     pub(crate) fullscreen_state_changed_events: AsyncClosures<bool>,
@@ -304,6 +306,15 @@ pub(crate) struct AsyncEvents {
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
+}
+
+/// Event data for renameworkspace event
+#[derive(Debug, Clone)]
+pub struct WorkspaceRenameEventData {
+    /// Workspace id
+    pub workspace_id: String,
+    /// Workspace name content
+    pub workspace_name: String,
 }
 
 /// Event data for a minimize event
@@ -554,6 +565,7 @@ pub(crate) enum Event {
     WorkspaceDeleted(WorkspaceType),
     WorkspaceAdded(WorkspaceType),
     WorkspaceMoved(MonitorEventData),
+    WorkspaceRename(WorkspaceRenameEventData),
     ActiveWindowChangedV1(Option<(String, String)>),
     ActiveWindowChangedV2(Option<Address>),
     ActiveWindowChangedMerged(Option<WindowEventData>),
@@ -625,6 +637,7 @@ enum ParsedEventType {
     WorkspaceDeleted,
     WorkspaceAdded,
     WorkspaceMoved,
+    WorkspaceRename,
     ActiveWindowChangedV1,
     ActiveWindowChangedV2,
     ActiveMonitorChanged,
@@ -665,6 +678,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             (
                 ParsedEventType::WorkspaceMoved,
                 r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)"
+            ),
+            (
+                ParsedEventType::WorkspaceRename,
+                r"renameworkspace>>(?P<id>.*),(?P<name>.*)"
             ),
             (
                 ParsedEventType::ActiveMonitorChanged,
@@ -805,6 +822,14 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 events.push(Event::WorkspaceMoved(MonitorEventData {
                     monitor_name: monitor.to_string(),
                     workspace,
+                }));
+            }
+            ParsedEventType::WorkspaceRename => {
+                let id = &captures["id"];
+                let name = &captures["name"];
+                events.push(Event::WorkspaceRename(WorkspaceRenameEventData {
+                    workspace_id: id.to_string(),
+                    workspace_name: name.to_string(),
                 }));
             }
             ParsedEventType::ActiveMonitorChanged => {

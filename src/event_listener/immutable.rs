@@ -39,6 +39,7 @@ impl HasExecutor for EventListener {
             WorkspaceAdded(id) => arm!(id, workspace_added_events, self),
             WorkspaceDeleted(id) => arm!(id, workspace_destroyed_events, self),
             WorkspaceMoved(evend) => arm!(evend, workspace_moved_events, self),
+            WorkspaceRename(even) => arm!(even, workspace_rename_events, self),
             ActiveMonitorChanged(evend) => arm!(evend, active_monitor_changed_events, self),
             ActiveWindowChangedMerged(opt) => arm!(opt, active_window_changed_events, self),
             ActiveWindowChangedV1(_) => (),

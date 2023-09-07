@@ -40,6 +40,9 @@ impl HasAsyncExecutor for AsyncEventListener {
             Event::WorkspaceAdded(id) => arm_async!(id.clone(), workspace_added_events, self),
             Event::WorkspaceDeleted(id) => arm_async!(id.clone(), workspace_destroyed_events, self),
             Event::WorkspaceMoved(evend) => arm_async!(evend.clone(), workspace_moved_events, self),
+            Event::WorkspaceRename(even) => {
+                arm_async!(even.clone(), workspace_rename_events, self)
+            }
             Event::ActiveMonitorChanged(evend) => {
                 arm_async!(evend.clone(), active_monitor_changed_events, self)
             }
