@@ -50,6 +50,9 @@ impl HasExecutor for EventListener {
                 mut_arm_sync!(id.clone(), workspace_destroyed_events, self)
             }
             Event::WorkspaceMoved(id) => mut_arm_sync!(id.clone(), workspace_moved_events, self),
+            Event::WorkspaceRename(even) => {
+                mut_arm_sync!(even.clone(), workspace_rename_events, self)
+            }
             Event::ActiveMonitorChanged(MonitorEventData {
                 monitor_name,
                 workspace,
@@ -157,6 +160,7 @@ impl EventListener {
             Event::WorkspaceAdded(id) => mut_arm!(id.clone(), workspace_added_events, self),
             Event::WorkspaceDeleted(id) => mut_arm!(id.clone(), workspace_destroyed_events, self),
             Event::WorkspaceMoved(id) => mut_arm!(id.clone(), workspace_moved_events, self),
+            Event::WorkspaceRename(even) => mut_arm!(even.clone(), workspace_rename_events, self),
             Event::ActiveMonitorChanged(even) => mut_state_arm!(
                 even.clone(),
                 active_monitor_changed_events,
