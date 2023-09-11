@@ -94,7 +94,7 @@ pub enum Transforms {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Monitor {
     /// The monitor id
-    pub id: u64,
+    pub id: i64,
     /// The monitor's name
     pub name: String,
     /// The monitor's description
@@ -216,8 +216,8 @@ pub struct Client {
     /// What type of fullscreen?
     #[serde(rename = "fullscreenMode")]
     pub fullscreen_mode: i8,
-    /// The monitor the window is on
-    pub monitor: u64,
+    /// The monitor id the window is on
+    pub monitor: i64,
     /// The initial window class
     #[serde(rename = "initialClass")]
     pub initial_class: String,
