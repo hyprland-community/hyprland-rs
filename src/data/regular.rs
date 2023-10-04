@@ -580,7 +580,7 @@ struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 
 /// Struct that holds animations and beziers
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Animations(Vec<Animation>, Vec<BezierIdent>);
+pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
 #[async_trait]
 impl HyprData for Animations {
