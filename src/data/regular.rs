@@ -457,6 +457,8 @@ pub enum AnimationStyle {
     Slide,
     /// Vertical slide animation
     SlideVert,
+    SlideFade,
+    SlideFadeVert,
     /// Popin animation (with percentage)
     PopIn(u8),
     /// Fade animation
@@ -488,6 +490,8 @@ impl<Str: ToString + Clone> From<Str> for AnimationStyle {
                 "slide" => AnimationStyle::Slide,
                 "slidevert" => AnimationStyle::SlideVert,
                 "fade" => AnimationStyle::Fade,
+                "slidefade" => AnimationStyle::SlideFade,
+                "slidefadevert" => AnimationStyle::SlideFadeVert,
                 "once" => AnimationStyle::Once,
                 "loop" => AnimationStyle::Loop,
                 "" => AnimationStyle::None,
@@ -580,7 +584,7 @@ struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 
 /// Struct that holds animations and beziers
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Animations(Vec<Animation>, Vec<BezierIdent>);
+pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
 #[async_trait]
 impl HyprData for Animations {
