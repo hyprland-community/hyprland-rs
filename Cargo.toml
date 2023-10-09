@@ -42,7 +42,7 @@ async-net = { version = "1", optional = true }
 async-std = { version = "1", optional = true }
 futures-lite = { version = "1", optional = true }
 lazy_static = "1.4"
-regex = "1.9"
+regex = "1.10"
 async-trait = "0.1"
 num-traits = "0.2"
 doc-comment = "0.3"
