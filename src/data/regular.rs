@@ -338,6 +338,8 @@ pub struct Keyboard {
     pub options: String,
     /// The keyboard's active keymap
     pub active_keymap: String,
+    /// The keyboard's primary status
+    pub main: bool,
 }
 
 /// A enum that holds the types of tablets
