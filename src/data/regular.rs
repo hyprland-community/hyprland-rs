@@ -240,6 +240,9 @@ pub struct Client {
     pub mapped: bool,
     /// The swallowed window
     pub swallowing: Option<Box<Address>>,
+    /// When was this window last focused relatively to other windows? 0 for current, 1 previous, 2 previous before that, etc
+    #[serde(rename = "focusHistoryID")]
+    pub focus_history_id: i8,
 }
 
 /// This enum holds the information for the active window
