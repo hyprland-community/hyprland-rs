@@ -506,7 +506,7 @@ dependencies = [
  "derive_more",
  "doc-comment",
  "futures",
- "futures-lite 1.13.0",
+ "futures-lite 2.0.0",
  "hex",
  "hyprland-macros",
  "lazy_static",
