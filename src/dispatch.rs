@@ -167,8 +167,10 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
     Relative(i32),
-    /// The workspace on the monitor relative to the current monitor
+    /// The workspace on the monitor relative to the current workspace
     RelativeMonitor(i32),
+    /// The workspace on the monitor relative to the current workspace, including empty workspaces
+    RelativeMonitorIncludingEmpty(i32),
     /// The open workspace relative to the current workspace
     RelativeOpen(i32),
     /// The previous Workspace
@@ -189,6 +191,7 @@ impl std::fmt::Display for WorkspaceIdentifierWithSpecial<'_> {
             Name(name) => format!("name:{name}"),
             Relative(int) => format_relative(*int, ""),
             RelativeMonitor(int) => format_relative(*int, "m"),
+            RelativeMonitorIncludingEmpty(int) => format_relative(*int, "r"),
             RelativeOpen(int) => format_relative(*int, "e"),
             Previous => "previous".to_string(),
             Empty => "empty".to_string(),
@@ -209,8 +212,10 @@ pub enum WorkspaceIdentifier<'a> {
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
     Relative(i32),
-    /// The workspace on the monitor relative to the current monitor
+    /// The workspace on the monitor relative to the current workspace
     RelativeMonitor(i32),
+    /// The workspace on the monitor relative to the current workspace, including empty workspaces
+    RelativeMonitorIncludingEmpty(i32),
     /// The open workspace relative to the current workspace
     RelativeOpen(i32),
     /// The previous Workspace
@@ -229,6 +234,7 @@ impl std::fmt::Display for WorkspaceIdentifier<'_> {
             Name(name) => format!("name:{name}"),
             Relative(int) => format_relative(*int, ""),
             RelativeMonitor(int) => format_relative(*int, "m"),
+            RelativeMonitorIncludingEmpty(int) => format_relative(*int, "r"),
             RelativeOpen(int) => format_relative(*int, "e"),
             Previous => "previous".to_string(),
             Empty => "empty".to_string(),
