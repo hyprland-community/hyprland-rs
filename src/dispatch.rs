@@ -297,9 +297,14 @@ pub enum DispatchType<'a> {
     ),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// changes the active workspace aswell
+    #[deprecated(since = "0.3.13", note = "use MoveToWorkspace(work, None) instead")]
     MoveFocusedWindowToWorkspace(WorkspaceIdentifier<'a>),
     /// This dispatcher moves the focused window to a specified workspace, and
     /// does not change workspaces
+    #[deprecated(
+        since = "0.3.13",
+        note = "use MoveToWorkspaceSilent(work, None) instead"
+    )]
     MoveFocusedWindowToWorkspaceSilent(WorkspaceIdentifier<'a>),
     /// This dispatcher floats a window (current if not specified)
     ToggleFloating(Option<WindowIdentifier<'a>>),
@@ -486,8 +491,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         MoveToWorkspace(work, None) => format!("movetoworkspace{sep}{work}"),
         MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent{sep}{work},{win}"),
         MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent{sep}{work}"),
-        MoveFocusedWindowToWorkspace(work) => format!("workspace{sep}{work}"),
-        MoveFocusedWindowToWorkspaceSilent(work) => format!("workspace{sep}{work}"),
+        MoveFocusedWindowToWorkspace(work) => format!("movetoworkspace{sep}{work}"),
+        MoveFocusedWindowToWorkspaceSilent(work) => format!("movetoworkspacesilent{sep}{work}"),
         ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
         ToggleFloating(None) => "togglefloating".to_string(),
         ToggleFullscreen(ftype) => format!("fullscreen{sep}{ftype}"),
