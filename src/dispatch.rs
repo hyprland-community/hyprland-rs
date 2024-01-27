@@ -167,7 +167,7 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
     Relative(i32),
-    /// The workspace on the monitor relative to the current monitor
+    /// The workspace on the monitor relative to the current workspace
     RelativeMonitor(i32),
     /// The open workspace relative to the current workspace
     RelativeOpen(i32),
@@ -209,7 +209,7 @@ pub enum WorkspaceIdentifier<'a> {
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
     Relative(i32),
-    /// The workspace on the monitor relative to the current monitor
+    /// The workspace on the monitor relative to the current workspace
     RelativeMonitor(i32),
     /// The open workspace relative to the current workspace
     RelativeOpen(i32),
