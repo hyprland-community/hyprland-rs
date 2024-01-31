@@ -275,28 +275,6 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
     format!("/tmp/hypr/{hypr_instance_sig}/{socket_name}")
 }
 
-pub(crate) fn object_empty_as_none<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    for<'a> T: Deserialize<'a>,
-{
-    #[derive(Deserialize, Debug)]
-    #[serde(deny_unknown_fields)]
-    struct Empty {}
-
-    #[derive(Deserialize, Debug)]
-    #[serde(untagged)]
-    enum Aux<T> {
-        T(T),
-        Empty(Empty),
-        Null,
-    }
-
-    match Deserialize::deserialize(deserializer)? {
-        Aux::T(t) => Ok(Some(t)),
-        Aux::Empty(_) | Aux::Null => Ok(None),
-    }
-}
 
 /// Creates a `CommandContent` instance with the given flag and formatted data.
 ///
