@@ -245,25 +245,31 @@ pub struct Client {
     pub focus_history_id: i8,
 }
 
-/// This enum holds the information for the active window
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub(crate) struct ActiveWindow(
-    /// The client data
-    #[serde(deserialize_with = "object_empty_as_none")]
-    pub Option<Client>,
-);
+#[derive(Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
+struct Empty {}
 
 #[async_trait]
 impl HyprDataActiveOptional for Client {
     fn get_active() -> crate::Result<Option<Self>> {
         let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow);
-        let deserialized: ActiveWindow = serde_json::from_str(&data)?;
-        Ok(deserialized.0)
+        let res = serde_json::from_str::<Empty>(&data);
+        if res.is_err() {
+            let t = serde_json::from_str::<Client>(&data)?;
+            Ok(Some(t))
+        } else {
+            Ok(None)
+        }
     }
     async fn get_active_async() -> crate::Result<Option<Self>> {
         let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await;
-        let deserialized: ActiveWindow = serde_json::from_str(&data)?;
-        Ok(deserialized.0)
+        let res = serde_json::from_str::<Empty>(&data);
+        if res.is_err() {
+            let t = serde_json::from_str::<Client>(&data)?;
+            Ok(Some(t))
+        } else {
+            Ok(None)
+        }
     }
 }
 
