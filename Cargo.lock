@@ -123,7 +123,7 @@ checksum = "b948000fad4873c1c9339d60f2623323a0cfd3816e5181033c6a5cb68b2accf7"
 dependencies = [
  "async-io 2.1.0",
  "blocking",
- "futures-lite 2.0.1",
+ "futures-lite 2.2.0",
 ]
 
 [[package]]
@@ -397,14 +397,13 @@ dependencies = [
 
 [[package]]
 name = "futures-lite"
-version = "2.0.1"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3831c2651acb5177cbd83943f3d9c8912c5ad03c76afcc0e9511ba568ec5ebb"
+checksum = "445ba825b27408685aaecefd65178908c36c6e96aaf6d8599419d46e624192ba"
 dependencies = [
  "fastrand 2.0.1",
  "futures-core",
  "futures-io",
- "memchr",
  "parking",
  "pin-project-lite",
 ]
@@ -505,7 +504,7 @@ dependencies = [
  "derive_more",
  "doc-comment",
  "futures",
- "futures-lite 2.0.1",
+ "futures-lite 2.2.0",
  "hex",
  "hyprland-macros",
  "lazy_static",
