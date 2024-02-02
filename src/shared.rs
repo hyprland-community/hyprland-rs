@@ -64,7 +64,7 @@ pub type HResult<T> = Result<T, HyprError>;
 
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct Address(String);
 
 /// This trait provides a standardized way to get data
