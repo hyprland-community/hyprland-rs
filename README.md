@@ -9,6 +9,11 @@
 
 An unofficial rust wrapper for Hyprland's IPC
 
+## Help Wanted!
+We need help with developing the next version of hyprland-rs `0.4`,
+if you know how to do the things in https://github.com/hyprland-community/hyprland-rs/milestone/4
+contributions in those areas would be greatly appreciated!
+
 ## Disclaimer
 
 If something doesn't work, doesn't matter what,
@@ -23,7 +28,7 @@ Let's get started with Hyprland-rs!
 Add the code below to the dependencies section of your Cargo.toml file!
 
 ```toml
-hyprland = "0.3.12"
+hyprland = "0.3.13"
 ```
 
 ### Reading the docs
