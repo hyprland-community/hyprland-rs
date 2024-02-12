@@ -116,6 +116,10 @@ pub trait HyprDataVec<T>: HyprData {
 /// > its a type because it might change at some point
 pub type WorkspaceId = i32;
 
+/// This type provides the id used to identify monitors
+/// > its a type because it might change at some point
+pub type MonitorId = u8;
+
 fn ser_spec_opt(opt: &Option<String>) -> String {
     match opt {
         Some(name) => format!("special:{name}"),
@@ -274,7 +278,6 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
 
     format!("/tmp/hypr/{hypr_instance_sig}/{socket_name}")
 }
-
 
 /// Creates a `CommandContent` instance with the given flag and formatted data.
 ///
