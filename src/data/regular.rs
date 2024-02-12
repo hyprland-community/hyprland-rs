@@ -164,6 +164,9 @@ pub struct Workspace {
     pub name: String,
     /// The monitor the workspace is on
     pub monitor: String,
+    /// The monitor id the workspace is on
+    #[serde(rename = "monitorID")]
+    pub monitor_id: MonitorId,
     /// The amount of windows in the workspace
     pub windows: u16,
     /// A bool that shows if there is a fullscreen window in the workspace
