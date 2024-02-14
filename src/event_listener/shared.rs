@@ -312,7 +312,7 @@ pub(crate) struct AsyncEvents {
 #[derive(Debug, Clone)]
 pub struct WorkspaceRenameEventData {
     /// Workspace id
-    pub workspace_id: String,
+    pub workspace_id: WorkspaceId,
     /// Workspace name content
     pub workspace_name: String,
 }
@@ -828,7 +828,9 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 let id = &captures["id"];
                 let name = &captures["name"];
                 events.push(Event::WorkspaceRename(WorkspaceRenameEventData {
-                    workspace_id: id.to_string(),
+                    workspace_id: id
+                        .parse::<WorkspaceId>()
+                        .map_err(|e| HyprError::IoError(std::io::Error::other(e)))?,
                     workspace_name: name.to_string(),
                 }));
             }

@@ -23,6 +23,7 @@ add_listener!(workspace_change d, WorkspaceType, "on workspace change", "changed
 add_listener!(workspace_added, WorkspaceType, "a workspace is created", "workspace was added" => id);
 add_listener!(workspace_destroy ed, WorkspaceType, "a workspace is destroyed", "workspace was destroyed" => id);
 add_listener!(workspace_moved, MonitorEventData, "a workspace is moved", "workspace was moved" => id);
+add_listener!(workspace_rename, WorkspaceRenameEventData, "a workspace is renamed", "workspace was renamed" => id);
 add_listener!(active_monitor_change d, MonitorEventData, "the active monitor is changed", "Active monitor changed to" => data);
 add_listener!(active_window_change d, Option<WindowEventData>, "the active window is changed", "Active window changed" => data);
 add_listener!(fullscreen_state_change d, bool, "the active monitor is changed", "Fullscreen is on" => state);
