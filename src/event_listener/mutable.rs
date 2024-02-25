@@ -92,6 +92,12 @@ impl HasExecutor for EventListener {
             Event::WindowClosed(addr) => mut_arm_sync!(addr.clone(), window_close_events, self),
             Event::WindowMoved(even) => mut_arm_sync!(even.clone(), window_moved_events, self),
             Event::WindowOpened(even) => mut_arm_sync!(even.clone(), window_open_events, self),
+            Event::SpecialRemoved(monitor) => {
+                mut_arm_sync!(monitor.clone(), special_removed_events, self)
+            }
+            Event::ChangedSpecial(data) => {
+                mut_arm_sync!(data.clone(), special_changed_events, self)
+            }
             Event::LayoutChanged(lay) => {
                 mut_arm_sync!(lay.clone(), keyboard_layout_change_events, self)
             }
@@ -191,6 +197,10 @@ impl EventListener {
             Event::WindowMoved(even) => mut_arm!(even.clone(), window_moved_events, self),
             Event::WindowOpened(even) => mut_arm!(even.clone(), window_open_events, self),
             Event::LayoutChanged(lay) => mut_arm!(lay.clone(), keyboard_layout_change_events, self),
+            Event::SpecialRemoved(monitor) => {
+                mut_arm!(monitor.clone(), special_removed_events, self)
+            }
+            Event::ChangedSpecial(data) => mut_arm!(data.clone(), special_changed_events, self),
             Event::SubMapChanged(map) => mut_arm!(map.clone(), sub_map_changed_events, self),
             Event::LayerOpened(even) => mut_arm!(even.clone(), layer_open_events, self),
             Event::LayerClosed(even) => mut_arm!(even.clone(), layer_closed_events, self),

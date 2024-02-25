@@ -244,7 +244,7 @@ impl std::fmt::Display for WorkspaceIdentifier<'_> {
     }
 }
 
-/// This enum is the params to MoveWindow dispatcher
+/// This enum is the params to [DispatchType::MoveWindow] dispatcher
 #[derive(Debug, Clone)]
 pub enum WindowMove<'a> {
     /// Moves the window to a specified monitor
@@ -325,13 +325,13 @@ pub enum DispatchType<'a> {
     MoveWindow(WindowMove<'a>),
     /// This dispatcher centers the active window
     CenterWindow,
-    /// This dispatcher resizes the active window using a [`Position`][Position] enum
+    /// This dispatcher resizes the active window using a [Position] enum
     ResizeActive(Position),
-    /// This dispatcher moves the active window using a [`Position`][Position] enum
+    /// This dispatcher moves the active window using a [Position] enum
     MoveActive(Position),
-    /// This dispatcher resizes the specified window using a [`Position`][Position] enum
+    /// This dispatcher resizes the specified window using a [Position] enum
     ResizeWindowPixel(Position, WindowIdentifier<'a>),
-    /// This dispatcher moves the specified window using a [`Position`][Position] enum
+    /// This dispatcher moves the specified window using a [Position] enum
     MoveWindowPixel(Position, WindowIdentifier<'a>),
     /// This dispatcher cycles windows using a specified direction
     CycleWindow(CycleDirection),
@@ -438,7 +438,7 @@ pub enum LockType {
     ToggleLock,
 }
 
-/// Param for [SwapWithMaster] dispatcher
+/// Param for [DispatchType::SwapWithMaster] dispatcher
 #[derive(Debug, Clone, Display)]
 pub enum SwapWithMasterParam {
     /// New focus is the new master window
@@ -452,7 +452,7 @@ pub enum SwapWithMasterParam {
     Auto,
 }
 
-/// Param for [FocusMaster] dispatcher
+/// Param for [DispatchType::FocusMaster] dispatcher
 #[derive(Debug, Clone, Display)]
 pub enum FocusMasterParam {
     /// Focus stays at master, (even if it was selected before)
@@ -491,7 +491,9 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         MoveToWorkspace(work, None) => format!("movetoworkspace{sep}{work}"),
         MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent{sep}{work},{win}"),
         MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent{sep}{work}"),
+        #[allow(deprecated)]
         MoveFocusedWindowToWorkspace(work) => format!("movetoworkspace{sep}{work}"),
+        #[allow(deprecated)]
         MoveFocusedWindowToWorkspaceSilent(work) => format!("movetoworkspacesilent{sep}{work}"),
         ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
         ToggleFloating(None) => "togglefloating".to_string(),

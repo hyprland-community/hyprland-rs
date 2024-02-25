@@ -34,7 +34,7 @@ macro_rules! add_listener_reg {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListener {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
@@ -50,7 +50,7 @@ listener.start_listener();"#),
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListener {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
@@ -69,7 +69,7 @@ macro_rules! add_async_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncEventListener {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
@@ -85,7 +85,7 @@ listener.start_listener();"#),
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncEventListener {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
@@ -105,7 +105,7 @@ macro_rules! add_mut_async_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncMutableEventListener {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
@@ -121,7 +121,7 @@ listener.start_listener();"#),
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncMutableEventListener {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
@@ -140,7 +140,7 @@ macro_rules! mut_add_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListenerMutable {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListenerMutable as EventListener;
 let mut listener = EventListener::new();
@@ -156,7 +156,7 @@ listener.start_listener();"#),
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListenerMutable {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+            doc_comment! { concat!("This method adds an event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListenerMutable as EventListener;
 let mut listener = EventListener::new();
@@ -283,6 +283,8 @@ macro_rules! init_events {
             window_open_events: vec![],
             window_close_events: vec![],
             window_moved_events: vec![],
+            special_removed_events: vec![],
+            special_changed_events: vec![],
             keyboard_layout_change_events: vec![],
             sub_map_changed_events: vec![],
             layer_open_events: vec![],

@@ -50,6 +50,8 @@ impl HasExecutor for EventListener {
             WindowClosed(addr) => arm!(addr, window_close_events, self),
             WindowMoved(even) => arm!(even, window_moved_events, self),
             WindowOpened(even) => arm!(even, window_open_events, self),
+            SpecialRemoved(monitor) => arm!(monitor, special_removed_events, self),
+            ChangedSpecial(data) => arm!(data, special_changed_events, self),
             LayoutChanged(even) => arm!(even, keyboard_layout_change_events, self),
             SubMapChanged(map) => arm!(map, sub_map_changed_events, self),
             LayerOpened(namespace) => arm!(namespace, layer_open_events, self),

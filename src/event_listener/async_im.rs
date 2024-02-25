@@ -64,6 +64,10 @@ impl HasAsyncExecutor for AsyncEventListener {
             Event::WindowClosed(addr) => arm_async!(addr.clone(), window_close_events, self),
             Event::WindowMoved(even) => arm_async!(even.clone(), window_moved_events, self),
             Event::WindowOpened(even) => arm_async!(even.clone(), window_open_events, self),
+            Event::SpecialRemoved(monitor) => {
+                arm_async!(monitor.clone(), special_removed_events, self)
+            }
+            Event::ChangedSpecial(data) => arm_async!(data.clone(), special_changed_events, self),
             Event::LayoutChanged(even) => {
                 arm_async!(even.clone(), keyboard_layout_change_events, self)
             }
