@@ -117,7 +117,7 @@ pub enum MonitorIdentifier<'a> {
     /// The monitor that is to the specified direction of the active one
     Direction(Direction),
     /// The monitor id
-    Id(u8),
+    Id(MonitorId),
     /// The monitor name
     Name(&'a str),
     /// The current monitor

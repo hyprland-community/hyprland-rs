@@ -118,7 +118,7 @@ pub type WorkspaceId = i32;
 
 /// This type provides the id used to identify monitors
 /// > its a type because it might change at some point
-pub type MonitorId = u8;
+pub type MonitorId = i128;
 
 fn ser_spec_opt(opt: &Option<String>) -> String {
     match opt {
