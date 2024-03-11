@@ -175,7 +175,7 @@ macro_rules! mut_arm {
     ($val:expr,$nam:ident,$se:ident) => {{
         let events = &$se.events.$nam;
         for i in events.iter() {
-            let new_state = execute_closure_mut($se.state.clone(), i, $val).await?;
+            let new_state = execute_closure_mut($se.state.clone(), i, $val.clone()).await?;
             $se.state = new_state;
         }
     }};
@@ -186,7 +186,7 @@ macro_rules! mut_state_arm {
         let events = &$se.events.$nam;
         $se.state.$na = $va;
         for i in events.iter() {
-            let new_state = execute_closure_mut($se.state.clone(), i, $val).await?;
+            let new_state = execute_closure_mut($se.state.clone(), i, $val.clone()).await?;
             $se.state = new_state;
         }
     }};
@@ -196,7 +196,7 @@ macro_rules! mut_arm_sync {
     ($val:expr,$nam:ident,$se:ident) => {{
         let events = &$se.events.$nam;
         for i in events.iter() {
-            let new_state = execute_closure_mut_sync($se.state.clone(), i, $val)?;
+            let new_state = execute_closure_mut_sync($se.state.clone(), i, $val.clone())?;
             $se.state = new_state;
         }
     }};
@@ -207,7 +207,7 @@ macro_rules! mut_state_arm_sync {
         let events = &$se.events.$nam;
         $se.state.$na = $va;
         for i in events.iter() {
-            let new_state = execute_closure_mut_sync($se.state.clone(), i, $val)?;
+            let new_state = execute_closure_mut_sync($se.state.clone(), i, $val.clone())?;
             $se.state = new_state;
         }
     }};
@@ -229,7 +229,7 @@ macro_rules! arm {
     ($val:expr,$nam:ident,$se:ident) => {{
         let events = &$se.events.$nam;
         for item in events.iter() {
-            execute_closure(item, $val);
+            execute_closure(item, $val.clone());
         }
     }};
 }
@@ -238,7 +238,7 @@ macro_rules! arm_async {
     ($val:expr,$nam:ident,$se:ident) => {{
         let events = &$se.events.$nam;
         for item in events.iter() {
-            execute_closure_async(item, $val).await;
+            execute_closure_async(item, $val.clone()).await;
         }
     }};
 }
@@ -254,7 +254,7 @@ macro_rules! arm_async_mut {
     }};
     (cv $val:expr,$nam:ident,$na:ident,$va:expr,$se:ident) => {{
         let events = &$se.events.$nam;
-        $se.state.$na.update({ $va }.clone());
+        $se.state.$na.update($va);
         for item in events.iter() {
             execute_closure_async_state(item, $val, &mut $se.state).await;
         }
