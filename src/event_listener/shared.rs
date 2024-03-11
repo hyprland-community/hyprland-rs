@@ -57,10 +57,10 @@ pub(crate) trait HasExecutor {
         }
         if let Event::ActiveWindowChangedV1(data) = event {
             let mut to_remove = vec![];
+            let data = into(data);
             for (index, awin) in abuf.iter_mut().enumerate() {
                 if awin.title.is_empty() && awin.class.is_empty() {
-                    awin.class = data.clone().map(|i| i.0).into();
-                    awin.title = data.clone().map(|i| i.1).into();
+                    (awin.class, awin.title) = data.clone();
                 }
                 if awin.ready() {
                     awin.execute(self)?;
@@ -110,10 +110,10 @@ pub(crate) trait HasAsyncExecutor {
         }
         if let Event::ActiveWindowChangedV1(data) = event {
             let mut to_remove = vec![];
+            let data = into(data);
             for (index, awin) in abuf.iter_mut().enumerate() {
                 if awin.title.is_empty() && awin.class.is_empty() {
-                    awin.class = data.clone().map(|i| i.0).into();
-                    awin.title = data.clone().map(|i| i.1).into();
+                    (awin.class, awin.title) = data.clone();
                 }
                 if awin.ready() {
                     awin.execute_async(self).await?;
@@ -230,6 +230,17 @@ impl<T> From<Option<T>> for ActiveWindowValue<T> {
             Some(v) => ActiveWindowValue::Queued(v),
             None => ActiveWindowValue::None,
         }
+    }
+}
+
+pub(crate) fn into<T>(from: Option<(T, T)>) -> (ActiveWindowValue<T>, ActiveWindowValue<T>) {
+    if let Some((first, second)) = from {
+        (
+            ActiveWindowValue::Queued(first),
+            ActiveWindowValue::Queued(second),
+        )
+    } else {
+        (ActiveWindowValue::None, ActiveWindowValue::None)
     }
 }
 
@@ -425,7 +436,7 @@ impl State {
                 .await?;
             };
         }
-        Ok(state.clone())
+        Ok(state)
     }
     /// Execute changes in state
     pub fn execute_state_sync(self, old: State) -> crate::Result<Self> {
@@ -490,7 +501,7 @@ pub(crate) async fn execute_closure_mut<T>(
     val: T,
 ) -> crate::Result<State> {
     let old_state = state.clone();
-    let mut new_state = state.clone();
+    let mut new_state = state;
     match f {
         EventTypes::MutableState(fun) => fun(val, &mut new_state),
         EventTypes::Regular(fun) => fun(val),
@@ -507,7 +518,7 @@ pub(crate) fn execute_closure_mut_sync<T>(
     val: T,
 ) -> crate::Result<State> {
     let old_state = state.clone();
-    let mut new_state = state.clone();
+    let mut new_state = state;
     match f {
         EventTypes::MutableState(fun) => fun(val, &mut new_state),
         EventTypes::Regular(fun) => fun(val),

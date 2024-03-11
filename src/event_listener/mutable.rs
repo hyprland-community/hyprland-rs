@@ -218,10 +218,10 @@ impl EventListener {
         }
         if let Event::ActiveWindowChangedV1(data) = event {
             let mut to_remove = vec![];
+            let data = into(data);
             for (index, awin) in abuf.iter_mut().enumerate() {
                 if awin.title.is_empty() && awin.class.is_empty() {
-                    awin.class = data.clone().map(|i| i.0).into();
-                    awin.title = data.clone().map(|i| i.1).into();
+                    (awin.class, awin.title) = data.clone();
                 }
                 if awin.ready() {
                     awin.execute_async_mut(self).await?;
