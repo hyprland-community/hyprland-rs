@@ -20,15 +20,17 @@ macro_rules! create_data_struct {
     (vec $name:ident,$kind:path,$held:ty,$c:literal) => {
         #[doc = $c]
         #[derive(Debug, Clone)]
-        pub struct $name {
-            pos: usize,
-            held: Vec<$held>,
-        }
+        pub struct $name(Vec<$held>);
 
         impl $name {
-            /// Get the iterator from the `held` Vec without having to move/clone data
-            pub fn iter(&self) -> impl Iterator<Item = &$held> {
-                self.held.iter()
+            /// Get the iterator by references of monitors.
+            pub fn iter(&self) -> std::slice::Iter<$held> {
+                self.0.iter()
+            }
+
+            /// Get the iterator by mutable references of monitors.
+            pub fn iter_mut(&mut self) -> std::slice::IterMut<$held> {
+                self.0.iter_mut()
             }
         }
 
@@ -37,37 +39,46 @@ macro_rules! create_data_struct {
             fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd($kind);
                 let deserialized: Vec<$held> = serde_json::from_str(&data)?;
-                Ok(Self {
-                    held: deserialized,
-                    pos: 0,
-                })
+                Ok(Self(deserialized))
             }
             async fn get_async() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd_async($kind).await;
                 let deserialized: Vec<$held> = serde_json::from_str(&data)?;
-                Ok(Self {
-                    held: deserialized,
-                    pos: 0,
-                })
+                Ok(Self(deserialized))
             }
         }
 
-        impl Iterator for $name {
+        impl IntoIterator for $name {
             type Item = $held;
 
-            fn next(&mut self) -> Option<Self::Item> {
-                let out = self.held.get(self.pos);
-                self.pos += 1;
-                match out {
-                    Some(v) => Some(v.clone()),
-                    None => None,
-                }
+            type IntoIter = std::vec::IntoIter<$held>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                self.0.into_iter()
+            }
+        }
+
+        impl<'a> IntoIterator for &'a $name {
+            type Item = &'a $held;
+            type IntoIter = std::slice::Iter<'a, $held>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                self.0.iter()
+            }
+        }
+
+        impl<'a> IntoIterator for &'a mut $name {
+            type Item = &'a mut $held;
+            type IntoIter = std::slice::IterMut<'a, $held>;
+
+            fn into_iter(self) -> Self::IntoIter {
+                self.0.iter_mut()
             }
         }
 
         impl HyprDataVec<$held> for $name {
             fn to_vec(self) -> Vec<$held> {
-                self.held
+                self.0
             }
         }
     };

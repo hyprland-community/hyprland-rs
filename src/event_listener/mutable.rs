@@ -134,7 +134,7 @@ impl EventListener {
                     Err(e) => panic!("Error parsing data whith serde: {e}"),
                 },
                 active_monitor: match Monitors::get() {
-                    Ok(mut monitors) => match monitors.find(|item| item.focused) {
+                    Ok(monitors) => match monitors.into_iter().find(|item| item.focused) {
                         Some(mon) => mon.name,
                         None => panic!("No active monitor?"),
                     },

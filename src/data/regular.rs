@@ -131,16 +131,16 @@ pub struct Monitor {
 #[async_trait]
 impl HyprDataActive for Monitor {
     fn get_active() -> crate::Result<Self> {
-        let mut all = Monitors::get()?;
-        if let Some(it) = all.find(|item| item.focused) {
+        let all = Monitors::get()?;
+        if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
             panic!("No active monitor?")
         }
     }
     async fn get_active_async() -> crate::Result<Self> {
-        let mut all = Monitors::get_async().await?;
-        if let Some(it) = all.find(|item| item.focused) {
+        let all = Monitors::get_async().await?;
+        if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
             panic!("No active monitor?")
