@@ -68,8 +68,8 @@ pub(crate) trait HasExecutor {
                     break;
                 }
             }
-            for index in to_remove {
-                abuf.remove(index);
+            for index in to_remove.into_iter().rev() {
+                abuf.swap_remove(index);
             }
         } else if let Event::ActiveWindowChangedV2(data) = event {
             let mut to_remove = vec![];
@@ -83,8 +83,8 @@ pub(crate) trait HasExecutor {
                     break;
                 }
             }
-            for index in to_remove {
-                abuf.remove(index);
+            for index in to_remove.into_iter().rev() {
+                abuf.swap_remove(index);
             }
         } else {
             self.event_executor(event)?;
@@ -121,8 +121,8 @@ pub(crate) trait HasAsyncExecutor {
                     break;
                 }
             }
-            for index in to_remove {
-                abuf.remove(index);
+            for index in to_remove.into_iter().rev() {
+                abuf.swap_remove(index);
             }
         } else if let Event::ActiveWindowChangedV2(data) = event {
             let mut to_remove = vec![];
@@ -136,8 +136,8 @@ pub(crate) trait HasAsyncExecutor {
                     break;
                 }
             }
-            for index in to_remove {
-                abuf.remove(index);
+            for index in to_remove.into_iter().rev() {
+                abuf.swap_remove(index);
             }
         } else {
             self.event_executor_async(event).await?;
