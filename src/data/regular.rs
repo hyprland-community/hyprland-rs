@@ -471,7 +471,9 @@ pub enum AnimationStyle {
     Slide,
     /// Vertical slide animation
     SlideVert,
+    /// Slide with fade animation
     SlideFade,
+    /// Vertical slide with fade animation
     SlideFadeVert,
     /// Popin animation (with percentage)
     PopIn(u8),

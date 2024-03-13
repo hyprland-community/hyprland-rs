@@ -268,6 +268,8 @@ pub(crate) struct Events {
     pub(crate) fullscreen_state_changed_events: Closures<bool>,
     pub(crate) monitor_removed_events: Closures<String>,
     pub(crate) monitor_added_events: Closures<String>,
+    pub(crate) special_removed_events: Closures<String>,
+    pub(crate) special_changed_events: Closures<MonitorEventData>,
     pub(crate) keyboard_layout_change_events: Closures<LayoutEvent>,
     pub(crate) sub_map_changed_events: Closures<String>,
     pub(crate) window_open_events: Closures<WindowOpenEvent>,
@@ -294,6 +296,8 @@ pub(crate) struct AsyncEvents {
     pub(crate) fullscreen_state_changed_events: AsyncClosures<bool>,
     pub(crate) monitor_removed_events: AsyncClosures<String>,
     pub(crate) monitor_added_events: AsyncClosures<String>,
+    pub(crate) special_removed_events: AsyncClosures<String>,
+    pub(crate) special_changed_events: AsyncClosures<MonitorEventData>,
     pub(crate) keyboard_layout_change_events: AsyncClosures<LayoutEvent>,
     pub(crate) sub_map_changed_events: AsyncClosures<String>,
     pub(crate) window_open_events: AsyncClosures<WindowOpenEvent>,
@@ -532,7 +536,7 @@ pub struct WindowEventData {
 unsafe impl Send for WindowEventData {}
 #[allow(unsafe_code)]
 unsafe impl Sync for WindowEventData {}
-/// This tuple struct holds monitor event data
+/// This struct holds monitor event data
 #[derive(Debug, Clone)]
 pub struct MonitorEventData {
     /// The monitor name
@@ -545,7 +549,8 @@ pub struct MonitorEventData {
 unsafe impl Send for MonitorEventData {}
 #[allow(unsafe_code)]
 unsafe impl Sync for MonitorEventData {}
-/// This tuple struct holds monitor event data
+
+/// This struct holds monitor event data
 #[derive(Debug, Clone)]
 pub struct WindowFloatEventData {
     /// The window address
@@ -576,6 +581,8 @@ pub(crate) enum Event {
     WindowOpened(WindowOpenEvent),
     WindowClosed(Address),
     WindowMoved(WindowMoveEvent),
+    SpecialRemoved(String),
+    ChangedSpecial(MonitorEventData),
     LayoutChanged(LayoutEvent),
     SubMapChanged(String),
     LayerOpened(String),
@@ -647,6 +654,7 @@ enum ParsedEventType {
     WindowOpened,
     WindowClosed,
     WindowMoved,
+    ActiveSpecial,
     LayoutChanged,
     SubMapChanged,
     LayerOpened,
@@ -723,6 +731,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 ParsedEventType::LayoutChanged,
                 r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)"
             ),
+            (
+                ParsedEventType::ActiveSpecial,
+                r"activespecial>>(?P<workspace>.*),(?P<monitor>.*)"
+            ),
             (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
             (
                 ParsedEventType::LayerOpened,
@@ -793,7 +805,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             _ => {
                 return Err(HyprError::IoError(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    "Event matched more than one regex (not a unknown event issue!)",
+                    "Event matched more than one regex (not an unknown event issue!)",
                 )));
             }
         };
@@ -897,6 +909,19 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     window_address: Address::new(addr),
                     workspace_name: work.to_string(),
                 }));
+            }
+            ParsedEventType::ActiveSpecial => {
+                let work = &captures["workspace"];
+                if work.is_empty() {
+                    events.push(Event::SpecialRemoved(work.to_string()));
+                } else {
+                    let workspace = parse_string_as_work(work.to_string());
+                    let monitor = &captures["monitor"];
+                    events.push(Event::ChangedSpecial(MonitorEventData {
+                        monitor_name: monitor.to_string(),
+                        workspace,
+                    }));
+                }
             }
             ParsedEventType::LayoutChanged => {
                 let keyboard_name = &captures["keyboard"];
