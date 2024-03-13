@@ -201,22 +201,4 @@ macro_rules! create_data_struct {
             }
         }
     };
-
-    (p $name:ident,$kind:path,$caller:expr,$held:ty,$c:literal) => {
-        #[doc = $c]
-        #[derive(Debug)]
-        pub struct $name($held);
-
-        #[async_trait]
-        impl HyprData for $name {
-            fn get() -> HResult<Self> {
-                let data = call_hyprctl_data_cmd($kind);
-                Ok(Self($caller(data)?))
-            }
-            async fn get_async() -> HResult<Self> {
-                let data = call_hyprctl_data_cmd_async($kind).await;
-                Ok(Self($caller(data)?))
-            }
-        }
-    };
 }
