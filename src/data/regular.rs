@@ -315,11 +315,12 @@ impl LayerDisplay {
 }
 
 create_data_struct!(
-    sing Layers,
-    DataCommands::Layers,
-    HashMap<String, LayerDisplay>,
-    "This struct holds a hashmap of all current displays, and their layer surfaces",
-    iter_item = (&String, &LayerDisplay)
+    table,
+    name: Layers,
+    command: DataCommands::Layers,
+    key: String,
+    value: LayerDisplay,
+    doc: "This struct holds a hashmap of all current displays, and their layer surfaces"
 );
 
 /// This struct holds information about a mouse device

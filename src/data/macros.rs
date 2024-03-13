@@ -83,30 +83,29 @@ macro_rules! create_data_struct {
         }
     };
 
-    (sing $name:ident,$kind:path,$held:ty,$c:literal $(, iter_item = $it_it:ty)*) => {
-        #[doc = $c]
+    (
+        table,
+        name: $name:ident,
+        command: $cmd_kind:path,
+        key: $key:ty,
+        value: $value:ty,
+        doc: $doc:literal
+    ) => {
+        #[doc = $doc]
         #[derive(Debug)]
-        pub struct $name($held);
-
-        impl $name {
-            $(
-                /// Get the iterator from the `held` Vec without having to move/clone data
-                pub fn iter(&self) -> impl Iterator<Item = $it_it> {
-                    self.0.iter()
-                }
-            )*
-        }
+        pub struct $name(HashMap<$key, $value>);
 
         #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd($kind);
-                let deserialized: $held = serde_json::from_str(&data)?;
+                let data = call_hyprctl_data_cmd($cmd_kind);
+                let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
+
             async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async($kind).await;
-                let deserialized: $held = serde_json::from_str(&data)?;
+                let data = call_hyprctl_data_cmd_async($cmd_kind).await;
+                let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
         }
