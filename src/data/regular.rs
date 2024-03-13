@@ -310,12 +310,13 @@ pub struct LayerDisplay {
     pub levels: HashMap<String, Vec<LayerClient>>,
 }
 
-impl LayerDisplay {
-    /// Returns an iterator over the levels map
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Vec<LayerClient>)> {
-        self.levels.iter()
-    }
-}
+implement_iterators!(
+    table,
+    name: LayerDisplay,
+    iterated_field: levels,
+    key: String,
+    value: Vec<LayerClient>,
+);
 
 create_data_struct!(
     table,
