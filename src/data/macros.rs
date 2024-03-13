@@ -24,15 +24,17 @@ macro_rules! implement_iterators {
         holding_type: $holding_type:ty, 
     ) => {
         impl $name {
-            /// Get the iterator by references of monitors.
-            pub fn iter(&self) -> std::slice::Iter<$holding_type> {
-                self.0.iter()
-            }
+            paste!(
+                #[doc = "Creates the iterator by references of `" $name "`."]
+                pub fn iter(&self) -> std::slice::Iter<$holding_type> {
+                    self.0.iter()
+                }
 
-            /// Get the iterator by mutable references of monitors.
-            pub fn iter_mut(&mut self) -> std::slice::IterMut<$holding_type> {
-                self.0.iter_mut()
-            }
+                #[doc = "Creates the iterator by mutable references of " $name "`."]
+                pub fn iter_mut(&mut self) -> std::slice::IterMut<$holding_type> {
+                    self.0.iter_mut()
+                }
+            );
         }
 
         impl IntoIterator for $name {
@@ -72,21 +74,27 @@ macro_rules! implement_iterators {
         value: $value:ty,
     ) => {
         impl $name {
-            pub fn iter(&self) -> std::collections::hash_map::Iter<$key, $value> {
-                self.$iterated_field.iter()
-            }
+            paste!(
+                #[doc = "Creates the iterator of map by references of " $name]
+                pub fn iter(&self) -> std::collections::hash_map::Iter<$key, $value> {
+                    self.$iterated_field.iter()
+                }
 
-            pub fn iter_mut(&mut self) -> std::collections::hash_map::IterMut<$key, $value> {
-                self.$iterated_field.iter_mut()
-            }
+                #[doc = "Creates the iterator of map by mutable references of `" $name "`."]
+                pub fn iter_mut(&mut self) -> std::collections::hash_map::IterMut<$key, $value> {
+                    self.$iterated_field.iter_mut()
+                }
 
-            pub fn into_keys(self) -> std::collections::hash_map::IntoKeys<$key, $value> {
-                self.$iterated_field.into_keys()
-            }
+                #[doc = "Creates the consuming iterator by keys with type `" $key "` of `" $name "`."]
+                pub fn into_keys(self) -> std::collections::hash_map::IntoKeys<$key, $value> {
+                    self.$iterated_field.into_keys()
+                }
 
-            pub fn into_values(self) -> std::collections::hash_map::IntoValues<$key, $value> {
-                self.$iterated_field.into_values()
-            }
+                #[doc = "Creates the consuming iterator by values of `" $name "`."]
+                pub fn into_values(self) -> std::collections::hash_map::IntoValues<$key, $value> {
+                    self.$iterated_field.into_values()
+                }
+            );
         }
 
         impl IntoIterator for $name {
