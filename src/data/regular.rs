@@ -149,10 +149,11 @@ impl HyprDataActive for Monitor {
 }
 
 create_data_struct!(
-    vec Monitors,
-    DataCommands::Monitors,
-    Monitor,
-    "This struct holds a vector of monitors"
+    vector,
+    name: Monitors,
+    command: DataCommands::Monitors,
+    holding_type: Monitor,
+    doc: "This struct holds a vector of monitors"
 );
 
 /// This struct holds information for a workspace
@@ -195,10 +196,11 @@ impl HyprDataActive for Workspace {
 }
 
 create_data_struct!(
-    vec Workspaces,
-    DataCommands::Workspaces,
-    Workspace,
-    "This type provides a vector of workspaces"
+    vector,
+    name: Workspaces,
+    command: DataCommands::Workspaces,
+    holding_type: Workspace,
+    doc: "This type provides a vector of workspaces"
 );
 
 /// This struct holds information for a client/window
@@ -277,10 +279,11 @@ impl HyprDataActiveOptional for Client {
 }
 
 create_data_struct!(
-    vec Clients,
-    DataCommands::Clients,
-    Client,
-    "This struct holds a vector of clients"
+    vector,
+    name: Clients,
+    command: DataCommands::Clients,
+    holding_type: Client,
+    doc: "This struct holds a vector of clients"
 );
 
 /// This struct holds information about a layer surface/client
@@ -459,10 +462,11 @@ pub struct Bind {
 }
 
 create_data_struct!(
-    vec Binds,
-    DataCommands::Binds,
-    Bind,
-    "This struct holds a vector of binds"
+    vector,
+    name: Binds,
+    command: DataCommands::Binds,
+    holding_type: Bind,
+    doc: "This struct holds a vector of binds"
 );
 
 /// Animation styles
