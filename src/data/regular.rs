@@ -131,16 +131,16 @@ pub struct Monitor {
 #[async_trait]
 impl HyprDataActive for Monitor {
     fn get_active() -> crate::Result<Self> {
-        let mut all = Monitors::get()?;
-        if let Some(it) = all.find(|item| item.focused) {
+        let all = Monitors::get()?;
+        if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
             panic!("No active monitor?")
         }
     }
     async fn get_active_async() -> crate::Result<Self> {
-        let mut all = Monitors::get_async().await?;
-        if let Some(it) = all.find(|item| item.focused) {
+        let all = Monitors::get_async().await?;
+        if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
             panic!("No active monitor?")
@@ -149,10 +149,11 @@ impl HyprDataActive for Monitor {
 }
 
 create_data_struct!(
-    vec Monitors,
-    DataCommands::Monitors,
-    Monitor,
-    "This struct holds a vector of monitors"
+    vector,
+    name: Monitors,
+    command: DataCommands::Monitors,
+    holding_type: Monitor,
+    doc: "This struct holds a vector of monitors"
 );
 
 /// This struct holds information for a workspace
@@ -195,10 +196,11 @@ impl HyprDataActive for Workspace {
 }
 
 create_data_struct!(
-    vec Workspaces,
-    DataCommands::Workspaces,
-    Workspace,
-    "This type provides a vector of workspaces"
+    vector,
+    name: Workspaces,
+    command: DataCommands::Workspaces,
+    holding_type: Workspace,
+    doc: "This type provides a vector of workspaces"
 );
 
 /// This struct holds information for a client/window
@@ -277,10 +279,11 @@ impl HyprDataActiveOptional for Client {
 }
 
 create_data_struct!(
-    vec Clients,
-    DataCommands::Clients,
-    Client,
-    "This struct holds a vector of clients"
+    vector,
+    name: Clients,
+    command: DataCommands::Clients,
+    holding_type: Client,
+    doc: "This struct holds a vector of clients"
 );
 
 /// This struct holds information about a layer surface/client
@@ -307,19 +310,21 @@ pub struct LayerDisplay {
     pub levels: HashMap<String, Vec<LayerClient>>,
 }
 
-impl LayerDisplay {
-    /// Returns an iterator over the levels map
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Vec<LayerClient>)> {
-        self.levels.iter()
-    }
-}
+implement_iterators!(
+    table,
+    name: LayerDisplay,
+    iterated_field: levels,
+    key: String,
+    value: Vec<LayerClient>,
+);
 
 create_data_struct!(
-    sing Layers,
-    DataCommands::Layers,
-    HashMap<String, LayerDisplay>,
-    "This struct holds a hashmap of all current displays, and their layer surfaces",
-    iter_item = (&String, &LayerDisplay)
+    table,
+    name: Layers,
+    command: DataCommands::Layers,
+    key: String,
+    value: LayerDisplay,
+    doc: "This struct holds a hashmap of all current displays, and their layer surfaces"
 );
 
 /// This struct holds information about a mouse device
@@ -458,10 +463,11 @@ pub struct Bind {
 }
 
 create_data_struct!(
-    vec Binds,
-    DataCommands::Binds,
-    Bind,
-    "This struct holds a vector of binds"
+    vector,
+    name: Binds,
+    command: DataCommands::Binds,
+    holding_type: Bind,
+    doc: "This struct holds a vector of binds"
 );
 
 /// Animation styles
