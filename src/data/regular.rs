@@ -499,7 +499,7 @@ impl From<String> for AnimationStyle {
                 str.parse().unwrap_or(100_u8)
             })
         } else {
-            match value.to_string().as_str() {
+            match value.as_str() {
                 "slide" => AnimationStyle::Slide,
                 "slidevert" => AnimationStyle::SlideVert,
                 "fade" => AnimationStyle::Fade,
