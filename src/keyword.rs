@@ -119,25 +119,20 @@ impl Keyword {
             str,
         }: OptionRaw,
     ) -> Keyword {
-        fn parse_value(int: i64, float: f64, str: String) -> OptionValue {
-            const HYPR_UNSET_FLOAT: f64 = -340282346638528859811704183484516925440.0;
-            const HYPR_UNSET_INT: i64 = -9223372036854775807;
+        const HYPR_UNSET_FLOAT: f64 = -340282346638528859811704183484516925440.0;
+        const HYPR_UNSET_INT: i64 = -9223372036854775807;
 
-            if float == HYPR_UNSET_FLOAT {
-                if int == HYPR_UNSET_INT {
-                    OptionValue::String(str)
-                } else {
-                    OptionValue::Int(int)
-                }
+        let value = if float == HYPR_UNSET_FLOAT {
+            if int == HYPR_UNSET_INT {
+                OptionValue::String(str)
             } else {
-                OptionValue::Float(float)
+                OptionValue::Int(int)
             }
-        }
+        } else {
+            OptionValue::Float(float)
+        };
 
-        Keyword {
-            option,
-            value: parse_value(int, float, str),
-        }
+        Keyword { option, value }
     }
 
     /// This function sets a keyword's value
