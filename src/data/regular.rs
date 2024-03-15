@@ -487,11 +487,10 @@ pub enum AnimationStyle {
     Unknown(String),
 }
 
-impl<Str: ToString + Clone> From<Str> for AnimationStyle {
-    fn from(value: Str) -> Self {
-        let string = value.to_string();
-        if string.starts_with("popin") {
-            let mut iter = string.split(' ');
+impl From<String> for AnimationStyle {
+    fn from(value: String) -> Self {
+        if value.starts_with("popin") {
+            let mut iter = value.split(' ');
             iter.next();
             AnimationStyle::PopIn({
                 let mut str = iter.next().unwrap_or("100%").to_string();
@@ -500,7 +499,7 @@ impl<Str: ToString + Clone> From<Str> for AnimationStyle {
                 str.parse().unwrap_or(100_u8)
             })
         } else {
-            match value.to_string().as_str() {
+            match value.as_str() {
                 "slide" => AnimationStyle::Slide,
                 "slidevert" => AnimationStyle::SlideVert,
                 "fade" => AnimationStyle::Fade,
@@ -509,7 +508,7 @@ impl<Str: ToString + Clone> From<Str> for AnimationStyle {
                 "once" => AnimationStyle::Once,
                 "loop" => AnimationStyle::Loop,
                 "" => AnimationStyle::None,
-                _ => AnimationStyle::Unknown(string),
+                _ => AnimationStyle::Unknown(value),
             }
         }
     }
@@ -528,13 +527,12 @@ pub enum BezierIdent {
     Specified(String),
 }
 
-impl<Str: ToString + Clone> From<Str> for BezierIdent {
-    fn from(value: Str) -> Self {
-        let str = value.to_string();
-        match str.as_str() {
+impl From<String> for BezierIdent {
+    fn from(value: String) -> Self {
+        match value.as_str() {
             "" => BezierIdent::None,
             "default" => BezierIdent::Default,
-            _ => BezierIdent::Specified(str),
+            _ => BezierIdent::Specified(value),
         }
     }
 }
@@ -610,19 +608,19 @@ impl HyprData for Animations {
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
-            .iter()
+            .into_iter()
             .map(|item| Animation {
-                name: item.name.clone(),
+                name: item.name,
                 overridden: item.overridden,
-                bezier: item.bezier.clone().into(),
+                bezier: item.bezier.into(),
                 enabled: item.enabled,
                 speed: item.speed,
-                style: item.style.clone().into(),
+                style: item.style.into(),
             })
             .collect();
         let new_bezs: Vec<BezierIdent> = beziers
-            .iter()
-            .map(|item| item.name.clone().into())
+            .into_iter()
+            .map(|item| item.name.into())
             .collect();
         Ok(Animations(new_anims, new_bezs))
     }
@@ -634,19 +632,19 @@ impl HyprData for Animations {
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
-            .iter()
+            .into_iter()
             .map(|item| Animation {
-                name: item.name.clone(),
+                name: item.name,
                 overridden: item.overridden,
-                bezier: item.bezier.clone().into(),
+                bezier: item.bezier.into(),
                 enabled: item.enabled,
                 speed: item.speed,
-                style: item.style.clone().into(),
+                style: item.style.into(),
             })
             .collect();
         let new_bezs: Vec<BezierIdent> = beziers
-            .iter()
-            .map(|item| item.name.clone().into())
+            .into_iter()
+            .map(|item| item.name.into())
             .collect();
         Ok(Animations(new_anims, new_bezs))
     }

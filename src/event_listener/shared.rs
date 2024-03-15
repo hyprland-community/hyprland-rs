@@ -42,11 +42,11 @@ pub(crate) struct ActiveWindowState {
 }
 
 pub(crate) trait HasExecutor {
-    fn event_executor(&mut self, event: &Event) -> crate::Result<()>;
+    fn event_executor(&mut self, event: Event) -> crate::Result<()>;
 
     fn event_primer(
         &mut self,
-        event: &Event,
+        event: Event,
         abuf: &mut Vec<ActiveWindowState>,
     ) -> crate::Result<()>
     where
@@ -57,10 +57,10 @@ pub(crate) trait HasExecutor {
         }
         if let Event::ActiveWindowChangedV1(data) = event {
             let mut to_remove = vec![];
+            let data = into(data);
             for (index, awin) in abuf.iter_mut().enumerate() {
                 if awin.title.is_empty() && awin.class.is_empty() {
-                    awin.class = data.clone().map(|i| i.0).into();
-                    awin.title = data.clone().map(|i| i.1).into();
+                    (awin.class, awin.title) = data.clone();
                 }
                 if awin.ready() {
                     awin.execute(self)?;
@@ -95,11 +95,11 @@ pub(crate) trait HasExecutor {
 
 #[async_trait]
 pub(crate) trait HasAsyncExecutor {
-    async fn event_executor_async(&mut self, event: &Event) -> crate::Result<()>;
+    async fn event_executor_async(&mut self, event: Event) -> crate::Result<()>;
 
     async fn event_primer_async(
         &mut self,
-        event: &Event,
+        event: Event,
         abuf: &mut Vec<ActiveWindowState>,
     ) -> crate::Result<()>
     where
@@ -110,10 +110,10 @@ pub(crate) trait HasAsyncExecutor {
         }
         if let Event::ActiveWindowChangedV1(data) = event {
             let mut to_remove = vec![];
+            let data = into(data);
             for (index, awin) in abuf.iter_mut().enumerate() {
                 if awin.title.is_empty() && awin.class.is_empty() {
-                    awin.class = data.clone().map(|i| i.0).into();
-                    awin.title = data.clone().map(|i| i.1).into();
+                    (awin.class, awin.title) = data.clone();
                 }
                 if awin.ready() {
                     awin.execute_async(self).await?;
@@ -151,14 +151,14 @@ impl ActiveWindowState {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
         if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
-            listener.event_executor(&Event::ActiveWindowChangedMerged(Some(WindowEventData {
+            listener.event_executor(Event::ActiveWindowChangedMerged(Some(WindowEventData {
                 window_class: class.to_string(),
                 window_title: title.to_string(),
                 window_address: addr.clone(),
             })))?;
             self.reset();
         } else if let (None, None, None) = data {
-            listener.event_executor(&Event::ActiveWindowChangedMerged(Option::None))?;
+            listener.event_executor(Event::ActiveWindowChangedMerged(Option::None))?;
         }
         Ok(())
     }
@@ -170,7 +170,7 @@ impl ActiveWindowState {
         let data = (&self.title, &self.class, &self.addr);
         if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
             listener
-                .event_executor_async(&Event::ActiveWindowChangedMerged(Some(WindowEventData {
+                .event_executor_async(Event::ActiveWindowChangedMerged(Some(WindowEventData {
                     window_class: class.to_string(),
                     window_title: title.to_string(),
                     window_address: addr.clone(),
@@ -179,7 +179,7 @@ impl ActiveWindowState {
             self.reset();
         } else if let (None, None, None) = data {
             listener
-                .event_executor_async(&Event::ActiveWindowChangedMerged(Option::None))
+                .event_executor_async(Event::ActiveWindowChangedMerged(Option::None))
                 .await?;
         }
         Ok(())
@@ -192,7 +192,7 @@ impl ActiveWindowState {
         let data = (&self.title, &self.class, &self.addr);
         if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
             listener
-                .event_executor_async(&Event::ActiveWindowChangedMerged(Some(WindowEventData {
+                .event_executor_async(Event::ActiveWindowChangedMerged(Some(WindowEventData {
                     window_class: class.to_string(),
                     window_title: title.to_string(),
                     window_address: addr.clone(),
@@ -201,7 +201,7 @@ impl ActiveWindowState {
             self.reset();
         } else if let (None, None, None) = data {
             listener
-                .event_executor_async(&Event::ActiveWindowChangedMerged(Option::None))
+                .event_executor_async(Event::ActiveWindowChangedMerged(Option::None))
                 .await?;
         }
         Ok(())
@@ -230,6 +230,17 @@ impl<T> From<Option<T>> for ActiveWindowValue<T> {
             Some(v) => ActiveWindowValue::Queued(v),
             None => ActiveWindowValue::None,
         }
+    }
+}
+
+pub(crate) fn into<T>(from: Option<(T, T)>) -> (ActiveWindowValue<T>, ActiveWindowValue<T>) {
+    if let Some((first, second)) = from {
+        (
+            ActiveWindowValue::Queued(first),
+            ActiveWindowValue::Queued(second),
+        )
+    } else {
+        (ActiveWindowValue::None, ActiveWindowValue::None)
     }
 }
 
@@ -425,7 +436,7 @@ impl State {
                 .await?;
             };
         }
-        Ok(state.clone())
+        Ok(state)
     }
     /// Execute changes in state
     pub fn execute_state_sync(self, old: State) -> crate::Result<Self> {
@@ -459,10 +470,10 @@ impl State {
     }
 }
 
-pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: &T) {
+pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     match f {
         EventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
-        EventTypes::Regular(fun) => fun(val.clone()),
+        EventTypes::Regular(fun) => fun(val),
     }
 }
 
@@ -476,11 +487,11 @@ pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
 #[allow(dead_code)]
 pub(crate) async fn execute_closure_async_state<T: Clone>(
     f: &AsyncClosure<T>,
-    val: &T,
+    val: T,
     state: &mut State,
 ) {
     match f {
-        AsyncEventTypes::MutableState(fun) => fun(val.clone(), state).await,
+        AsyncEventTypes::MutableState(fun) => fun(val, state).await,
         AsyncEventTypes::Regular(_) => panic!("Using mutable handler with immutable listener"),
     }
 }
@@ -490,7 +501,7 @@ pub(crate) async fn execute_closure_mut<T>(
     val: T,
 ) -> crate::Result<State> {
     let old_state = state.clone();
-    let mut new_state = state.clone();
+    let mut new_state = state;
     match f {
         EventTypes::MutableState(fun) => fun(val, &mut new_state),
         EventTypes::Regular(fun) => fun(val),
@@ -507,7 +518,7 @@ pub(crate) fn execute_closure_mut_sync<T>(
     val: T,
 ) -> crate::Result<State> {
     let old_state = state.clone();
-    let mut new_state = state.clone();
+    let mut new_state = state;
     match f {
         EventTypes::MutableState(fun) => fun(val, &mut new_state),
         EventTypes::Regular(fun) => fun(val),

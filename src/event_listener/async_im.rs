@@ -34,51 +34,32 @@ impl Default for AsyncEventListener {
 
 #[async_trait]
 impl HasAsyncExecutor for AsyncEventListener {
-    async fn event_executor_async(&mut self, event: &Event) -> crate::Result<()> {
+    async fn event_executor_async(&mut self, event: Event) -> crate::Result<()> {
         match event {
-            Event::WorkspaceChanged(id) => arm_async!(id.clone(), workspace_changed_events, self),
-            Event::WorkspaceAdded(id) => arm_async!(id.clone(), workspace_added_events, self),
-            Event::WorkspaceDeleted(id) => arm_async!(id.clone(), workspace_destroyed_events, self),
-            Event::WorkspaceMoved(evend) => arm_async!(evend.clone(), workspace_moved_events, self),
-            Event::WorkspaceRename(even) => {
-                arm_async!(even.clone(), workspace_rename_events, self)
-            }
-            Event::ActiveMonitorChanged(evend) => {
-                arm_async!(evend.clone(), active_monitor_changed_events, self)
-            }
-            Event::ActiveWindowChangedMerged(Some(event)) => {
-                arm_async!(Some(event.clone()), active_window_changed_events, self)
-            }
-            Event::ActiveWindowChangedMerged(None) => {
-                arm_async!(None, active_window_changed_events, self)
-            }
+            Event::WorkspaceChanged(id) => arm_async!(id, workspace_changed_events, self),
+            Event::WorkspaceAdded(id) => arm_async!(id, workspace_added_events, self),
+            Event::WorkspaceDeleted(id) => arm_async!(id, workspace_destroyed_events, self),
+            Event::WorkspaceMoved(evend) => arm_async!(evend, workspace_moved_events, self),
+            Event::WorkspaceRename(even) => arm_async!(even, workspace_rename_events, self),
+            Event::ActiveMonitorChanged(evend) => arm_async!(evend, active_monitor_changed_events, self),
+            Event::ActiveWindowChangedMerged(event) => arm_async!(event, active_window_changed_events, self),
             Event::ActiveWindowChangedV1(_) => (),
             Event::ActiveWindowChangedV2(_) => (),
-            Event::FullscreenStateChanged(bool) => {
-                arm_async!(*bool, fullscreen_state_changed_events, self)
-            }
-            Event::MonitorAdded(monitor) => arm_async!(monitor.clone(), monitor_added_events, self),
-            Event::MonitorRemoved(monitor) => {
-                arm_async!(monitor.clone(), monitor_removed_events, self)
-            }
-            Event::WindowClosed(addr) => arm_async!(addr.clone(), window_close_events, self),
-            Event::WindowMoved(even) => arm_async!(even.clone(), window_moved_events, self),
-            Event::WindowOpened(even) => arm_async!(even.clone(), window_open_events, self),
-            Event::LayoutChanged(even) => {
-                arm_async!(even.clone(), keyboard_layout_change_events, self)
-            }
-            Event::SubMapChanged(map) => arm_async!(map.clone(), sub_map_changed_events, self),
-            Event::LayerOpened(namespace) => arm_async!(namespace.clone(), layer_open_events, self),
-            Event::LayerClosed(namespace) => {
-                arm_async!(namespace.clone(), layer_closed_events, self)
-            }
-            Event::FloatStateChanged(even) => arm_async!(even.clone(), float_state_events, self),
-            Event::UrgentStateChanged(even) => arm_async!(even.clone(), urgent_state_events, self),
-            Event::Minimize(data) => arm_async!(data.clone(), minimize_events, self),
-            Event::WindowTitleChanged(addr) => {
-                arm_async!(addr.clone(), window_title_changed_events, self)
-            }
-            Event::Screencast(data) => arm_async!(*data, screencast_events, self),
+            Event::FullscreenStateChanged(bool) => arm_async!(bool, fullscreen_state_changed_events, self),
+            Event::MonitorAdded(monitor) => arm_async!(monitor, monitor_added_events, self),
+            Event::MonitorRemoved(monitor) => arm_async!(monitor, monitor_removed_events, self),
+            Event::WindowClosed(addr) => arm_async!(addr, window_close_events, self),
+            Event::WindowMoved(even) => arm_async!(even, window_moved_events, self),
+            Event::WindowOpened(even) => arm_async!(even, window_open_events, self),
+            Event::LayoutChanged(even) => arm_async!(even, keyboard_layout_change_events, self),
+            Event::SubMapChanged(map) => arm_async!(map, sub_map_changed_events, self),
+            Event::LayerOpened(namespace) => arm_async!(namespace, layer_open_events, self),
+            Event::LayerClosed(namespace) => arm_async!(namespace, layer_closed_events, self),
+            Event::FloatStateChanged(even) => arm_async!(even, float_state_events, self),
+            Event::UrgentStateChanged(even) => arm_async!(even, urgent_state_events, self),
+            Event::Minimize(data) => arm_async!(data, minimize_events, self),
+            Event::WindowTitleChanged(addr) => arm_async!(addr, window_title_changed_events, self),
+            Event::Screencast(data) => arm_async!(data, screencast_events, self),
         }
         Ok(())
     }
@@ -127,7 +108,7 @@ impl AsyncEventListener {
             let string = String::from_utf8(buf.to_vec())?;
             let parsed: Vec<Event> = event_parser(string)?;
 
-            for event in parsed.iter() {
+            for event in parsed {
                 self.event_primer_async(event, &mut active_windows).await?;
             }
         }

@@ -110,22 +110,31 @@ macro_rules! keyword {
     };
 }
 
-fn parse_option_raw(opt: OptionRaw) -> OptionValue {
-    static HYPR_UNSET_FLOAT: f64 = -340282346638528859811704183484516925440.0;
-    static HYPR_UNSET_INT: i64 = -9223372036854775807;
-
-    if opt.float == HYPR_UNSET_FLOAT {
-        if opt.int == HYPR_UNSET_INT {
-            OptionValue::String(opt.str)
-        } else {
-            OptionValue::Int(opt.int)
-        }
-    } else {
-        OptionValue::Float(opt.float)
-    }
-}
-
 impl Keyword {
+    fn parse_opts(
+        OptionRaw {
+            option,
+            int,
+            float,
+            str,
+        }: OptionRaw,
+    ) -> Keyword {
+        const HYPR_UNSET_FLOAT: f64 = -340282346638528859811704183484516925440.0;
+        const HYPR_UNSET_INT: i64 = -9223372036854775807;
+
+        let value = if float == HYPR_UNSET_FLOAT {
+            if int == HYPR_UNSET_INT {
+                OptionValue::String(str)
+            } else {
+                OptionValue::Int(int)
+            }
+        } else {
+            OptionValue::Float(float)
+        };
+
+        Keyword { option, value }
+    }
+
     /// This function sets a keyword's value
     pub fn set<Str: ToString, Opt: Into<OptionValue>>(key: Str, value: Opt) -> crate::Result<()> {
         let socket_path = get_socket_path(SocketType::Command);
@@ -153,10 +162,7 @@ impl Keyword {
         let socket_path = get_socket_path(SocketType::Command);
         let data = write_to_socket_sync(socket_path, keyword!(g(key.to_string())))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let keyword = Keyword {
-            option: deserialized.option.clone(),
-            value: parse_option_raw(deserialized),
-        };
+        let keyword = Keyword::parse_opts(deserialized);
         Ok(keyword)
     }
     /// This function returns the value of a keyword (async)
@@ -164,10 +170,7 @@ impl Keyword {
         let socket_path = get_socket_path(SocketType::Command);
         let data = write_to_socket(socket_path, keyword!(g(key.to_string()))).await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let keyword = Keyword {
-            option: deserialized.option.clone(),
-            value: parse_option_raw(deserialized),
-        };
+        let keyword = Keyword::parse_opts(deserialized);
         Ok(keyword)
     }
 }

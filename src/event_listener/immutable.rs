@@ -32,7 +32,7 @@ impl Default for EventListener {
 }
 
 impl HasExecutor for EventListener {
-    fn event_executor(&mut self, event: &Event) -> crate::Result<()> {
+    fn event_executor(&mut self, event: Event) -> crate::Result<()> {
         use Event::*;
         match event {
             WorkspaceChanged(id) => arm!(id, workspace_changed_events, self),
@@ -107,7 +107,7 @@ impl EventListener {
             let string = String::from_utf8(buf.to_vec())?;
             let parsed: Vec<Event> = event_parser(string)?;
 
-            for event in parsed.iter() {
+            for event in parsed {
                 self.event_primer(event, &mut active_windows)?;
             }
         }
@@ -143,7 +143,7 @@ impl EventListener {
             let string = String::from_utf8(buf.to_vec())?;
             let parsed: Vec<Event> = event_parser(string)?;
 
-            for event in parsed.iter() {
+            for event in parsed {
                 self.event_primer(event, &mut active_windows)?;
             }
         }
