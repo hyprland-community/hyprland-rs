@@ -866,9 +866,9 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 }
             }
             ParsedEventType::ActiveWindowChangedV2 => {
-                let addr = format_event_addr(&captures["address"]);
+                let addr = &captures["address"];
                 if addr != "," {
-                    events.push(Event::ActiveWindowChangedV2(Some(Address::new(addr))));
+                    events.push(Event::ActiveWindowChangedV2(Some(Address::new(format_event_addr(addr)))));
                 } else {
                     events.push(Event::ActiveWindowChangedV2(None));
                 }
