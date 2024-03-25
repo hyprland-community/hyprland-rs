@@ -653,6 +653,7 @@ impl HyprData for Animations {
 }
 
 // HACK: shadow and decorate are actually missing from the hyprctl json output for some reason
+// HACK: gaps_in and gaps_out are returned as arrays with 4 integers, even though Hyprland doesn't support per-side gaps
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkspaceRuleset {
     /// The name of the workspace
