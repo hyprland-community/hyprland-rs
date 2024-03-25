@@ -21,7 +21,7 @@ macro_rules! implement_iterators {
         vector,
         name: $name:ident,
         iterated_field: $iterated_field:tt,
-        holding_type: $holding_type:ty, 
+        holding_type: $holding_type:ty,
     ) => {
         impl $name {
             paste!(
@@ -131,7 +131,7 @@ macro_rules! create_data_struct {
         vector,
         name: $name:ident,
         command: $cmd_kind:path,
-        holding_type: $holding_type:ty, 
+        holding_type: $holding_type:ty,
         doc: $doc:literal
     ) => {
         #[doc = $doc]
