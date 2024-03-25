@@ -41,11 +41,17 @@ impl HasAsyncExecutor for AsyncEventListener {
             Event::WorkspaceDeleted(id) => arm_async!(id, workspace_destroyed_events, self),
             Event::WorkspaceMoved(evend) => arm_async!(evend, workspace_moved_events, self),
             Event::WorkspaceRename(even) => arm_async!(even, workspace_rename_events, self),
-            Event::ActiveMonitorChanged(evend) => arm_async!(evend, active_monitor_changed_events, self),
-            Event::ActiveWindowChangedMerged(event) => arm_async!(event, active_window_changed_events, self),
+            Event::ActiveMonitorChanged(evend) => {
+                arm_async!(evend, active_monitor_changed_events, self)
+            }
+            Event::ActiveWindowChangedMerged(event) => {
+                arm_async!(event, active_window_changed_events, self)
+            }
             Event::ActiveWindowChangedV1(_) => (),
             Event::ActiveWindowChangedV2(_) => (),
-            Event::FullscreenStateChanged(bool) => arm_async!(bool, fullscreen_state_changed_events, self),
+            Event::FullscreenStateChanged(bool) => {
+                arm_async!(bool, fullscreen_state_changed_events, self)
+            }
             Event::MonitorAdded(monitor) => arm_async!(monitor, monitor_added_events, self),
             Event::MonitorRemoved(monitor) => arm_async!(monitor, monitor_removed_events, self),
             Event::WindowClosed(addr) => arm_async!(addr, window_close_events, self),

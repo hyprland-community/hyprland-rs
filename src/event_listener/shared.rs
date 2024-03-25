@@ -44,11 +44,7 @@ pub(crate) struct ActiveWindowState {
 pub(crate) trait HasExecutor {
     fn event_executor(&mut self, event: Event) -> crate::Result<()>;
 
-    fn event_primer(
-        &mut self,
-        event: Event,
-        abuf: &mut Vec<ActiveWindowState>,
-    ) -> crate::Result<()>
+    fn event_primer(&mut self, event: Event, abuf: &mut Vec<ActiveWindowState>) -> crate::Result<()>
     where
         Self: std::marker::Sized,
     {
@@ -868,7 +864,9 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             ParsedEventType::ActiveWindowChangedV2 => {
                 let addr = &captures["address"];
                 if addr != "," {
-                    events.push(Event::ActiveWindowChangedV2(Some(Address::new(format_event_addr(addr)))));
+                    events.push(Event::ActiveWindowChangedV2(Some(Address::new(
+                        format_event_addr(addr),
+                    ))));
                 } else {
                     events.push(Event::ActiveWindowChangedV2(None));
                 }

@@ -58,7 +58,9 @@ impl HasExecutor for EventListener {
                     self
                 )
             }
-            Event::ActiveWindowChangedMerged(event) => mut_arm_sync!(event, active_window_changed_events, self),
+            Event::ActiveWindowChangedMerged(event) => {
+                mut_arm_sync!(event, active_window_changed_events, self)
+            }
             Event::ActiveWindowChangedV1(_) => (),
             Event::ActiveWindowChangedV2(_) => (),
             Event::FullscreenStateChanged(bool) => mut_state_arm_sync!(
@@ -80,7 +82,9 @@ impl HasExecutor for EventListener {
             Event::FloatStateChanged(even) => mut_arm_sync!(even, float_state_events, self),
             Event::UrgentStateChanged(even) => mut_arm_sync!(even, urgent_state_events, self),
             Event::Minimize(data) => mut_arm_sync!(data, minimize_events, self),
-            Event::WindowTitleChanged(addr) => mut_arm_sync!(addr, window_title_changed_events, self),
+            Event::WindowTitleChanged(addr) => {
+                mut_arm_sync!(addr, window_title_changed_events, self)
+            }
             Event::Screencast(data) => mut_arm_sync!(data, screencast_events, self),
         }
         Ok(())
@@ -141,7 +145,9 @@ impl EventListener {
                 even.monitor_name.clone(),
                 self
             ),
-            Event::ActiveWindowChangedMerged(event) => mut_arm!(event, active_window_changed_events, self),
+            Event::ActiveWindowChangedMerged(event) => {
+                mut_arm!(event, active_window_changed_events, self)
+            }
             Event::ActiveWindowChangedV1(_) => (),
             Event::ActiveWindowChangedV2(_) => (),
             Event::FullscreenStateChanged(bool) => mut_state_arm!(
