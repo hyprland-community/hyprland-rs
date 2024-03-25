@@ -57,6 +57,8 @@ pub(crate) enum DataCommands {
     Binds,
     #[display(fmt = "animations")]
     Animations,
+    #[display(fmt = "workspacerules")]
+    WorkspaceRules,
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
@@ -624,10 +626,7 @@ impl HyprData for Animations {
                 style: item.style.into(),
             })
             .collect();
-        let new_bezs: Vec<BezierIdent> = beziers
-            .into_iter()
-            .map(|item| item.name.into())
-            .collect();
+        let new_bezs: Vec<BezierIdent> = beziers.into_iter().map(|item| item.name.into()).collect();
         Ok(Animations(new_anims, new_bezs))
     }
     async fn get_async() -> crate::Result<Self>
@@ -648,10 +647,46 @@ impl HyprData for Animations {
                 style: item.style.into(),
             })
             .collect();
-        let new_bezs: Vec<BezierIdent> = beziers
-            .into_iter()
-            .map(|item| item.name.into())
-            .collect();
+        let new_bezs: Vec<BezierIdent> = beziers.into_iter().map(|item| item.name.into()).collect();
         Ok(Animations(new_anims, new_bezs))
     }
 }
+
+// HACK: shadow and decorate are actually missing from the hyprctl json output for some reason
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct WorkspaceRuleset {
+    /// The name of the workspace
+    #[serde(rename = "workspaceString")]
+    pub workspace_string: Option<String>,
+    /// The monitor the workspace is on
+    pub monitor: Option<String>,
+    /// Is it default?
+    pub default: Option<bool>,
+    /// The gaps between windows
+    #[serde(rename = "gapsIn")]
+    pub gaps_in: Option<Vec<i64>>,
+    /// The gaps between windows and monitor edges
+    #[serde(rename = "gapsOut")]
+    pub gaps_out: Option<Vec<i64>>,
+    /// The size of window borders
+    #[serde(rename = "borderSize")]
+    pub border_size: Option<i64>,
+    /// Are borders enabled?
+    pub border: Option<bool>,
+    /// Are shadows enabled?
+    pub shadow: Option<bool>,
+    /// Is rounding enabled?
+    pub rounding: Option<bool>,
+    /// Are window decorations enabled?
+    pub decorate: Option<bool>,
+    /// Is it persistent?
+    pub persistent: Option<bool>,
+}
+
+create_data_struct!(
+    vector,
+    name: WorkspaceRules,
+    command: DataCommands::WorkspaceRules,
+    holding_type: WorkspaceRuleset,
+    doc: "This struct holds a vector of workspace rules per workspace"
+);
