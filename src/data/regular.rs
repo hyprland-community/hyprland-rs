@@ -658,7 +658,7 @@ impl HyprData for Animations {
 pub struct WorkspaceRuleset {
     /// The name of the workspace
     #[serde(rename = "workspaceString")]
-    pub workspace_string: Option<String>,
+    pub workspace_string: String,
     /// The monitor the workspace is on
     pub monitor: Option<String>,
     /// Is it default?
