@@ -123,6 +123,15 @@ impl Keyword {
             set,
         }: OptionRaw,
     ) -> Keyword {
+        let int_exists = int.is_some() as u8;
+        let float_exists = float.is_some() as u8;
+        let str_exists = str.is_some() as u8;
+
+        // EXPLANATION: if at least two values is exists then we stop execution.
+        if int_exists + float_exists + str_exists > 1 {
+            panic!("The option have more than one type together! Please open an issue!")
+        }
+
         let value = match (int, float, str) {
             (Some(int), _, _) => OptionValue::Int(int),
             (_, Some(float), _) => OptionValue::Float(float),
