@@ -23,9 +23,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct OptionRaw {
     pub option: String,
-    pub int: i64,
-    pub float: f64,
-    pub str: String,
+    pub int: Option<i64>,
+    pub float: Option<f64>,
+    pub str: Option<String>,
+    pub set: bool,
 }
 
 /// This enum holds the possible values of a keyword/option
@@ -93,6 +94,8 @@ pub struct Keyword {
     pub option: String,
     /// The value of the keyword/option
     pub value: OptionValue,
+    /// Is value overriden or not
+    pub set: bool,
 }
 
 macro_rules! keyword {
@@ -117,22 +120,17 @@ impl Keyword {
             int,
             float,
             str,
+            set,
         }: OptionRaw,
     ) -> Keyword {
-        const HYPR_UNSET_FLOAT: f64 = -340282346638528859811704183484516925440.0;
-        const HYPR_UNSET_INT: i64 = -9223372036854775807;
-
-        let value = if float == HYPR_UNSET_FLOAT {
-            if int == HYPR_UNSET_INT {
-                OptionValue::String(str)
-            } else {
-                OptionValue::Int(int)
-            }
-        } else {
-            OptionValue::Float(float)
+        let value = match (int, float, str) {
+            (Some(int), _, _) => OptionValue::Int(int),
+            (_, Some(float), _) => OptionValue::Float(float),
+            (_, _, Some(str)) => OptionValue::String(str),
+            _ => panic!("Unrecognized option value! Please open issue!"),
         };
 
-        Keyword { option, value }
+        Keyword { option, value, set }
     }
 
     /// This function sets a keyword's value
