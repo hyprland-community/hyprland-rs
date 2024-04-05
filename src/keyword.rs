@@ -127,16 +127,16 @@ impl Keyword {
         let float_exists = float.is_some() as u8;
         let str_exists = str.is_some() as u8;
 
-        // EXPLANATION: if at least two values is exists then we stop execution.
+        // EXPLANATION: if at least two types of value is exists then we stop execution.
         if int_exists + float_exists + str_exists > 1 {
-            panic!("The option have more than one type together! Please open an issue!")
+            panic!("Expected single value type, but received more than one! Please open an issue with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!")
         }
 
         let value = match (int, float, str) {
             (Some(int), _, _) => OptionValue::Int(int),
             (_, Some(float), _) => OptionValue::Float(float),
             (_, _, Some(str)) => OptionValue::String(str),
-            _ => panic!("Unrecognized option value! Please open issue!"),
+            (int, float, str) => panic!("Expected either an 'int', a 'float' or a 'str', but none of them is not received! Please open an issue with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!"),
         };
 
         Keyword { option, value, set }
