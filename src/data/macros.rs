@@ -3,12 +3,12 @@ macro_rules! impl_on {
         #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd(DataCommands::$name);
+                let data = call_hyprctl_data_cmd(DataCommands::$name)?;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
             async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async(DataCommands::$name).await;
+                let data = call_hyprctl_data_cmd_async(DataCommands::$name).await?;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
@@ -148,12 +148,12 @@ macro_rules! create_data_struct {
         #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd($cmd_kind);
+                let data = call_hyprctl_data_cmd($cmd_kind)?;
                 let deserialized: Vec<$holding_type> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
             async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async($cmd_kind).await;
+                let data = call_hyprctl_data_cmd_async($cmd_kind).await?;
                 let deserialized: Vec<$holding_type> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
@@ -189,13 +189,13 @@ macro_rules! create_data_struct {
         #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd($cmd_kind);
+                let data = call_hyprctl_data_cmd($cmd_kind)?;
                 let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
 
             async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async($cmd_kind).await;
+                let data = call_hyprctl_data_cmd_async($cmd_kind).await?;
                 let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
