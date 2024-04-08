@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// This private function is to call socket commands
-async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
+async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String> {
     let socket_path = get_socket_path(SocketType::Command);
 
     let command = CommandContent {
@@ -12,13 +12,10 @@ async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
         data: cmd.to_string(),
     };
 
-    match write_to_socket(socket_path, command).await {
-        Ok(data) => data,
-        Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
-    }
+    write_to_socket(socket_path, command).await
 }
 
-fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
+fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
     let socket_path = get_socket_path(SocketType::Command);
 
     let command = CommandContent {
@@ -26,10 +23,7 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
         data: cmd.to_string(),
     };
 
-    match write_to_socket_sync(socket_path, command) {
-        Ok(data) => data,
-        Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
-    }
+    write_to_socket_sync(socket_path, command)
 }
 
 /// This pub(crate) enum holds every socket command that returns data
@@ -184,12 +178,12 @@ pub struct Workspace {
 #[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> crate::Result<Self> {
-        let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace);
+        let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace)?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
     async fn get_active_async() -> crate::Result<Self> {
-        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWorkspace).await;
+        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWorkspace).await?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
@@ -257,7 +251,7 @@ struct Empty {}
 #[async_trait]
 impl HyprDataActiveOptional for Client {
     fn get_active() -> crate::Result<Option<Self>> {
-        let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow);
+        let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow)?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -267,7 +261,7 @@ impl HyprDataActiveOptional for Client {
         }
     }
     async fn get_active_async() -> crate::Result<Option<Self>> {
-        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await;
+        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -610,7 +604,7 @@ impl HyprData for Animations {
     where
         Self: Sized,
     {
-        let out = call_hyprctl_data_cmd(DataCommands::Animations);
+        let out = call_hyprctl_data_cmd(DataCommands::Animations)?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
@@ -634,7 +628,7 @@ impl HyprData for Animations {
     where
         Self: Sized,
     {
-        let out = call_hyprctl_data_cmd_async(DataCommands::Animations).await;
+        let out = call_hyprctl_data_cmd_async(DataCommands::Animations).await?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
