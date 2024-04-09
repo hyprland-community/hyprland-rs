@@ -252,9 +252,9 @@ pub(crate) enum AsyncEventTypes<T: ?Sized, U: ?Sized> {
     Regular(Pin<Box<T>>),
 }
 
-pub(crate) type VoidFuture = std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send>>;
+pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
 pub(crate) type VoidFutureMut =
-    std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send + 'static>>;
+    std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>>;
 
 pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
 pub(crate) type AsyncClosure<T> = AsyncEventTypes<
