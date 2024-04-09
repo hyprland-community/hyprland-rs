@@ -451,6 +451,7 @@ dependencies = [
  "hyprland-macros",
  "num-traits",
  "once_cell",
+ "parking_lot",
  "paste",
  "regex",
  "serde",

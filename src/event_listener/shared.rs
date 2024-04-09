@@ -639,7 +639,11 @@ use ahash::HashMap;
 #[cfg(not(feature = "ahash"))]
 use std::collections::HashMap;
 
+#[cfg(feature = "parking_lot")]
+use parking_lot::Mutex;
+#[cfg(not(feature = "parking_lot"))]
 use std::sync::Mutex;
+
 static CHECK_TABLE: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
 #[derive(PartialEq, Eq, Hash)]
@@ -968,6 +972,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 match &captures.name("event") {
                     Some(s) => {
                         let table = CHECK_TABLE.lock();
+                        // stupid hack
+                        #[cfg(feature = "parking_lot")]
+                        let table = Ok::<_, std::convert::Infallible>(table);
+
                         if let Ok(mut tbl) = table {
                             let should_run = tbl.insert(s.as_str().to_string());
                             if should_run {
@@ -982,6 +990,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     }
                     None => {
                         let table = CHECK_TABLE.lock();
+                        // stupid hack
+                        #[cfg(feature = "parking_lot")]
+                        let table = Ok::<_, std::convert::Infallible>(table);
+
                         if let Ok(mut tbl) = table {
                             let should_run = tbl.insert("unknown".to_string());
                             if should_run {
