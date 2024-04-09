@@ -507,8 +507,8 @@ dependencies = [
  "futures-lite 2.3.0",
  "hex",
  "hyprland-macros",
- "lazy_static",
  "num-traits",
+ "once_cell",
  "paste",
  "regex",
  "serde",
@@ -569,12 +569,6 @@ checksum = "0de8b303297635ad57c9f5059fd9cee7a47f8e8daa09df0fcd07dd39fb22977f"
 dependencies = [
  "log",
 ]
-
-[[package]]
-name = "lazy_static"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
@@ -669,9 +663,12 @@ dependencies = [
 
 [[package]]
 name = "once_cell"
-version = "1.18.0"
+version = "1.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd8b5dd2ae5ed71462c540258bedcb51965123ad7e7ccf4b9a8cafaa4a63576d"
+checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
+dependencies = [
+ "parking_lot_core",
+]
 
 [[package]]
 name = "parking"

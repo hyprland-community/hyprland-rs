@@ -1,4 +1,5 @@
 use crate::shared::*;
+use once_cell::sync::Lazy;
 use regex::{Error as RegexError, Regex};
 use std::fmt::Debug;
 use std::io;
@@ -668,103 +669,103 @@ enum ParsedEventType {
 
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
-    lazy_static! {
-        static ref EVENT_SET: HashMap<ParsedEventType, Regex> = vec![
+    static EVENT_SET: Lazy<HashMap<ParsedEventType, Regex>> = Lazy::new(|| {
+        vec![
             (
                 ParsedEventType::WorkspaceChanged,
-                r"\bworkspace>>(?P<workspace>.*)"
+                r"\bworkspace>>(?P<workspace>.*)",
             ),
             (
                 ParsedEventType::WorkspaceDeleted,
-                r"destroyworkspace>>(?P<workspace>.*)"
+                r"destroyworkspace>>(?P<workspace>.*)",
             ),
             (
                 ParsedEventType::WorkspaceAdded,
-                r"createworkspace>>(?P<workspace>.*)"
+                r"createworkspace>>(?P<workspace>.*)",
             ),
             (
                 ParsedEventType::WorkspaceMoved,
-                r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)"
+                r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
             ),
             (
                 ParsedEventType::WorkspaceRename,
-                r"renameworkspace>>(?P<id>.*),(?P<name>.*)"
+                r"renameworkspace>>(?P<id>.*),(?P<name>.*)",
             ),
             (
                 ParsedEventType::ActiveMonitorChanged,
-                r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)"
+                r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
             ),
             (
                 ParsedEventType::ActiveWindowChangedV1,
-                r"activewindow>>(?P<class>.*?),(?P<title>.*)"
+                r"activewindow>>(?P<class>.*?),(?P<title>.*)",
             ),
             (
                 ParsedEventType::ActiveWindowChangedV2,
-                r"activewindowv2>>(?P<address>.*)"
+                r"activewindowv2>>(?P<address>.*)",
             ),
             (
                 ParsedEventType::FullscreenStateChanged,
-                r"fullscreen>>(?P<state>0|1)"
+                r"fullscreen>>(?P<state>0|1)",
             ),
             (
                 ParsedEventType::MonitorRemoved,
-                r"monitorremoved>>(?P<monitor>.*)"
+                r"monitorremoved>>(?P<monitor>.*)",
             ),
             (
                 ParsedEventType::MonitorAdded,
-                r"monitoradded>>(?P<monitor>.*)"
+                r"monitoradded>>(?P<monitor>.*)",
             ),
             (
                 ParsedEventType::WindowOpened,
-                r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)"
+                r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)",
             ),
             (
                 ParsedEventType::WindowClosed,
-                r"closewindow>>(?P<address>.*)"
+                r"closewindow>>(?P<address>.*)",
             ),
             (
                 ParsedEventType::WindowMoved,
-                r"movewindow>>(?P<address>.*),(?P<workspace>.*)"
+                r"movewindow>>(?P<address>.*),(?P<workspace>.*)",
             ),
             (
                 ParsedEventType::LayoutChanged,
-                r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)"
+                r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",
             ),
             (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
             (
                 ParsedEventType::LayerOpened,
-                r"openlayer>>(?P<namespace>.*)"
+                r"openlayer>>(?P<namespace>.*)",
             ),
             (
                 ParsedEventType::LayerClosed,
-                r"closelayer>>(?P<namespace>.*)"
+                r"closelayer>>(?P<namespace>.*)",
             ),
             (
                 ParsedEventType::FloatStateChanged,
-                r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])"
+                r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
             ),
             (
                 ParsedEventType::Minimize,
-                r"minimize>>(?P<address>.*),(?P<state>[0-1])"
+                r"minimize>>(?P<address>.*),(?P<state>[0-1])",
             ),
             (
                 ParsedEventType::Screencast,
-                r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])"
+                r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])",
             ),
             (
                 ParsedEventType::UrgentStateChanged,
-                r"urgent>>(?P<address>.*)"
+                r"urgent>>(?P<address>.*)",
             ),
             (
                 ParsedEventType::WindowTitleChanged,
-                r"windowtitle>>(?P<address>.*)"
+                r"windowtitle>>(?P<address>.*)",
             ),
             (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
         ]
         .into_iter()
         .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
-        .collect();
-    }
+        .collect()
+    });
 
     let event_iter = event.trim().split('\n');
 

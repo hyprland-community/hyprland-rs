@@ -5,9 +5,6 @@
 #![deny(unsafe_code)]
 
 #[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
 extern crate doc_comment;
 
 #[macro_use]
