@@ -634,11 +634,6 @@ macro_rules! report_unknown {
 
 use std::collections::BTreeSet;
 
-#[cfg(feature = "ahash")]
-use ahash::HashMap;
-#[cfg(not(feature = "ahash"))]
-use std::collections::HashMap;
-
 #[cfg(feature = "parking_lot")]
 use parking_lot::Mutex;
 #[cfg(not(feature = "parking_lot"))]
