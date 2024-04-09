@@ -670,7 +670,7 @@ enum ParsedEventType {
 }
 
 /// All the recognized events
-static EVENT_SET: Lazy<Vec<(ParsedEventType, Regex)>> = Lazy::new(|| {
+static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
     vec![
         (
             ParsedEventType::WorkspaceChanged,
@@ -765,7 +765,7 @@ static EVENT_SET: Lazy<Vec<(ParsedEventType, Regex)>> = Lazy::new(|| {
     ]
     .into_iter()
     .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
-    .collect()
+    .collect::<Box<_>>()
 });
 
 /// TODO: Possibly switch to this
