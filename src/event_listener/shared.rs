@@ -674,109 +674,110 @@ enum ParsedEventType {
     Unknown,
 }
 
+/// All the recognized events
+static EVENT_SET: Lazy<HashMap<ParsedEventType, Regex>> = Lazy::new(|| {
+    vec![
+        (
+            ParsedEventType::WorkspaceChanged,
+            r"\bworkspace>>(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceDeleted,
+            r"destroyworkspace>>(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceAdded,
+            r"createworkspace>>(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceMoved,
+            r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceRename,
+            r"renameworkspace>>(?P<id>.*),(?P<name>.*)",
+        ),
+        (
+            ParsedEventType::ActiveMonitorChanged,
+            r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::ActiveWindowChangedV1,
+            r"activewindow>>(?P<class>.*?),(?P<title>.*)",
+        ),
+        (
+            ParsedEventType::ActiveWindowChangedV2,
+            r"activewindowv2>>(?P<address>.*)",
+        ),
+        (
+            ParsedEventType::FullscreenStateChanged,
+            r"fullscreen>>(?P<state>0|1)",
+        ),
+        (
+            ParsedEventType::MonitorRemoved,
+            r"monitorremoved>>(?P<monitor>.*)",
+        ),
+        (
+            ParsedEventType::MonitorAdded,
+            r"monitoradded>>(?P<monitor>.*)",
+        ),
+        (
+            ParsedEventType::WindowOpened,
+            r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)",
+        ),
+        (
+            ParsedEventType::WindowClosed,
+            r"closewindow>>(?P<address>.*)",
+        ),
+        (
+            ParsedEventType::WindowMoved,
+            r"movewindow>>(?P<address>.*),(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::LayoutChanged,
+            r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",
+        ),
+        (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
+        (
+            ParsedEventType::LayerOpened,
+            r"openlayer>>(?P<namespace>.*)",
+        ),
+        (
+            ParsedEventType::LayerClosed,
+            r"closelayer>>(?P<namespace>.*)",
+        ),
+        (
+            ParsedEventType::FloatStateChanged,
+            r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
+        ),
+        (
+            ParsedEventType::Minimize,
+            r"minimize>>(?P<address>.*),(?P<state>[0-1])",
+        ),
+        (
+            ParsedEventType::Screencast,
+            r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])",
+        ),
+        (
+            ParsedEventType::UrgentStateChanged,
+            r"urgent>>(?P<address>.*)",
+        ),
+        (
+            ParsedEventType::WindowTitleChanged,
+            r"windowtitle>>(?P<address>.*)",
+        ),
+        (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
+    ]
+    .into_iter()
+    .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
+    .collect()
+});
+
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
-    static EVENT_SET: Lazy<HashMap<ParsedEventType, Regex>> = Lazy::new(|| {
-        vec![
-            (
-                ParsedEventType::WorkspaceChanged,
-                r"\bworkspace>>(?P<workspace>.*)",
-            ),
-            (
-                ParsedEventType::WorkspaceDeleted,
-                r"destroyworkspace>>(?P<workspace>.*)",
-            ),
-            (
-                ParsedEventType::WorkspaceAdded,
-                r"createworkspace>>(?P<workspace>.*)",
-            ),
-            (
-                ParsedEventType::WorkspaceMoved,
-                r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
-            ),
-            (
-                ParsedEventType::WorkspaceRename,
-                r"renameworkspace>>(?P<id>.*),(?P<name>.*)",
-            ),
-            (
-                ParsedEventType::ActiveMonitorChanged,
-                r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
-            ),
-            (
-                ParsedEventType::ActiveWindowChangedV1,
-                r"activewindow>>(?P<class>.*?),(?P<title>.*)",
-            ),
-            (
-                ParsedEventType::ActiveWindowChangedV2,
-                r"activewindowv2>>(?P<address>.*)",
-            ),
-            (
-                ParsedEventType::FullscreenStateChanged,
-                r"fullscreen>>(?P<state>0|1)",
-            ),
-            (
-                ParsedEventType::MonitorRemoved,
-                r"monitorremoved>>(?P<monitor>.*)",
-            ),
-            (
-                ParsedEventType::MonitorAdded,
-                r"monitoradded>>(?P<monitor>.*)",
-            ),
-            (
-                ParsedEventType::WindowOpened,
-                r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)",
-            ),
-            (
-                ParsedEventType::WindowClosed,
-                r"closewindow>>(?P<address>.*)",
-            ),
-            (
-                ParsedEventType::WindowMoved,
-                r"movewindow>>(?P<address>.*),(?P<workspace>.*)",
-            ),
-            (
-                ParsedEventType::LayoutChanged,
-                r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",
-            ),
-            (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
-            (
-                ParsedEventType::LayerOpened,
-                r"openlayer>>(?P<namespace>.*)",
-            ),
-            (
-                ParsedEventType::LayerClosed,
-                r"closelayer>>(?P<namespace>.*)",
-            ),
-            (
-                ParsedEventType::FloatStateChanged,
-                r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
-            ),
-            (
-                ParsedEventType::Minimize,
-                r"minimize>>(?P<address>.*),(?P<state>[0-1])",
-            ),
-            (
-                ParsedEventType::Screencast,
-                r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])",
-            ),
-            (
-                ParsedEventType::UrgentStateChanged,
-                r"urgent>>(?P<address>.*)",
-            ),
-            (
-                ParsedEventType::WindowTitleChanged,
-                r"windowtitle>>(?P<address>.*)",
-            ),
-            (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
-        ]
-        .into_iter()
-        .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
-        .collect()
-    });
+    let event_iter = event.trim().lines();
 
-    let event_iter = event.trim().split('\n');
-
-    let mut events: Vec<Event> = vec![];
+    let mut events: Vec<Event> = Vec::new();
 
     for item in event_iter {
         let matched: Vec<_> = EVENT_SET
@@ -969,41 +970,28 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             }
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
-                match &captures.name("event") {
-                    Some(s) => {
-                        let table = CHECK_TABLE.lock();
-                        // stupid hack
-                        #[cfg(feature = "parking_lot")]
-                        let table = Ok::<_, std::convert::Infallible>(table);
+                {
+                    let table = CHECK_TABLE.lock();
+                    // The std mutex returns a Result, the parking_lot mutex does not. This is a hack that allows us to
+                    // keep the table code how it is, without duplicating or `return`ing.
+                    #[cfg(feature = "parking_lot")]
+                    let table = Ok::<_, std::convert::Infallible>(table);
 
-                        if let Ok(mut tbl) = table {
-                            let should_run = tbl.insert(s.as_str().to_string());
-                            if should_run {
-                                eprintln!(
-                                    "A unknown event was passed into Hyprland-rs
-                        PLEASE MAKE AN ISSUE!!
-                        The event was: {}",
-                                    s.as_str()
-                                );
-                            }
+                    if let Ok(mut tbl) = table {
+                        let (event_string, print_str) =
+                            match captures.name("event").map(|s| s.as_str()) {
+                                Some(s) => (s.to_string(), s),
+                                None => ("Unknown".to_owned(), item),
+                            };
+
+                        let should_run = tbl.insert(event_string);
+                        if should_run {
+                            eprintln!(
+                                "An unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {print_str}"
+                            );
                         }
                     }
-                    None => {
-                        let table = CHECK_TABLE.lock();
-                        // stupid hack
-                        #[cfg(feature = "parking_lot")]
-                        let table = Ok::<_, std::convert::Infallible>(table);
-
-                        if let Ok(mut tbl) = table {
-                            let should_run = tbl.insert("unknown".to_string());
-                            if should_run {
-                                eprintln!(
-                            "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {item}"
-                        );
-                            }
-                        }
-                    }
-                };
+                }
             }
         }
     }
@@ -1011,6 +999,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     Ok(events)
 }
 
+#[inline(always)]
 fn format_event_addr(addr: &str) -> String {
     format!("0x{addr}")
 }
