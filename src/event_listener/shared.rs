@@ -621,7 +621,7 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
 }
 
 macro_rules! report_unknown {
-    ($event:tt) => {
+    ($event:expr) => {
         #[cfg(not(feature = "silent"))]
         eprintln!(
             "A unknown event was passed into Hyprland-rs
@@ -773,12 +773,210 @@ static EVENT_SET: Lazy<Vec<(ParsedEventType, Regex)>> = Lazy::new(|| {
     .collect()
 });
 
-// pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
-//     let mut events: Vec<Event> = Vec::new();
-//     let event_iter = event.trim().lines();
+/// TODO: Possibly switch to this
+pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
+    // TODO: Optimize nested looped regex capturing. Maybe pull in rayon if possible.
+    let event_iter = event
+        .trim()
+        .lines()
+        .map(|event_line| {
+            let type_matches = EVENT_SET
+                .iter()
+                .filter_map(|(event_type, regex)| Some((event_type, regex.captures(event_line)?)))
+                .collect::<Vec<_>>();
 
-//     todo!();
-// }
+            (event_line, type_matches)
+        })
+        .filter(|(_, b)| !b.is_empty());
+
+    let mut temp_event_holder = Vec::new();
+
+    for (event_str, matches) in event_iter {
+        match matches.len() {
+            0 => unreachable!(),
+            1 => {
+                report_unknown!((event_str.split('>').next().unwrap_or("unknown")));
+                continue;
+            }
+            2 => {
+                let (event_type, captures) = matches
+                    .into_iter()
+                    .find(|(e, _)| **e != ParsedEventType::Unknown)
+                    .unwrap_or_else(|| unreachable!());
+
+                temp_event_holder.push((event_str, event_type, captures));
+            }
+            _ => {
+                return Err(HyprError::IoError(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Event matched more than one regex (not a unknown event issue!)",
+                )));
+            }
+        }
+    }
+
+    let parsed_events = temp_event_holder
+        .into_iter()
+        .map(|(event_str, event_type, captures)| match event_type {
+            ParsedEventType::WorkspaceChanged => {
+                let captured = &captures["workspace"];
+                let workspace = if !captured.is_empty() {
+                    parse_string_as_work(captured.to_string())
+                } else {
+                    WorkspaceType::Regular("1".to_string())
+                };
+                Ok(Event::WorkspaceChanged(workspace))
+            }
+            ParsedEventType::WorkspaceDeleted => Ok(Event::WorkspaceDeleted(parse_string_as_work(
+                captures["workspace"].to_string(),
+            ))),
+
+            ParsedEventType::WorkspaceAdded => Ok(Event::WorkspaceAdded(parse_string_as_work(
+                captures["workspace"].to_string(),
+            ))),
+            ParsedEventType::WorkspaceMoved => Ok(Event::WorkspaceMoved(MonitorEventData {
+                monitor_name: captures["monitor"].to_string(),
+                workspace: parse_string_as_work(captures["workspace"].to_string()),
+            })),
+            ParsedEventType::WorkspaceRename => {
+                Ok(Event::WorkspaceRename(WorkspaceRenameEventData {
+                    workspace_id: captures["id"]
+                        .parse::<WorkspaceId>()
+                        .map_err(|e| HyprError::IoError(std::io::Error::other(e)))?,
+                    workspace_name: captures["name"].to_string(),
+                }))
+            }
+            ParsedEventType::ActiveMonitorChanged => {
+                Ok(Event::ActiveMonitorChanged(MonitorEventData {
+                    monitor_name: captures["monitor"].to_string(),
+                    workspace: WorkspaceType::Regular(captures["workspace"].to_string()),
+                }))
+            }
+            ParsedEventType::ActiveWindowChangedV1 => {
+                let class = &captures["class"];
+                let title = &captures["title"];
+                let event = if !class.is_empty() && !title.is_empty() {
+                    Event::ActiveWindowChangedV1(Some((class.to_string(), title.to_string())))
+                } else {
+                    Event::ActiveWindowChangedV1(None)
+                };
+
+                Ok(event)
+            }
+            ParsedEventType::ActiveWindowChangedV2 => {
+                let addr = &captures["address"];
+                let event = if addr != "," {
+                    Event::ActiveWindowChangedV2(Some(Address::new(format_event_addr(addr))))
+                } else {
+                    Event::ActiveWindowChangedV2(None)
+                };
+                Ok(event)
+            }
+            ParsedEventType::FullscreenStateChanged => {
+                let state = &captures["state"] != "0";
+                Ok(Event::FullscreenStateChanged(state))
+            }
+            ParsedEventType::MonitorRemoved => {
+                Ok(Event::MonitorRemoved(captures["monitor"].to_string()))
+            }
+            ParsedEventType::MonitorAdded => {
+                Ok(Event::MonitorAdded(captures["monitor"].to_string()))
+            }
+            ParsedEventType::WindowOpened => Ok(Event::WindowOpened(WindowOpenEvent {
+                window_address: Address::new(format_event_addr(&captures["address"])),
+                workspace_name: captures["workspace"].to_string(),
+                window_class: captures["class"].to_string(),
+                window_title: captures["title"].to_string(),
+            })),
+            ParsedEventType::WindowClosed => Ok(Event::WindowClosed(Address::new(
+                format_event_addr(&captures["address"]),
+            ))),
+            ParsedEventType::WindowMoved => Ok(Event::WindowMoved(WindowMoveEvent {
+                window_address: Address::new(format_event_addr(&captures["address"])),
+                workspace_name: captures["workspace"].to_string(),
+            })),
+            ParsedEventType::LayoutChanged => Ok(Event::LayoutChanged(LayoutEvent {
+                keyboard_name: captures["keyboard"].to_string(),
+                layout_name: captures["layout"].to_string(),
+            })),
+            ParsedEventType::SubMapChanged => {
+                Ok(Event::SubMapChanged(captures["submap"].to_string()))
+            }
+            ParsedEventType::LayerOpened => {
+                Ok(Event::LayerOpened(captures["namespace"].to_string()))
+            }
+            ParsedEventType::LayerClosed => {
+                Ok(Event::LayerClosed(captures["namespace"].to_string()))
+            }
+            ParsedEventType::FloatStateChanged => {
+                let state = &captures["floatstate"] == "0"; // FIXME: does 0 mean it's floating?
+                Ok(Event::FloatStateChanged(WindowFloatEventData {
+                    window_address: Address::new(format_event_addr(&captures["address"])),
+                    is_floating: state,
+                }))
+            }
+            ParsedEventType::Minimize => {
+                let state = &captures["state"] == "1";
+                Ok(Event::Minimize(MinimizeEventData {
+                    window_address: Address::new(format_event_addr(&captures["address"])),
+                    is_minimized: state,
+                }))
+            }
+            ParsedEventType::Screencast => {
+                let state = &captures["state"] == "1";
+                let owner = &captures["owner"] == "1";
+                Ok(Event::Screencast(ScreencastEventData {
+                    is_turning_on: state,
+                    is_monitor: owner,
+                }))
+            }
+            ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::new(
+                format_event_addr(&captures["address"]),
+            ))),
+            ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::new(
+                format_event_addr(&captures["address"]),
+            ))),
+            ParsedEventType::Unknown => {
+                #[cfg(not(feature = "silent"))]
+                {
+                    let table = CHECK_TABLE.lock();
+                    // The std mutex returns a Result, the parking_lot mutex does not. This is a hack that allows us to
+                    // keep the table code how it is, without duplicating or `return`ing.
+                    #[cfg(feature = "parking_lot")]
+                    let table = Ok::<_, std::convert::Infallible>(table);
+
+                    if let Ok(mut tbl) = table {
+                        let (event_string, print_str) =
+                            match captures.name("event").map(|s| s.as_str()) {
+                                Some(s) => (s.to_string(), s),
+                                None => ("Unknown".to_owned(), event_str),
+                            };
+
+                        let should_run = tbl.insert(event_string);
+                        if should_run {
+                            eprintln!(
+                                "An unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {print_str}"
+                            );
+                        }
+                    }
+                }
+                Err(HyprError::IoError(io::Error::other("Unknown event")))
+            }
+        });
+
+    let mut events: Vec<Event> = Vec::new();
+
+    for event in parsed_events {
+        let event = event?;
+        events.push(event);
+    }
+
+    // if events.is_empty() {
+    //     return Err(HyprError::IoError(io::Error::other("No events!")));
+    // }
+
+    Ok(events)
+}
 
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
