@@ -15,9 +15,8 @@
 //! ````
 
 use crate::shared::*;
-use std::string::ToString;
-//use strum::Display;
 use derive_more::Display;
+use std::string::ToString;
 
 /// This enum is for identifying a window
 #[derive(Debug, Clone)]
