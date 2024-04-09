@@ -1,7 +1,6 @@
 //! # The Shared Module
 //!
 //! This module provides shared private and public functions, structs, enum, and types
-pub use async_trait::async_trait;
 use derive_more::Display;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::env::{var, VarError};
@@ -68,7 +67,6 @@ pub type HResult<T> = Result<T, HyprError>;
 pub struct Address(String);
 
 /// This trait provides a standardized way to get data
-#[async_trait]
 pub trait HyprData {
     /// This method gets the data
     fn get() -> crate::Result<Self>
@@ -81,7 +79,6 @@ pub trait HyprData {
 }
 
 /// Trait for helper functions to get the active of the implementor
-#[async_trait]
 pub trait HyprDataActive {
     /// This method gets the active data
     fn get_active() -> crate::Result<Self>
@@ -94,7 +91,6 @@ pub trait HyprDataActive {
 }
 
 /// Trait for helper functions to get the active of the implementor, but for optional ones
-#[async_trait]
 pub trait HyprDataActiveOptional {
     /// This method gets the active data
     fn get_active() -> crate::Result<Option<Self>>

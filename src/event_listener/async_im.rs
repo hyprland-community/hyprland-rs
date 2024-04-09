@@ -32,7 +32,6 @@ impl Default for AsyncEventListener {
     }
 }
 
-#[async_trait]
 impl HasAsyncExecutor for AsyncEventListener {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()> {
         match event {

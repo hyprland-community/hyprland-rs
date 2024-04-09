@@ -50,7 +50,6 @@ regex = { version = "1.10", default-features = false, features = [
     "perf",
     "unicode",
 ] }
-async-trait = "0.1"
 num-traits = "0.2"
 doc-comment = "0.3"
 paste = "1"

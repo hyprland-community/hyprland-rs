@@ -6,14 +6,12 @@ use std::io;
 use std::pin::Pin;
 
 /// This trait provides shared behaviour for listener types
-#[async_trait]
 pub(crate) trait Listener: HasExecutor {
     /// This method starts the event listener
     fn start_listener() -> crate::Result<()>;
 }
 
 /// This trait provides shared behaviour for listener types
-#[async_trait]
 pub(crate) trait AsyncListener: HasAsyncExecutor {
     /// This method starts the event listener (async)
     async fn start_listener_async() -> crate::Result<()>;
@@ -90,7 +88,6 @@ pub(crate) trait HasExecutor {
     }
 }
 
-#[async_trait]
 pub(crate) trait HasAsyncExecutor {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()>;
 

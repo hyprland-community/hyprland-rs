@@ -6,7 +6,6 @@ pub struct FullscreenState(
     pub bool,
 );
 
-#[async_trait]
 impl HyprData for FullscreenState {
     fn get() -> crate::Result<Self> {
         Ok(Self(Workspace::get_active()?.fullscreen))

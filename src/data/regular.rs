@@ -124,7 +124,6 @@ pub struct Monitor {
     pub vrr: bool,
 }
 
-#[async_trait]
 impl HyprDataActive for Monitor {
     fn get_active() -> crate::Result<Self> {
         let all = Monitors::get()?;
@@ -177,7 +176,6 @@ pub struct Workspace {
     pub last_window_title: String,
 }
 
-#[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> crate::Result<Self> {
         let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace)?;
@@ -250,7 +248,6 @@ pub struct Client {
 #[serde(deny_unknown_fields)]
 struct Empty {}
 
-#[async_trait]
 impl HyprDataActiveOptional for Client {
     fn get_active() -> crate::Result<Option<Self>> {
         let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow)?;
@@ -602,7 +599,6 @@ struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
-#[async_trait]
 impl HyprData for Animations {
     fn get() -> crate::Result<Self>
     where
