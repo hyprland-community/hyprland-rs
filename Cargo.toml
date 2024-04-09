@@ -16,7 +16,7 @@ categories.workspace = true
 build = true
 
 [profile.release]
-opt-level = "z"
+opt-level = 3
 strip = true
 lto = true
 
