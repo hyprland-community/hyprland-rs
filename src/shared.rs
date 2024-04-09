@@ -65,6 +65,13 @@ pub type HResult<T> = Result<T, HyprError>;
 /// and has methods to reveal the address in different data formats
 #[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct Address(String);
+impl Address {
+    #[inline(always)]
+    pub(crate) fn fmt_new(address: &str) -> Self {
+        // this way is faster than std::fmt
+        Self("0x".to_owned() + address)
+    }
+}
 
 /// This trait provides a standardized way to get data
 pub trait HyprData {
