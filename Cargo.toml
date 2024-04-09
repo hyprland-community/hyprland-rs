@@ -58,9 +58,19 @@ derive_more = { version = "0.99", default-features = false, features = [
     "constructor",
 ] }
 once_cell = "1"
+ahash = { version = "0.8", features = ["std", "serde", "no-rng"], default-features = false, optional = true }
 
 [features]
-default = ["listener", "dispatch", "data", "keyword", "config", "ctl", "tokio"]
+default = [
+    "listener",
+    "dispatch",
+    "data",
+    "keyword",
+    "config",
+    "ctl",
+    "tokio",
+    "ahash",
+]
 async-lite = ["dep:async-net", "dep:futures-lite"]
 async-std = ["dep:async-std", "dep:futures-lite"]
 tokio = ["dep:tokio"]
@@ -72,6 +82,7 @@ config = ["dispatch", "keyword"]
 listener = ["data", "dispatch"]
 silent = []
 parking_lot = ["once_cell/parking_lot", "tokio?/parking_lot"]
+ahash = ["dep:ahash"]
 
 # for examples
 [dev-dependencies]

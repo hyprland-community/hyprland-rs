@@ -2,7 +2,7 @@
 //!
 //! This module provides shared private and public functions, structs, enum, and types
 use derive_more::Display;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
 use std::{error, fmt, io};

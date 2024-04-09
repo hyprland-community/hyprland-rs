@@ -632,7 +632,13 @@ macro_rules! report_unknown {
     };
 }
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::BTreeSet;
+
+#[cfg(feature = "ahash")]
+use ahash::HashMap;
+#[cfg(not(feature = "ahash"))]
+use std::collections::HashMap;
+
 use std::sync::Mutex;
 static CHECK_TABLE: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
