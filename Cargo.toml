@@ -61,15 +61,7 @@ derive_more = { version = "0.99", default-features = false, features = [
 once_cell = { version = "1" }
 
 [features]
-default = [
-    "listener",
-    "dispatch",
-    "data",
-    "keyword",
-    "config",
-    "ctl",
-    "async-lite",
-]
+default = ["listener", "dispatch", "data", "keyword", "config", "ctl", "tokio"]
 async-lite = ["dep:async-net", "dep:futures-lite"]
 async-std = ["dep:async-std", "dep:futures-lite"]
 tokio = ["dep:tokio"]

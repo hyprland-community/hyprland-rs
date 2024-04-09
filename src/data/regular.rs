@@ -473,7 +473,9 @@ pub enum AnimationStyle {
     Slide,
     /// Vertical slide animation
     SlideVert,
+    /// Fading slide animation
     SlideFade,
+    /// Fading slide animation in a vertical direction
     SlideFadeVert,
     /// Popin animation (with percentage)
     PopIn(u8),
@@ -648,6 +650,7 @@ impl HyprData for Animations {
 
 // HACK: shadow and decorate are actually missing from the hyprctl json output for some reason
 // HACK: gaps_in and gaps_out are returned as arrays with 4 integers, even though Hyprland doesn't support per-side gaps
+/// The rules of an individual workspace, as returned by hyprctl json.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct WorkspaceRuleset {
     /// The name of the workspace
