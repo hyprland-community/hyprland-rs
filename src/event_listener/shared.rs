@@ -675,7 +675,7 @@ enum ParsedEventType {
 }
 
 /// All the recognized events
-static EVENT_SET: Lazy<HashMap<ParsedEventType, Regex>> = Lazy::new(|| {
+static EVENT_SET: Lazy<Vec<(ParsedEventType, Regex)>> = Lazy::new(|| {
     vec![
         (
             ParsedEventType::WorkspaceChanged,
@@ -772,6 +772,13 @@ static EVENT_SET: Lazy<HashMap<ParsedEventType, Regex>> = Lazy::new(|| {
     .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
     .collect()
 });
+
+// pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
+//     let mut events: Vec<Event> = Vec::new();
+//     let event_iter = event.trim().lines();
+
+//     todo!();
+// }
 
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
