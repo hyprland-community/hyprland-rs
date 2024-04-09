@@ -1,6 +1,6 @@
 use derive_more::{Constructor, Display as MDisplay};
 use std::fmt::Display as FDisplay;
-use strum::{Display as SDisplay, EnumProperty};
+// use strum::{Display as SDisplay, EnumProperty};
 
 use crate::shared::*;
 
@@ -73,20 +73,27 @@ pub mod set_cursor {
 pub mod output {
     use super::*;
     /// Output backend types
-    #[derive(SDisplay)]
+    #[derive(Debug)]
     pub enum OutputBackends {
         /// The wayland output backend
-        #[strum(serialize = "wayland")]
         Wayland,
         /// The x11 output backend
-        #[strum(serialize = "x11")]
         X11,
         /// The headless output backend
-        #[strum(serialize = "headless")]
         Headless,
         /// Let Hyprland decide the backend type
-        #[strum(serialize = "auto")]
         Auto,
+    }
+    impl std::fmt::Display for OutputBackends {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Self::Wayland => "wayland",
+                Self::X11 => "x11",
+                Self::Headless => "headless",
+                Self::Auto => "auto",
+            }
+            .fmt(f)
+        }
     }
 
     /// Create virtual displays
@@ -237,7 +244,7 @@ pub mod set_prop {
     }
 
     /// Type that represents a prop
-    #[derive(EnumProperty, MDisplay)]
+    #[derive(MDisplay)]
     pub enum PropType {
         /// The animation style
         #[display(fmt = "animationstyle {}", "_0")]
