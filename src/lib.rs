@@ -46,9 +46,9 @@ pub mod prelude {
 }
 
 pub(crate) mod unix_async {
-    #[cfg(feature = "async-net")]
+    #[cfg(feature = "async-lite")]
     pub use async_net::unix::UnixStream;
-    #[cfg(feature = "async-net")]
+    #[cfg(feature = "async-lite")]
     pub use futures_lite::io::{AsyncReadExt, AsyncWriteExt};
 
     #[cfg(feature = "async-std")]
