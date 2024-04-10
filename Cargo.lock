@@ -413,12 +413,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed44880c466736ef9a5c5b5facefb5ed0785676d0c02d612db14e54f0d84286"
 
 [[package]]
-name = "hex"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
-
-[[package]]
 name = "hyprland"
 version = "0.3.13"
 dependencies = [
@@ -426,7 +420,6 @@ dependencies = [
  "async-std",
  "derive_more",
  "futures-lite 2.3.0",
- "hex",
  "hyprland-macros",
  "num-traits",
  "once_cell",

@@ -79,14 +79,14 @@ impl Address {
         // this way is faster than std::fmt
         Self("0x".to_owned() + address)
     }
-    /// This method returns a vector of bytes
-    pub fn as_vec(self) -> Vec<u8> {
-        let Address(value) = self;
-        match hex::decode(value.trim_start_matches("0x")) {
-            Ok(value) => value,
-            Err(error) => panic!("A error has occured while parsing string as hex: {error}"),
-        }
-    }
+    // /// This method returns a vector of bytes
+    // pub fn as_vec(self) -> Vec<u8> {
+    //     let Address(value) = self;
+    //     match hex::decode(value.trim_start_matches("0x")) {
+    //         Ok(value) => value,
+    //         Err(error) => panic!("A error has occured while parsing string as hex: {error}"),
+    //     }
+    // }
     /// This creates a new address from a value that implements [std::string::ToString]
     pub fn new<T: ToString>(string: T) -> Self {
         Self(string.to_string())
