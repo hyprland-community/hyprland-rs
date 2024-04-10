@@ -5,7 +5,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// This private function is to call socket commands
 async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String> {
-    let socket_path = get_socket_path(SocketType::Command)?;
+    let socket_path = SocketType::Command;
 
     let command = CommandContent {
         flag: CommandFlag::JSON,
@@ -16,7 +16,7 @@ async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String>
 }
 
 fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
-    let socket_path = get_socket_path(SocketType::Command)?;
+    let socket_path = SocketType::Command;
 
     let command = CommandContent {
         flag: CommandFlag::JSON,

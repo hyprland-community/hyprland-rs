@@ -8,19 +8,12 @@ pub mod reload {
     use super::*;
     /// Reload hyprland config
     pub fn call() -> crate::Result<()> {
-        write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "reload"),
-        )?;
+        write_to_socket_sync(SocketType::Command, command!(Empty, "reload"))?;
         Ok(())
     }
     /// Reload hyprland config (async)
     pub async fn call_async() -> crate::Result<()> {
-        write_to_socket(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "reload"),
-        )
-        .await?;
+        write_to_socket(SocketType::Command, command!(Empty, "reload")).await?;
         Ok(())
     }
 }
@@ -29,19 +22,12 @@ pub mod kill {
     use super::*;
     /// Enter kill mode (similar to xkill)
     pub fn call() -> crate::Result<()> {
-        write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "kill"),
-        )?;
+        write_to_socket_sync(SocketType::Command, command!(Empty, "kill"))?;
         Ok(())
     }
     /// Enter kill mode (similar to xkill) (async)
     pub async fn call_async() -> crate::Result<()> {
-        write_to_socket(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "kill"),
-        )
-        .await?;
+        write_to_socket(SocketType::Command, command!(Empty, "kill")).await?;
         Ok(())
     }
 }
@@ -52,7 +38,7 @@ pub mod set_cursor {
     /// Set the cursor theme
     pub fn call<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "setcursor {theme} {size}"),
         )?;
         Ok(())
@@ -60,7 +46,7 @@ pub mod set_cursor {
     /// Set the cursor theme (async)
     pub async fn call_async<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
         write_to_socket(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "setcursor {theme} {size}"),
         )
         .await?;
@@ -91,17 +77,14 @@ pub mod output {
     /// Create virtual displays
     pub fn create(backend: OutputBackends) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "output create {backend}"),
         )?;
         Ok(())
     }
     /// Remove virtual displays
     pub fn remove<Str: FDisplay>(name: Str) -> crate::Result<()> {
-        write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "output remove {name}"),
-        )?;
+        write_to_socket_sync(SocketType::Command, command!(Empty, "output remove {name}"))?;
         Ok(())
     }
 }
@@ -126,7 +109,7 @@ pub mod switch_xkb_layout {
     /// Switch the xkb layout index for a keyboard
     pub fn call<Str: FDisplay>(device: Str, cmd: SwitchXKBLayoutCmdTypes) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "switchxkblayout {device} {cmd}"),
         )?;
         Ok(())
@@ -137,7 +120,7 @@ pub mod switch_xkb_layout {
         cmd: SwitchXKBLayoutCmdTypes,
     ) -> crate::Result<()> {
         write_to_socket(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "switchxkblayout {device} {cmd}"),
         )
         .await?;
@@ -151,7 +134,7 @@ pub mod set_error {
     /// Creates a error that Hyprland will display
     pub fn call(color: Color, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "seterror {color} {msg}"),
         )?;
         Ok(())
@@ -159,7 +142,7 @@ pub mod set_error {
     /// Creates a error that Hyprland will display (async)
     pub async fn call_async(color: Color, msg: String) -> crate::Result<()> {
         write_to_socket(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "seterror {color} {msg}"),
         )
         .await?;
@@ -187,7 +170,7 @@ pub mod notify {
     /// Creates a notification with Hyprland
     pub fn call(icon: Icon, time: Duration, color: Color, msg: String) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
@@ -205,7 +188,7 @@ pub mod notify {
         msg: String,
     ) -> crate::Result<()> {
         write_to_socket(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(
                 Empty,
                 "notify {} {} {color} {msg}",
@@ -365,7 +348,7 @@ pub mod set_prop {
     /// Sets a window prob
     pub fn call(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(
                 Empty,
                 "setprop {ident} {prop} {}",
@@ -377,7 +360,7 @@ pub mod set_prop {
     /// Sets a window prob (async)
     pub async fn call_async(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
         write_to_socket(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(
                 Empty,
                 "setprop {ident} {prop} {}",
@@ -397,7 +380,7 @@ pub mod plugin {
     /// Loads a plugin, by path
     pub fn load(path: &Path) -> crate::Result<()> {
         write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "plugin load {}", path.display()),
         )?;
         Ok(())
@@ -405,7 +388,7 @@ pub mod plugin {
     /// Loads a plugin, by path (async)
     pub async fn load_async(path: &Path) -> crate::Result<()> {
         write_to_socket(
-            get_socket_path(SocketType::Command)?,
+            SocketType::Command,
             command!(Empty, "plugin load {}", path.display()),
         )
         .await?;
@@ -413,17 +396,10 @@ pub mod plugin {
     }
     /// Returns a list of all plugins
     pub fn list() -> crate::Result<String> {
-        write_to_socket_sync(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "plugin list"),
-        )
+        write_to_socket_sync(SocketType::Command, command!(Empty, "plugin list"))
     }
     /// Returns a list of all plugins (async)
     pub async fn list_async() -> crate::Result<String> {
-        write_to_socket(
-            get_socket_path(SocketType::Command)?,
-            command!(Empty, "plugin list"),
-        )
-        .await
+        write_to_socket(SocketType::Command, command!(Empty, "plugin list")).await
     }
 }

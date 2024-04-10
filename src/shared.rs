@@ -5,6 +5,7 @@ use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 use std::{error, fmt, io};
 
 #[derive(Debug, derive_more::Display)]
@@ -217,9 +218,13 @@ impl Hash for WorkspaceType {
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) async fn write_to_socket(path: &str, content: CommandContent) -> crate::Result<String> {
+pub(crate) async fn write_to_socket(
+    ty: SocketType,
+    content: CommandContent,
+) -> crate::Result<String> {
     use crate::unix_async::*;
 
+    let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(&content.as_bytes()).await?;
@@ -241,9 +246,14 @@ pub(crate) async fn write_to_socket(path: &str, content: CommandContent) -> crat
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) fn write_to_socket_sync(path: &str, content: CommandContent) -> crate::Result<String> {
+pub(crate) fn write_to_socket_sync(
+    ty: SocketType,
+    content: CommandContent,
+) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
+
+    let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path)?;
 
     stream.write_all(&content.as_bytes())?;
@@ -281,13 +291,7 @@ impl SocketType {
     }
 }
 
-pub(crate) static SOCKET_PATH_COMMAND: once_cell::sync::OnceCell<crate::Result<String>> =
-    once_cell::sync::OnceCell::new();
-// once_cell::sync::Lazy::new(|| Ok(format!("/tmp/hypr/{}/{}", instance_signature()?, SocketType::Command.socket_name())));
-pub(crate) static SOCKET_PATH_LISTENER: once_cell::sync::OnceCell<crate::Result<String>> =
-    once_cell::sync::OnceCell::new();
-// once_cell::sync::Lazy::new(|| Ok(format!("/tmp/hypr/{}/{}", instance_signature()?, SocketType::Listener.socket_name())));
-
+#[inline(always)]
 fn instance_signature() -> crate::Result<String> {
     match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => Ok(var),
@@ -300,38 +304,47 @@ fn instance_signature() -> crate::Result<String> {
     }
 }
 
-/// This pub(crate) function gets the Hyprland socket path.
-/// Here for backwards-compatibility and because Lazy cell errors can't be propagated with ?
-pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<&'a str> {
-    let socket_cell = match socket_type {
-        SocketType::Command => &SOCKET_PATH_COMMAND,
-        SocketType::Listener => &SOCKET_PATH_LISTENER,
-    };
-
-    macro_rules! ret {
-        () => {
-            if let Some(c) = socket_cell.get() {
-                return match c {
-                    Ok(s) => Ok(s.as_str()),
-                    // Safety: The error types that can be cloned are impossible to get here.
-                    Err(e) => Err(e.try_as_cloned().unwrap_or_else(|e| {
-                        unreachable!("Unreachable error occured while getting the Hyprland socket path, please file a bug report! {e}")
-                    })),
-                };
-            }
-        };
-    }
-    ret!();
-
-    socket_cell
-        .set(instance_signature().map(|s| format!("/tmp/hypr/{s}/{}", socket_type.socket_name())))
-        .unwrap_or_else(|e| {
-            unreachable!("Found previous Hyprland socket path: {e:?}, please file a bug report!")
-        });
-
-    ret!();
-    unreachable!("Hyprland-rs internal error getting the value of socket path right after setting the cell! Please file a bug report!");
+/// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
+pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<PathBuf> {
+    let instance = instance_signature()?;
+    let mut p = PathBuf::from("/tmp/hypr");
+    p.push(instance);
+    p.push(socket_type.socket_name());
+    Ok(p)
 }
+
+// /// This pub(crate) function gets the Hyprland socket path.
+// /// Here for backwards-compatibility and because Lazy cell errors can't be propagated with ?
+// pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<&'a str> {
+//     let socket_cell = match socket_type {
+//         SocketType::Command => &SOCKET_PATH_COMMAND,
+//         SocketType::Listener => &SOCKET_PATH_LISTENER,
+//     };
+
+//     macro_rules! ret {
+//         () => {
+//             if let Some(c) = socket_cell.get() {
+//                 return match c {
+//                     Ok(s) => Ok(s.as_str()),
+//                     // Safety: The error types that can be cloned are impossible to get here.
+//                     Err(e) => Err(e.try_as_cloned().unwrap_or_else(|e| {
+//                         unreachable!("Unreachable error occured while getting the Hyprland socket path, please file a bug report! {e}")
+//                     })),
+//                 };
+//             }
+//         };
+//     }
+//     ret!();
+
+//     socket_cell
+//         .set(instance_signature().map(|s| format!("/tmp/hypr/{s}/{}", socket_type.socket_name())))
+//         .unwrap_or_else(|e| {
+//             unreachable!("Found previous Hyprland socket path: {e:?}, please file a bug report!")
+//         });
+
+//     ret!();
+//     unreachable!("Hyprland-rs internal error getting the value of socket path right after setting the cell! Please file a bug report!");
+// }
 
 /// Creates a `CommandContent` instance with the given flag and formatted data.
 ///

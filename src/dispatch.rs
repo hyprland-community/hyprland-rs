@@ -587,8 +587,8 @@ impl Dispatch {
     /// # }
     /// ```
     pub fn call(dispatch_type: DispatchType) -> crate::Result<()> {
-        let socket_path = get_socket_path(SocketType::Command)?;
-        let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type, true)?);
+        let output =
+            write_to_socket_sync(SocketType::Command, gen_dispatch_str(dispatch_type, true)?);
 
         match output {
             Ok(msg) => match msg.as_str() {
@@ -611,8 +611,8 @@ impl Dispatch {
     /// # }
     /// ```
     pub async fn call_async(dispatch_type: DispatchType<'_>) -> crate::Result<()> {
-        let socket_path = get_socket_path(SocketType::Command)?;
-        let output = write_to_socket(socket_path, gen_dispatch_str(dispatch_type, true)?).await;
+        let output =
+            write_to_socket(SocketType::Command, gen_dispatch_str(dispatch_type, true)?).await;
 
         match output {
             Ok(msg) => match msg.as_str() {
