@@ -33,7 +33,7 @@ impl<T> ActiveWindowValue<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ActiveWindowState {
     pub class: ActiveWindowValue<String>,
     pub title: ActiveWindowValue<String>,
@@ -314,7 +314,7 @@ pub(crate) struct AsyncEvents {
 }
 
 /// Event data for renameworkspace event
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceRenameEventData {
     /// Workspace id
     pub workspace_id: WorkspaceId,
@@ -323,7 +323,7 @@ pub struct WorkspaceRenameEventData {
 }
 
 /// Event data for a minimize event
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MinimizeEventData {
     /// Window address
     pub window_address: Address,
@@ -332,7 +332,7 @@ pub struct MinimizeEventData {
 }
 
 /// Event data for screencast event
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScreencastEventData {
     /// State/Is it turning on?
     pub is_turning_on: bool,
@@ -341,7 +341,7 @@ pub struct ScreencastEventData {
 }
 
 /// The data for the event executed when moving a window to a new workspace
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WindowMoveEvent {
     /// Window address
     pub window_address: Address,
@@ -371,7 +371,7 @@ unsafe impl Send for WindowOpenEvent {}
 #[allow(unsafe_code)]
 unsafe impl Sync for WindowOpenEvent {}
 /// The data for the event executed when changing keyboard layouts
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LayoutEvent {
     /// Keyboard name
     pub keyboard_name: String,
@@ -523,7 +523,7 @@ pub(crate) fn execute_closure_mut_sync<T>(
 }
 
 /// This tuple struct holds window event data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowEventData {
     /// The window class
     pub window_class: String,
@@ -538,7 +538,7 @@ unsafe impl Send for WindowEventData {}
 #[allow(unsafe_code)]
 unsafe impl Sync for WindowEventData {}
 /// This tuple struct holds monitor event data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonitorEventData {
     /// The monitor name
     pub monitor_name: String,
@@ -551,7 +551,7 @@ unsafe impl Send for MonitorEventData {}
 #[allow(unsafe_code)]
 unsafe impl Sync for MonitorEventData {}
 /// This tuple struct holds monitor event data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowFloatEventData {
     /// The window address
     pub window_address: Address,

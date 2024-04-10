@@ -12,7 +12,7 @@ pub mod binds {
     }
 
     /// Type for a key held by a bind
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum Key<'a> {
         /// Variant for if the bind holds a modded key
         Mod(
@@ -38,7 +38,7 @@ pub mod binds {
         }
     }
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     #[allow(missing_docs)]
     /// Enum for mod keys used in bind combinations
     pub enum Mod {
@@ -72,7 +72,7 @@ pub mod binds {
         }
     }
 
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
     #[allow(non_camel_case_types)]
     /// Enum for bind flags
     pub enum Flag {

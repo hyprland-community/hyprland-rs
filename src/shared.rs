@@ -244,6 +244,7 @@ pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> cra
 }
 
 /// This pub(crate) enum holds the different sockets that Hyprland has
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SocketType {
     /// The socket used to send commands to Hyprland (AKA `.socket.sock`)
     Command,
@@ -286,14 +287,17 @@ macro_rules! command {
 pub use command;
 
 /// This enum defines the possible command flags that can be used.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CommandFlag {
     /// The JSON flag.
+    #[default]
     JSON,
     /// An empty flag.
     Empty,
 }
 
 /// This struct defines the content of a command, which consists of a flag and a data string.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommandContent {
     /// The flag for the command.
     pub flag: CommandFlag,

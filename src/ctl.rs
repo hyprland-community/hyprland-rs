@@ -72,7 +72,7 @@ pub mod set_cursor {
 pub mod output {
     use super::*;
     /// Output backend types
-    #[derive(Debug, MDisplay)]
+    #[derive(Debug, MDisplay, Clone, Copy, PartialEq, Eq)]
     pub enum OutputBackends {
         /// The wayland output backend
         #[display(fmt = "wayland")]
@@ -110,7 +110,7 @@ pub mod output {
 pub mod switch_xkb_layout {
     use super::*;
     /// The types of Cmds used by [switch_xkb_layout]
-    #[derive(MDisplay)]
+    #[derive(Debug, MDisplay, Clone, Copy, PartialEq, Eq)]
     pub enum SwitchXKBLayoutCmdTypes {
         /// Next input
         #[display(fmt = "next")]
@@ -173,7 +173,7 @@ pub mod notify {
     use std::time::Duration;
 
     #[allow(missing_docs)]
-    #[derive(Copy, Clone)]
+    #[derive(Debug, Copy, Clone, PartialEq, Eq)]
     #[repr(i8)]
     pub enum Icon {
         NoIcon = -1,
@@ -219,7 +219,7 @@ pub mod notify {
 }
 
 /// A 8-bit color with a alpha channel
-#[derive(Copy, Clone, MDisplay, Constructor)]
+#[derive(Debug, Copy, Clone, MDisplay, Constructor, PartialEq, Eq)]
 #[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
 pub struct Color(u8, u8, u8, u8);
 
@@ -236,7 +236,7 @@ pub mod set_prop {
     }
 
     /// Type that represents a prop
-    #[derive(MDisplay)]
+    #[derive(MDisplay, Clone, PartialEq)]
     pub enum PropType {
         /// The animation style
         #[display(fmt = "animationstyle {}", "_0")]

@@ -160,7 +160,7 @@ pub enum WorkspaceOptions {
 }
 
 /// This enum is for identifying workspaces that also includes the special workspace
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
@@ -205,7 +205,7 @@ impl std::fmt::Display for WorkspaceIdentifierWithSpecial<'_> {
 }
 
 /// This enum is for identifying workspaces
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkspaceIdentifier<'a> {
     /// The workspace Id
     Id(WorkspaceId),
@@ -438,7 +438,7 @@ pub enum LockType {
 }
 
 /// Param for [SwapWithMaster] dispatcher
-#[derive(Debug, Clone, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum SwapWithMasterParam {
     /// New focus is the new master window
     #[display(fmt = "master")]
@@ -452,7 +452,7 @@ pub enum SwapWithMasterParam {
 }
 
 /// Param for [FocusMaster] dispatcher
-#[derive(Debug, Clone, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum FocusMasterParam {
     /// Focus stays at master, (even if it was selected before)
     #[display(fmt = "master")]
