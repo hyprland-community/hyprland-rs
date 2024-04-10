@@ -1,9 +1,7 @@
 use crate::shared::*;
 use once_cell::sync::Lazy;
 use regex::{Error as RegexError, Regex};
-use std::fmt::Debug;
-use std::io;
-use std::pin::Pin;
+use std::{fmt::Debug, pin::Pin};
 
 /// This trait provides shared behaviour for listener types
 pub(crate) trait Listener: HasExecutor {
@@ -619,7 +617,7 @@ macro_rules! report_unknown {
     ($event:expr) => {
         #[cfg(not(feature = "silent"))]
         eprintln!(
-            "A unknown event was passed into Hyprland-rs
+            "An unknown event was passed into Hyprland-rs
             PLEASE MAKE AN ISSUE!!
             The event was: {event}",
             event = $event
@@ -636,7 +634,7 @@ use std::sync::Mutex;
 
 static CHECK_TABLE: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 enum ParsedEventType {
     WorkspaceChanged,
     WorkspaceDeleted,
@@ -665,7 +663,7 @@ enum ParsedEventType {
 }
 
 /// All the recognized events
-static EVENT_SET: Lazy<[(ParsedEventType, Regex); 24]> = Lazy::new(|| {
+static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
     [
         (
             ParsedEventType::WorkspaceChanged,
@@ -757,7 +755,7 @@ static EVENT_SET: Lazy<[(ParsedEventType, Regex); 24]> = Lazy::new(|| {
             r"windowtitle>>(?P<address>.*)",
         ),
         (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
-    ]
+    ].into_iter()
     .map(|(e, r)| (
         e,
         match Regex::new(r) {
@@ -775,7 +773,7 @@ static EVENT_SET: Lazy<[(ParsedEventType, Regex); 24]> = Lazy::new(|| {
                 }
             }
         })
-    )
+    ).collect()
 });
 
 /// TODO: Possibly switch to this
@@ -813,7 +811,7 @@ pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
             }
             _ => {
                 return Err(HyprError::Other(
-                    "Event matched more than one regex (not a unknown event issue!)",
+                    "Event matched more than one regex (not an unknown event issue!)",
                 ));
             }
         }
@@ -1001,7 +999,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 .unwrap_or_else(|| unreachable!()),
             _ => {
                 return Err(HyprError::Other(
-                    "Event matched more than one regex (not a unknown event issue!)",
+                    "Event matched more than one regex (not an unknown event issue!)",
                 ));
             }
         };
