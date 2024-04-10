@@ -777,7 +777,7 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
 });
 
 /// TODO: Possibly switch to this
-pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
+pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     // TODO: Optimize nested looped regex capturing. Maybe pull in rayon if possible.
     let event_iter = event
         .trim()
@@ -975,7 +975,7 @@ pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
 }
 
 /// This internal function parses event strings
-pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
+pub(crate) fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
     let event_iter = event.trim().lines();
 
     let mut events: Vec<Event> = Vec::new();
