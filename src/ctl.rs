@@ -72,27 +72,20 @@ pub mod set_cursor {
 pub mod output {
     use super::*;
     /// Output backend types
-    #[derive(Debug)]
+    #[derive(Debug, MDisplay)]
     pub enum OutputBackends {
         /// The wayland output backend
+        #[display(fmt = "wayland")]
         Wayland,
         /// The x11 output backend
+        #[display(fmt = "x11")]
         X11,
         /// The headless output backend
+        #[display(fmt = "headless")]
         Headless,
         /// Let Hyprland decide the backend type
+        #[display(fmt = "auto")]
         Auto,
-    }
-    impl std::fmt::Display for OutputBackends {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            match self {
-                Self::Wayland => "wayland",
-                Self::X11 => "x11",
-                Self::Headless => "headless",
-                Self::Auto => "auto",
-            }
-            .fmt(f)
-        }
     }
 
     /// Create virtual displays
