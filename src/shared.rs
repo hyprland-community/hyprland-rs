@@ -19,6 +19,9 @@ pub enum HyprError {
     /// Error that occurs when parsing UTF-8 string
     #[display(format = "{_0}")]
     FromUtf8Error(std::string::FromUtf8Error),
+    /// Error that occurs upon failed conversion of a type
+    #[display(format = "{_0}")]
+    ConversionError(&'static str),
     /// Dispatcher returned non `ok` value
     #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
@@ -110,10 +113,11 @@ pub type WorkspaceId = i32;
 /// > its a type because it might change at some point
 pub type MonitorId = i128;
 
+#[inline]
 fn ser_spec_opt(opt: &Option<String>) -> String {
     match opt {
-        Some(name) => format!("special:{name}"),
-        None => "special".to_string(),
+        Some(name) => "special:".to_owned() + name,
+        None => "special".to_owned(),
     }
 }
 
@@ -153,15 +157,15 @@ impl From<&WorkspaceType> for String {
 //     }
 // }
 
-impl From<i32> for WorkspaceType {
-    fn from(int: i32) -> Self {
+impl TryFrom<i32> for WorkspaceType {
+    type Error = HyprError;
+    fn try_from(int: i32) -> Result<Self, Self::Error> {
         match int {
-            1.. => WorkspaceType::Regular(int.to_string()),
-            _ => panic!("Unrecognised id"),
+            1.. => Ok(WorkspaceType::Regular(int.to_string())),
+            _ => Err(HyprError::ConversionError("Unrecognised id")),
         }
     }
 }
-
 impl Hash for WorkspaceType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
