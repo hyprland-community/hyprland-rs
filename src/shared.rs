@@ -158,28 +158,36 @@ impl From<&WorkspaceType> for String {
         value.to_string()
     }
 }
-
-// impl From<i8> for WorkspaceType {
-//     fn from(int: i8) -> Self {
-//         match int {
-//             1.. => WorkspaceType::Unnamed(match int.try_into() {
-//                 Ok(num) => num,
-//                 Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
-//             }),
-//             _ => panic!("Unrecognised id"),
-//         }
-//     }
-// }
-
-impl TryFrom<i32> for WorkspaceType {
-    type Error = HyprError;
-    fn try_from(int: i32) -> Result<Self, Self::Error> {
-        match int {
-            1.. => Ok(WorkspaceType::Regular(int.to_string())),
-            _ => Err(HyprError::ConversionError("Unrecognised id")),
-        }
-    }
+macro_rules! from {
+    // currently unused, may be useful later
+    ($($ty:ty),+$(,)?) => {
+        $(
+            impl From<$ty> for WorkspaceType {
+                fn from(int: $ty) -> Self {
+                    match int {
+                        1.. => WorkspaceType::Regular(int.to_string()),
+                        _ => panic!("Error converting Hyprland workspace: Unrecognised id!"),
+                    }
+                }
+            }
+        )+
+    };
+    (try $($ty:ty),+$(,)?) => {
+        $(
+            impl TryFrom<$ty> for WorkspaceType {
+                type Error = HyprError;
+                fn try_from(int: $ty) -> Result<Self, Self::Error> {
+                    match int {
+                        1.. => Ok(WorkspaceType::Regular(int.to_string())),
+                        _ => Err(HyprError::ConversionError("Unrecognised id")),
+                    }
+                }
+            }
+        )+
+    };
 }
+from![try u8, u16, u32, u64, usize, i8, i16, i32, i64, isize];
+
 impl Hash for WorkspaceType {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
