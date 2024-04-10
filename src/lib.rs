@@ -6,9 +6,6 @@
 #![allow(async_fn_in_trait)]
 
 #[macro_use]
-extern crate doc_comment;
-
-#[macro_use]
 extern crate paste;
 
 pub use hyprland_macros::*;

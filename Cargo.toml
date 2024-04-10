@@ -51,7 +51,6 @@ regex = { version = "1.10", default-features = false, features = [
     "unicode",
 ] }
 num-traits = "0.2.18"
-doc-comment = "0.3.3"
 paste = "1.0.14"
 derive_more = { version = "0.99", default-features = false, features = [
     "display",
