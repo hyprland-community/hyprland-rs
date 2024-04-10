@@ -19,9 +19,9 @@ pub enum HyprError {
     /// Error that occurs when parsing UTF-8 string
     #[display(format = "{_0}")]
     FromUtf8Error(std::string::FromUtf8Error),
-    /// Error that occurs upon failed conversion of a type
+    /// Error that occurs for other hardcoded reasons.
     #[display(format = "{_0}")]
-    ConversionError(&'static str),
+    Other(&'static str), // Note to future devs: Don't just throw this around randomly. This is why it is a &'static str.
     /// Dispatcher returned non `ok` value
     #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
@@ -179,7 +179,7 @@ macro_rules! from {
                 fn try_from(int: $ty) -> Result<Self, Self::Error> {
                     match int {
                         1.. => Ok(WorkspaceType::Regular(int.to_string())),
-                        _ => Err(HyprError::ConversionError("Unrecognised id")),
+                        _ => Err(HyprError::Other("Conversion error: Unrecognised id")),
                     }
                 }
             }

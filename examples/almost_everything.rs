@@ -45,7 +45,7 @@ fn main() -> hyprland::Result<()> {
     println!("monitors: {monitors:#?},\nactive window: {win:#?},\nclients {clients:#?}\nworkspace: {work:#?}");
 
     // Create a event listener
-    let mut event_listener = EventListener::new();
+    let mut event_listener = EventListener::new()?;
 
     // Shows when active window changes
     event_listener.add_active_window_change_handler(|data, _| {

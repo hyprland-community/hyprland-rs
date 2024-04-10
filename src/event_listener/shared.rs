@@ -466,14 +466,18 @@ impl State {
 
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     match f {
-        EventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+        EventTypes::MutableState(_) => {
+            unreachable!("Hyprland: using mutable handler with immutable listener")
+        }
         EventTypes::Regular(fun) => fun(val),
     }
 }
 
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     match f {
-        AsyncEventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+        AsyncEventTypes::MutableState(_) => {
+            unreachable!("Hyprland: Using mutable handler with immutable listener")
+        }
         AsyncEventTypes::Regular(fun) => fun(val).await,
     }
 }
@@ -486,7 +490,9 @@ pub(crate) async fn execute_closure_async_state<T: Clone>(
 ) {
     match f {
         AsyncEventTypes::MutableState(fun) => fun(val, state).await,
-        AsyncEventTypes::Regular(_) => panic!("Using mutable handler with immutable listener"),
+        AsyncEventTypes::Regular(_) => {
+            unreachable!("Hyprland: Using mutable handler with immutable listener")
+        }
     }
 }
 pub(crate) async fn execute_closure_mut<T>(
@@ -595,7 +601,7 @@ pub(crate) enum Event {
 fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
     match val {
         Ok(value) => value,
-        Err(RegexError::Syntax(str)) => panic!("syntax error: {str}"),
+        Err(RegexError::Syntax(str)) => panic!("Hyprland regex syntax error: {str}"),
         Err(RegexError::CompiledTooBig(size)) => {
             panic!("The compiled regex size is too big ({size})")
         }
@@ -979,10 +985,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 (
                     pet,
                     r.captures(item).unwrap_or_else(|| {
-                        panic!(
-                            "Unable to find captures while parsing Hyprland event: {}",
-                            item
-                        )
+                        panic!("Unable to find captures while parsing Hyprland event: {item}")
                     }),
                 )
             })
