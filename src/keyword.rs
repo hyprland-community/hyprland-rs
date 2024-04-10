@@ -144,7 +144,7 @@ impl Keyword {
 
     /// This function sets a keyword's value
     pub fn set<Str: ToString, Opt: Into<OptionValue>>(key: Str, value: Opt) -> crate::Result<()> {
-        let socket_path = get_socket_path(SocketType::Command);
+        let socket_path = get_socket_path(SocketType::Command)?;
         let _ = write_to_socket_sync(
             socket_path,
             keyword!((key.to_string()), (value.into().to_string())),
@@ -156,7 +156,7 @@ impl Keyword {
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
-        let socket_path = get_socket_path(SocketType::Command);
+        let socket_path = get_socket_path(SocketType::Command)?;
         let _ = write_to_socket(
             socket_path,
             keyword!((key.to_string()), (value.into().to_string())),
@@ -166,7 +166,7 @@ impl Keyword {
     }
     /// This function returns the value of a keyword
     pub fn get<Str: ToString>(key: Str) -> crate::Result<Self> {
-        let socket_path = get_socket_path(SocketType::Command);
+        let socket_path = get_socket_path(SocketType::Command)?;
         let data = write_to_socket_sync(socket_path, keyword!(g(key.to_string())))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword::parse_opts(deserialized);
@@ -174,7 +174,7 @@ impl Keyword {
     }
     /// This function returns the value of a keyword (async)
     pub async fn get_async<Str: ToString>(key: Str) -> crate::Result<Self> {
-        let socket_path = get_socket_path(SocketType::Command);
+        let socket_path = get_socket_path(SocketType::Command)?;
         let data = write_to_socket(socket_path, keyword!(g(key.to_string()))).await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword::parse_opts(deserialized);

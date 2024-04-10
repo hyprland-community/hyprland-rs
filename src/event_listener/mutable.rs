@@ -223,7 +223,7 @@ impl EventListener {
     pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
 
         let mut stream = UnixStream::connect(socket_path).await?;
 
@@ -262,7 +262,7 @@ impl EventListener {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
 
         let mut stream = UnixStream::connect(socket_path)?;
 

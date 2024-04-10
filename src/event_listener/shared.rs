@@ -598,17 +598,6 @@ pub(crate) enum Event {
     Screencast(ScreencastEventData),
 }
 
-fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
-    match val {
-        Ok(value) => value,
-        Err(RegexError::Syntax(str)) => panic!("Hyprland regex syntax error: {str}"),
-        Err(RegexError::CompiledTooBig(size)) => {
-            panic!("The compiled regex size is too big ({size})")
-        }
-        Err(_) => unreachable!(),
-    }
-}
-
 fn parse_string_as_work(str: String) -> WorkspaceType {
     if str == "special" {
         WorkspaceType::Special(None)
@@ -769,7 +758,24 @@ static EVENT_SET: Lazy<[(ParsedEventType, Regex); 24]> = Lazy::new(|| {
         ),
         (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
     ]
-    .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
+    .map(|(e, r)| (
+        e,
+        match Regex::new(r) {
+            Ok(value) => value,
+            Err(e) => {
+                // I believe that panics here are fine because the chances of the library user finding them are extremely high
+                // This check does occur at runtime though...
+                eprintln!("An internal error occured in hyprland-rs while parsing regex! Please open an issue!");
+                match e {
+                    RegexError::Syntax(str) => panic!("Regex syntax error: {str}"),
+                    RegexError::CompiledTooBig(size) => {
+                        panic!("The compiled regex size is too big! ({size})")
+                    }
+                    _ => panic!("Error compiling regex: {e}"),
+                }
+            }
+        })
+    )
 });
 
 /// TODO: Possibly switch to this
@@ -806,10 +812,9 @@ pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
                 temp_event_holder.push((event_str, event_type, captures));
             }
             _ => {
-                return Err(HyprError::IoError(io::Error::new(
-                    io::ErrorKind::InvalidData,
+                return Err(HyprError::Other(
                     "Event matched more than one regex (not a unknown event issue!)",
-                )));
+                ));
             }
         }
     }
@@ -953,7 +958,7 @@ pub(crate) fn event_parser_v2(event: String) -> crate::Result<Vec<Event>> {
                         }
                     }
                 }
-                Err(HyprError::IoError(io::Error::other("Unknown event")))
+                Err(HyprError::Other("Unknown event"))
             }
         });
 
@@ -981,14 +986,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
         let matched: Vec<_> = EVENT_SET
             .iter()
             .filter(|(_, r)| r.is_match(item))
-            .map(|(pet, r)| {
-                (
-                    pet,
-                    r.captures(item).unwrap_or_else(|| {
-                        panic!("Unable to find captures while parsing Hyprland event: {item}")
-                    }),
-                )
-            })
+            .map(|(pet, r)| (pet, r.captures(item)))
             .collect();
 
         let (e, captures) = match matched.len() {
@@ -1002,10 +1000,18 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 .find(|(e, _)| **e != ParsedEventType::Unknown)
                 .unwrap_or_else(|| unreachable!()),
             _ => {
-                return Err(HyprError::IoError(io::Error::new(
-                    io::ErrorKind::InvalidData,
+                return Err(HyprError::Other(
                     "Event matched more than one regex (not a unknown event issue!)",
-                )));
+                ));
+            }
+        };
+        let captures = match captures {
+            Some(c) => c,
+            None => {
+                // original: "Unable to find captures while parsing Hyprland event: {item}"
+                return Err(HyprError::Other(
+                    "Unable to find captures while parsing Hyprland event",
+                ));
             }
         };
 

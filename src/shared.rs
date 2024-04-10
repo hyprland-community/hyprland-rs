@@ -26,6 +26,22 @@ pub enum HyprError {
     #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
 }
+impl HyprError {
+    /// Try to get an owned version of the internal error.
+    ///
+    /// Some dependencies of hyprland do not impl Clone in their error types. This is a partial workaround.
+    ///
+    /// If it succeeds, it returns the owned version of HyprError in Ok(). Otherwise, it returns a reference to the error type.
+    pub fn try_as_cloned<'a>(&'a self) -> Result<Self, &'a Self> {
+        match self {
+            Self::SerdeError(_) => Err(self),
+            Self::IoError(_) => Err(self),
+            Self::FromUtf8Error(e) => Ok(Self::FromUtf8Error(e.clone())),
+            Self::Other(s) => Ok(Self::Other(s)),
+            Self::NotOkDispatch(s) => Ok(Self::NotOkDispatch(s.clone())),
+        }
+    }
+}
 
 impl From<io::Error> for HyprError {
     fn from(error: io::Error) -> Self {
@@ -201,10 +217,7 @@ impl Hash for WorkspaceType {
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) async fn write_to_socket(
-    path: String,
-    content: CommandContent,
-) -> crate::Result<String> {
+pub(crate) async fn write_to_socket(path: &str, content: CommandContent) -> crate::Result<String> {
     use crate::unix_async::*;
 
     let mut stream = UnixStream::connect(path).await?;
@@ -228,7 +241,7 @@ pub(crate) async fn write_to_socket(
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> crate::Result<String> {
+pub(crate) fn write_to_socket_sync(path: &str, content: CommandContent) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
     let mut stream = UnixStream::connect(path)?;
@@ -259,22 +272,65 @@ pub(crate) enum SocketType {
     /// The socket used to listen for events (AKA `.socket2.sock`)
     Listener,
 }
-/// This pub(crate) function gets the Hyprland socket path
-pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
-    let hypr_instance_sig = match var("HYPRLAND_INSTANCE_SIGNATURE") {
-        Ok(var) => var,
-        Err(VarError::NotPresent) => panic!("Could not get socket path! (Is Hyprland running??)"),
-        Err(VarError::NotUnicode(_)) => {
-            panic!("Corrupted Hyprland socket variable: Invalid unicode!")
+impl SocketType {
+    pub(crate) const fn socket_name(&self) -> &'static str {
+        match self {
+            Self::Command => ".socket.sock",
+            Self::Listener => ".socket2.sock",
         }
+    }
+}
+
+pub(crate) static SOCKET_PATH_COMMAND: once_cell::sync::OnceCell<crate::Result<String>> =
+    once_cell::sync::OnceCell::new();
+// once_cell::sync::Lazy::new(|| Ok(format!("/tmp/hypr/{}/{}", instance_signature()?, SocketType::Command.socket_name())));
+pub(crate) static SOCKET_PATH_LISTENER: once_cell::sync::OnceCell<crate::Result<String>> =
+    once_cell::sync::OnceCell::new();
+// once_cell::sync::Lazy::new(|| Ok(format!("/tmp/hypr/{}/{}", instance_signature()?, SocketType::Listener.socket_name())));
+
+fn instance_signature() -> crate::Result<String> {
+    match var("HYPRLAND_INSTANCE_SIGNATURE") {
+        Ok(var) => Ok(var),
+        Err(VarError::NotPresent) => Err(HyprError::Other(
+            "Could not get socket path! (Is Hyprland running??)",
+        )),
+        Err(VarError::NotUnicode(_)) => Err(HyprError::Other(
+            "Corrupted Hyprland socket variable: Invalid unicode!",
+        )),
+    }
+}
+
+/// This pub(crate) function gets the Hyprland socket path.
+/// Here for backwards-compatibility and because Lazy cell errors can't be propagated with ?
+pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<&'a str> {
+    let socket_cell = match socket_type {
+        SocketType::Command => &SOCKET_PATH_COMMAND,
+        SocketType::Listener => &SOCKET_PATH_LISTENER,
     };
 
-    let socket_name = match socket_type {
-        SocketType::Command => ".socket.sock",
-        SocketType::Listener => ".socket2.sock",
-    };
+    macro_rules! ret {
+        () => {
+            if let Some(c) = socket_cell.get() {
+                return match c {
+                    Ok(s) => Ok(s.as_str()),
+                    // Safety: The error types that can be cloned are impossible to get here.
+                    Err(e) => Err(e.try_as_cloned().unwrap_or_else(|e| {
+                        unreachable!("Unreachable error occured while getting the Hyprland socket path, please file a bug report! {e}")
+                    })),
+                };
+            }
+        };
+    }
+    ret!();
 
-    format!("/tmp/hypr/{hypr_instance_sig}/{socket_name}")
+    socket_cell
+        .set(instance_signature().map(|s| format!("/tmp/hypr/{s}/{}", socket_type.socket_name())))
+        .unwrap_or_else(|e| {
+            unreachable!("Found previous Hyprland socket path: {e:?}, please file a bug report!")
+        });
+
+    ret!();
+    unreachable!("Hyprland-rs internal error getting the value of socket path right after setting the cell! Please file a bug report!");
 }
 
 /// Creates a `CommandContent` instance with the given flag and formatted data.
