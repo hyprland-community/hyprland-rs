@@ -254,8 +254,10 @@ pub(crate) enum SocketType {
 pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
     let hypr_instance_sig = match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => var,
-        Err(VarError::NotPresent) => panic!("Is hyprland running?"),
-        Err(VarError::NotUnicode(_)) => panic!("wtf no unicode?"),
+        Err(VarError::NotPresent) => panic!("Could not get socket path! (Is Hyprland running??)"),
+        Err(VarError::NotUnicode(_)) => {
+            panic!("Corrupted Hyprland socket variable: Invalid unicode!")
+        }
     };
 
     let socket_name = match socket_type {
