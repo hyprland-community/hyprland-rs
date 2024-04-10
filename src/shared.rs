@@ -53,13 +53,27 @@ pub type HResult<T> = Result<T, HyprError>;
 
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
-#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(
+    Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, derive_more::Display,
+)]
 pub struct Address(String);
 impl Address {
     #[inline(always)]
     pub(crate) fn fmt_new(address: &str) -> Self {
         // this way is faster than std::fmt
         Self("0x".to_owned() + address)
+    }
+    /// This method returns a vector of bytes
+    pub fn as_vec(self) -> Vec<u8> {
+        let Address(value) = self;
+        match hex::decode(value.trim_start_matches("0x")) {
+            Ok(value) => value,
+            Err(error) => panic!("A error has occured while parsing string as hex: {error}"),
+        }
+    }
+    /// This creates a new address from a value that implements [std::string::ToString]
+    pub fn new<T: ToString>(string: T) -> Self {
+        Self(string.to_string())
     }
 }
 
@@ -175,27 +189,6 @@ impl Hash for WorkspaceType {
                 None => "".hash(state),
             },
         }
-    }
-}
-
-impl fmt::Display for Address {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Address {
-    /// This method returns a vector of bytes
-    pub fn as_vec(self) -> Vec<u8> {
-        let Address(value) = self;
-        match hex::decode(value.trim_start_matches("0x")) {
-            Ok(value) => value,
-            Err(error) => panic!("A error has occured while parsing string as hex: {error}"),
-        }
-    }
-    /// This creates a new address from a value that implements [std::string::ToString]
-    pub fn new<T: ToString>(string: T) -> Self {
-        Self(string.to_string())
     }
 }
 
