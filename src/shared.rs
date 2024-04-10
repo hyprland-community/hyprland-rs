@@ -7,16 +7,20 @@ use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
 use std::{error, fmt, io};
 
-#[derive(Debug)]
+#[derive(Debug, derive_more::Display)]
 /// Error that unifies different error types used by Hyprland-rs
 pub enum HyprError {
     /// Error coming from serde
+    #[display(format = "{_0}")]
     SerdeError(serde_json::Error),
     /// Error coming from std::io
+    #[display(format = "{_0}")]
     IoError(io::Error),
     /// Error that occurs when parsing UTF-8 string
+    #[display(format = "{_0}")]
     FromUtf8Error(std::string::FromUtf8Error),
     /// Dispatcher returned non `ok` value
+    #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
 }
 
@@ -35,23 +39,6 @@ impl From<serde_json::Error> for HyprError {
 impl From<std::string::FromUtf8Error> for HyprError {
     fn from(error: std::string::FromUtf8Error) -> Self {
         HyprError::FromUtf8Error(error)
-    }
-}
-
-impl fmt::Display for HyprError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::IoError(err) => err.to_string(),
-                Self::SerdeError(err) => err.to_string(),
-                Self::FromUtf8Error(err) => err.to_string(),
-                Self::NotOkDispatch(msg) => format!(
-                    "A dispatcher retrurned a non `ok`, value which is probably a error: {msg} was returned by it"
-                ),
-            }
-        )
     }
 }
 
