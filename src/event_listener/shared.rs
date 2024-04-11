@@ -799,25 +799,25 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
 
     for (event_str, matches) in event_iter {
         match matches.len() {
-            0 => return Err(HyprError::other(
-                "A Hyprland event that has no regex matches was passed! Please file a bug report!",
-            )),
+            0 => hypr_err!(
+                "A Hyprland event that has no regex matches was passed! Please file a bug report!"
+            ),
             1 => {
                 report_unknown!((event_str.split('>').next().unwrap_or("unknown")));
                 continue;
             }
             2 => {
-                let (event_type, captures) = matches
-                    .into_iter()
-                    .find(|(e, _)| **e != ParsedEventType::Unknown)
-                    .unwrap_or_else(|| unreachable!());
+                let (event_type, captures) = match matches
+                .into_iter()
+                .find(|(e, _)| **e != ParsedEventType::Unknown) {
+                    Some(t) => t,
+                    None => hypr_err!("The only events captured were unknown Hyprland events! Please file a bug report!"),
+                };
 
                 temp_event_holder.push((event_str, event_type, captures));
             }
             _ => {
-                return Err(HyprError::other(
-                    "Event matched more than one regex (not an unknown event issue!)",
-                ));
+                hypr_err!("Event matched more than one regex (not an unknown event issue!)");
             }
         }
     }
@@ -849,7 +849,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 Ok(Event::WorkspaceRename(WorkspaceRenameEventData {
                     workspace_id: captures["id"]
                         .parse::<WorkspaceId>()
-                        .map_err(|e| HyprError::IoError(std::io::Error::other(e)))?,
+                        .map_err(|e| HyprError::Internal(format!("Workspace rename: invalid integer error: {e}")))?,
                     workspace_name: captures["name"].to_string(),
                 }))
             }
@@ -961,7 +961,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                         }
                     }
                 }
-                Err(HyprError::Other(format!("Unknown event: {event_str}")))
+                hypr_err!("Unknown event: {event_str}");
             }
         });
 
@@ -973,7 +973,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     }
 
     // if events.is_empty() {
-    //     return Err(HyprError::Other("No events!"));
+    //     hypr_err!("No events!");
     // }
 
     Ok(events)
@@ -1003,18 +1003,14 @@ fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
                 .find(|(e, _)| **e != ParsedEventType::Unknown)
                 .unwrap_or_else(|| unreachable!()),
             _ => {
-                return Err(HyprError::other(
-                    "Event matched more than one regex (not an unknown event issue!)",
-                ));
+                hypr_err!("Event matched more than one regex (not an unknown event issue!)");
             }
         };
         let captures = match captures {
             Some(c) => c,
             None => {
                 // original: "Unable to find captures while parsing Hyprland event: {item}"
-                return Err(HyprError::other(
-                    "Unable to find regex captures while parsing Hyprland event",
-                ));
+                hypr_err!("Unable to find regex captures while parsing Hyprland event");
             }
         };
 
@@ -1048,9 +1044,9 @@ fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
                 let id = &captures["id"];
                 let name = &captures["name"];
                 events.push(Event::WorkspaceRename(WorkspaceRenameEventData {
-                    workspace_id: id
-                        .parse::<WorkspaceId>()
-                        .map_err(|e| HyprError::IoError(std::io::Error::other(e)))?,
+                    workspace_id: id.parse::<WorkspaceId>().map_err(|e| {
+                        HyprError::Internal(format!("Workspace rename: invalid integer error: {e}"))
+                    })?,
                     workspace_name: name.to_string(),
                 }));
             }

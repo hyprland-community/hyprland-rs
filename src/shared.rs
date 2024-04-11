@@ -23,7 +23,9 @@ pub enum HyprError {
     /// Dispatcher returned non `ok` value
     #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
-    /// Error that occurs for other reasons.
+    /// Internal Hyprland error
+    Internal(String),
+    /// Error that occurs for other reasons. Avoid using this.
     #[display(format = "{_0}")]
     Other(String),
 }
@@ -39,6 +41,7 @@ impl HyprError {
             Self::IoError(_) => Err(self),
             Self::FromUtf8Error(e) => Ok(Self::FromUtf8Error(e.clone())),
             Self::NotOkDispatch(s) => Ok(Self::NotOkDispatch(s.clone())),
+            Self::Internal(s) => Ok(Self::Internal(s.clone())),
             Self::Other(s) => Ok(Self::Other(s.clone())),
         }
     }
@@ -68,6 +71,24 @@ impl From<std::string::FromUtf8Error> for HyprError {
 }
 
 impl error::Error for HyprError {}
+
+/// Internal macro to return a Hyprland error
+macro_rules! hypr_err {
+    ($fmt:literal) => {
+        return Err($crate::shared::HyprError::Internal(format!($fmt)))
+    };
+    (other $fmt:literal) => {
+        return Err($crate::shared::HyprError::Other(format!($fmt)))
+    };
+    ($fmt:literal $(, $value:expr)+) => {
+        return Err($crate::shared::HyprError::Internal(format!($fmt $(, $value)+)))
+    };
+    (other $fmt:literal $(, $value:expr)+) => {
+        return Err($crate::shared::HyprError::Other(format!($fmt $(, $value)+)))
+    };
+}
+
+pub(crate) use hypr_err;
 
 /// This type provides the result type used everywhere in Hyprland-rs
 #[deprecated(since = "0.3.1", note = "New location: hyprland::Result")]
@@ -181,19 +202,6 @@ impl From<&WorkspaceType> for String {
     }
 }
 macro_rules! from {
-    // currently unused, may be useful later
-    ($($ty:ty),+$(,)?) => {
-        $(
-            impl From<$ty> for WorkspaceType {
-                fn from(int: $ty) -> Self {
-                    match int {
-                        1.. => WorkspaceType::Regular(int.to_string()),
-                        _ => panic!("Error converting Hyprland workspace: Unrecognised id!"),
-                    }
-                }
-            }
-        )+
-    };
     (try $($ty:ty),+$(,)?) => {
         $(
             impl TryFrom<$ty> for WorkspaceType {
@@ -201,7 +209,7 @@ macro_rules! from {
                 fn try_from(int: $ty) -> Result<Self, Self::Error> {
                     match int {
                         1.. => Ok(WorkspaceType::Regular(int.to_string())),
-                        _ => Err(HyprError::other("Conversion error: Unrecognised id")),
+                        _ => hypr_err!("Conversion error: Unrecognised id"),
                     }
                 }
             }
@@ -296,22 +304,17 @@ impl SocketType {
     }
 }
 
-#[inline(always)]
-fn instance_signature() -> crate::Result<String> {
-    match var("HYPRLAND_INSTANCE_SIGNATURE") {
-        Ok(var) => Ok(var),
-        Err(VarError::NotPresent) => Err(HyprError::other(
-            "Could not get socket path! (Is Hyprland running??)",
-        )),
-        Err(VarError::NotUnicode(_)) => Err(HyprError::other(
-            "Corrupted Hyprland socket variable: Invalid unicode!",
-        )),
-    }
-}
-
 /// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
 pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<PathBuf> {
-    let instance = instance_signature()?;
+    let instance = match var("HYPRLAND_INSTANCE_SIGNATURE") {
+        Ok(var) => var,
+        Err(VarError::NotPresent) => {
+            hypr_err!("Could not get socket path! (Is Hyprland running??)")
+        }
+        Err(VarError::NotUnicode(_)) => {
+            hypr_err!("Corrupted Hyprland socket variable: Invalid unicode!")
+        }
+    };
     let mut p = PathBuf::from("/tmp/hypr");
     p.push(instance);
     p.push(socket_type.socket_name());

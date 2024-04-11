@@ -130,7 +130,7 @@ impl HyprDataActive for Monitor {
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
-            unreachable!("No active Hyprland monitor detected!")
+            hypr_err!("No active Hyprland monitor detected!")
         }
     }
     async fn get_active_async() -> crate::Result<Self> {
@@ -138,7 +138,7 @@ impl HyprDataActive for Monitor {
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
-            unreachable!("No active Hyprland monitor detected!")
+            hypr_err!("No active Hyprland monitor detected!")
         }
     }
 }

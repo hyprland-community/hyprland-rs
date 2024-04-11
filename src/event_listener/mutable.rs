@@ -103,7 +103,7 @@ impl EventListener {
                 active_workspace: WorkspaceType::Regular(Workspace::get_active()?.id.to_string()),
                 active_monitor: match Monitors::get()?.into_iter().find(|item| item.focused) {
                     Some(mon) => mon.name,
-                    None => return Err(HyprError::other("No active Hyprland monitor detected!")),
+                    None => hypr_err!("No active Hyprland monitor detected!"),
                 },
                 fullscreen_state: FullscreenState::get()?.bool(),
             },

@@ -129,14 +129,14 @@ impl Keyword {
 
         // EXPLANATION: if at least two types of value is exists then we stop execution.
         if int_exists + float_exists + str_exists > 1 {
-            return Err(HyprError::Other(format!("Expected single value type, but received more than one! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!")));
+            hypr_err!("Expected single value type, but received more than one! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!");
         }
 
         let value = match (int, float, str) {
             (Some(int), _, _) => OptionValue::Int(int),
             (_, Some(float), _) => OptionValue::Float(float),
             (_, _, Some(str)) => OptionValue::String(str),
-            (int, float, str) => return Err(HyprError::Other(format!("Expected either an 'int', a 'float' or a 'str', but none of them is not received! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!"))),
+            (int, float, str) => hypr_err!("Expected either an 'int', a 'float' or a 'str', but none of them is not received! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!"),
         };
 
         Ok(Keyword { option, value, set })

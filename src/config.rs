@@ -262,7 +262,7 @@ fn test_binds() {
     };
     let built_bind = match Binder::gen_str(binding) {
         Ok(v) => v,
-        Err(e) => panic!("Error occured: {e}"),
+        Err(e) => panic!("Error occured: {e}"), // Note to greppers: this is in a test!
     };
     assert_eq!(built_bind, "SUPER,v,/togglefloating");
 }
