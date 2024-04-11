@@ -22,7 +22,7 @@ strip = true
 lto = true
 
 [workspace]
-members = ["hyprland-macros"]
+members = [ "examples/almost_everything", "examples/almost_everything_async","hyprland-macros"]
 
 [workspace.package]
 version = "0.3.13"
@@ -87,7 +87,3 @@ listener = ["data", "dispatch"]
 silent = []
 parking_lot = ["dep:parking_lot", "once_cell/parking_lot", "tokio?/parking_lot"]
 ahash = ["dep:ahash"]
-
-# for examples
-[dev-dependencies]
-tokio = { version = "1", features = ["macros", "io-std", "rt-multi-thread"] }

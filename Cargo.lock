@@ -40,6 +40,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "almost_everything"
+version = "0.3.13"
+dependencies = [
+ "hyprland",
+]
+
+[[package]]
+name = "almost_everything_async"
+version = "0.3.13"
+dependencies = [
+ "hyprland",
+ "tokio",
+]
+
+[[package]]
 name = "async-channel"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
