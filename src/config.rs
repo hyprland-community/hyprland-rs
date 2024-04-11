@@ -38,28 +38,20 @@ pub mod binds {
         }
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
     #[allow(missing_docs)]
     /// Enum for mod keys used in bind combinations
     pub enum Mod {
+        #[display(fmt = "SUPER")]
         SUPER,
+        #[display(fmt = "SHIFT")]
         SHIFT,
+        #[display(fmt = "ALT")]
         ALT,
+        #[display(fmt = "CTRL")]
         CTRL,
+        #[display(fmt = "")]
         NONE,
-    }
-
-    impl ToString for Mod {
-        fn to_string(&self) -> String {
-            match self {
-                Mod::NONE => "",
-                Mod::SUPER => "SUPER",
-                Mod::SHIFT => "SHIFT",
-                Mod::ALT => "ALT",
-                Mod::CTRL => "CTRL",
-            }
-            .to_string()
-        }
     }
 
     impl Join for Vec<Mod> {
@@ -72,30 +64,22 @@ pub mod binds {
         }
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
     #[allow(non_camel_case_types)]
     /// Enum for bind flags
     pub enum Flag {
         /// Works when screen is locked
+        #[display(fmt = "l")]
         l,
         /// Used for mouse binds
+        #[display(fmt = "m")]
         m,
         /// Repeats when held
+        #[display(fmt = "e")]
         e,
         /// Activates on release
+        #[display(fmt = "r")]
         r,
-    }
-
-    impl ToString for Flag {
-        fn to_string(&self) -> String {
-            match self {
-                Flag::l => "l",
-                Flag::m => "m",
-                Flag::e => "e",
-                Flag::r => "r",
-            }
-            .to_string()
-        }
     }
 
     impl Join for Vec<Flag> {

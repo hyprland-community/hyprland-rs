@@ -19,28 +19,20 @@ use derive_more::Display;
 use std::string::ToString;
 
 /// This enum is for identifying a window
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum WindowIdentifier<'a> {
     /// The address of a window
+    #[display(fmt = "address:{_0}")]
     Address(Address),
     /// A Regular Expression to match the window class (handled by Hyprland)
+    #[display(fmt = "{_0}")]
     ClassRegularExpression(&'a str),
     /// The window title
+    #[display(fmt = "title:{_0}")]
     Title(&'a str),
     /// The window's process Id
+    #[display(fmt = "pid:{_0}")]
     ProcessId(u32),
-}
-
-impl std::fmt::Display for WindowIdentifier<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let out = match self {
-            WindowIdentifier::Address(addr) => format!("address:{addr}"),
-            WindowIdentifier::ProcessId(id) => format!("pid:{id}"),
-            WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
-            WindowIdentifier::Title(title) => format!("title:{title}"),
-        };
-        write!(f, "{out}")
-    }
 }
 
 /// This enum holds the fullscreen types
@@ -160,47 +152,41 @@ pub enum WorkspaceOptions {
 }
 
 /// This enum is for identifying workspaces that also includes the special workspace
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
+    #[display(fmt = "{}", "format_relative(*_0, \"\")")]
     Relative(i32),
     /// The workspace on the monitor relative to the current workspace
+    #[display(fmt = "{}", "format_relative(*_0, \"m\")")]
     RelativeMonitor(i32),
     /// The workspace on the monitor relative to the current workspace, including empty workspaces
+    #[display(fmt = "{}", "format_relative(*_0, \"r\")")]
     RelativeMonitorIncludingEmpty(i32),
     /// The open workspace relative to the current workspace
+    #[display(fmt = "{}", "format_relative(*_0, \"e\")")]
     RelativeOpen(i32),
     /// The previous Workspace
+    #[display(fmt = "previous")]
     Previous,
     /// The first available empty workspace
+    #[display(fmt = "empty")]
     Empty,
     /// The name of the workspace
+    #[display(fmt = "name:{_0}")]
     Name(&'a str),
     /// The special workspace
+    #[display(fmt = "special{}", "format_special_workspace_ident(_0)")]
     Special(Option<&'a str>),
 }
 
-impl std::fmt::Display for WorkspaceIdentifierWithSpecial<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use WorkspaceIdentifierWithSpecial::*;
-        let out = match self {
-            Id(id) => format!("{id}"),
-            Name(name) => format!("name:{name}"),
-            Relative(int) => format_relative(*int, ""),
-            RelativeMonitor(int) => format_relative(*int, "m"),
-            RelativeMonitorIncludingEmpty(int) => format_relative(*int, "r"),
-            RelativeOpen(int) => format_relative(*int, "e"),
-            Previous => "previous".to_string(),
-            Empty => "empty".to_string(),
-            Special(opt) => match opt {
-                Some(name) => format!("special:{name}"),
-                None => "special".to_string(),
-            },
-        };
-
-        write!(f, "{out}")
+#[inline(always)]
+fn format_special_workspace_ident<'a>(opt: &'a Option<&'a str>) -> String {
+    match opt {
+        Some(o) => ":".to_owned() + o,
+        None => String::new(),
     }
 }
 

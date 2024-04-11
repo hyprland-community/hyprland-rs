@@ -183,7 +183,6 @@ fn ser_spec_opt(opt: &Option<String>) -> String {
 #[serde(untagged)]
 pub enum WorkspaceType {
     /// A named workspace
-    #[display(fmt = "{}", "_0")]
     Regular(
         /// The name
         String,
