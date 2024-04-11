@@ -10,6 +10,7 @@ author.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
+rust-version = "1.75.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.nix]
@@ -57,7 +58,11 @@ derive_more = { version = "0.99", default-features = false, features = [
 ] }
 once_cell = "1.19"
 parking_lot = { version = "0.12.1", optional = true }
-ahash = { version = "0.8.11", features = ["std", "no-rng", "serde"], optional = true, default-features = false }
+ahash = { version = "0.8.11", features = [
+    "std",
+    "no-rng",
+    "serde",
+], optional = true, default-features = false }
 
 [features]
 default = [
