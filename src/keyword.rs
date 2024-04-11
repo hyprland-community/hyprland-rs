@@ -122,24 +122,24 @@ impl Keyword {
             str,
             set,
         }: OptionRaw,
-    ) -> Keyword {
+    ) -> crate::Result<Keyword> {
         let int_exists = int.is_some() as u8;
         let float_exists = float.is_some() as u8;
         let str_exists = str.is_some() as u8;
 
         // EXPLANATION: if at least two types of value is exists then we stop execution.
         if int_exists + float_exists + str_exists > 1 {
-            panic!("Expected single value type, but received more than one! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!")
+            return Err(HyprError::Other(format!("Expected single value type, but received more than one! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!")));
         }
 
         let value = match (int, float, str) {
             (Some(int), _, _) => OptionValue::Int(int),
             (_, Some(float), _) => OptionValue::Float(float),
             (_, _, Some(str)) => OptionValue::String(str),
-            (int, float, str) => panic!("Expected either an 'int', a 'float' or a 'str', but none of them is not received! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!"),
+            (int, float, str) => return Err(HyprError::Other(format!("Expected either an 'int', a 'float' or a 'str', but none of them is not received! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!"))),
         };
 
-        Keyword { option, value, set }
+        Ok(Keyword { option, value, set })
     }
 
     /// This function sets a keyword's value
@@ -166,14 +166,14 @@ impl Keyword {
     pub fn get<Str: ToString>(key: Str) -> crate::Result<Self> {
         let data = write_to_socket_sync(SocketType::Command, keyword!(g(key.to_string())))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let keyword = Keyword::parse_opts(deserialized);
+        let keyword = Keyword::parse_opts(deserialized)?;
         Ok(keyword)
     }
     /// This function returns the value of a keyword (async)
     pub async fn get_async<Str: ToString>(key: Str) -> crate::Result<Self> {
         let data = write_to_socket(SocketType::Command, keyword!(g(key.to_string()))).await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let keyword = Keyword::parse_opts(deserialized);
+        let keyword = Keyword::parse_opts(deserialized)?;
         Ok(keyword)
     }
 }

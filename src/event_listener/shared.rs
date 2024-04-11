@@ -799,7 +799,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
 
     for (event_str, matches) in event_iter {
         match matches.len() {
-            0 => return Err(HyprError::Other(
+            0 => return Err(HyprError::other(
                 "A Hyprland event that has no regex matches was passed! Please file a bug report!",
             )),
             1 => {
@@ -815,7 +815,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 temp_event_holder.push((event_str, event_type, captures));
             }
             _ => {
-                return Err(HyprError::Other(
+                return Err(HyprError::other(
                     "Event matched more than one regex (not an unknown event issue!)",
                 ));
             }
@@ -961,7 +961,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                         }
                     }
                 }
-                Err(HyprError::Other("Unknown event"))
+                Err(HyprError::Other(format!("Unknown event: {event_str}")))
             }
         });
 
@@ -1003,7 +1003,7 @@ fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
                 .find(|(e, _)| **e != ParsedEventType::Unknown)
                 .unwrap_or_else(|| unreachable!()),
             _ => {
-                return Err(HyprError::Other(
+                return Err(HyprError::other(
                     "Event matched more than one regex (not an unknown event issue!)",
                 ));
             }
@@ -1012,8 +1012,8 @@ fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
             Some(c) => c,
             None => {
                 // original: "Unable to find captures while parsing Hyprland event: {item}"
-                return Err(HyprError::Other(
-                    "Unable to find captures while parsing Hyprland event",
+                return Err(HyprError::other(
+                    "Unable to find regex captures while parsing Hyprland event",
                 ));
             }
         };

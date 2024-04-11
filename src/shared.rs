@@ -20,12 +20,12 @@ pub enum HyprError {
     /// Error that occurs when parsing UTF-8 string
     #[display(format = "{_0}")]
     FromUtf8Error(std::string::FromUtf8Error),
-    /// Error that occurs for other hardcoded reasons.
-    #[display(format = "{_0}")]
-    Other(&'static str), // Note to future devs: Don't just throw this around randomly. This is why it is a &'static str.
     /// Dispatcher returned non `ok` value
     #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
+    /// Error that occurs for other reasons.
+    #[display(format = "{_0}")]
+    Other(String),
 }
 impl HyprError {
     /// Try to get an owned version of the internal error.
@@ -38,9 +38,14 @@ impl HyprError {
             Self::SerdeError(_) => Err(self),
             Self::IoError(_) => Err(self),
             Self::FromUtf8Error(e) => Ok(Self::FromUtf8Error(e.clone())),
-            Self::Other(s) => Ok(Self::Other(s)),
             Self::NotOkDispatch(s) => Ok(Self::NotOkDispatch(s.clone())),
+            Self::Other(s) => Ok(Self::Other(s.clone())),
         }
+    }
+    /// Create a Hyprland error with dynamic data.
+    #[inline(always)]
+    pub fn other<S: Into<String>>(other: S) -> Self {
+        Self::Other(other.into())
     }
 }
 
@@ -196,7 +201,7 @@ macro_rules! from {
                 fn try_from(int: $ty) -> Result<Self, Self::Error> {
                     match int {
                         1.. => Ok(WorkspaceType::Regular(int.to_string())),
-                        _ => Err(HyprError::Other("Conversion error: Unrecognised id")),
+                        _ => Err(HyprError::other("Conversion error: Unrecognised id")),
                     }
                 }
             }
@@ -295,10 +300,10 @@ impl SocketType {
 fn instance_signature() -> crate::Result<String> {
     match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => Ok(var),
-        Err(VarError::NotPresent) => Err(HyprError::Other(
+        Err(VarError::NotPresent) => Err(HyprError::other(
             "Could not get socket path! (Is Hyprland running??)",
         )),
-        Err(VarError::NotUnicode(_)) => Err(HyprError::Other(
+        Err(VarError::NotUnicode(_)) => Err(HyprError::other(
             "Corrupted Hyprland socket variable: Invalid unicode!",
         )),
     }
