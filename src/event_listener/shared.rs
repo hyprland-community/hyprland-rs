@@ -625,14 +625,14 @@ macro_rules! report_unknown {
     };
 }
 
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 #[cfg(feature = "parking_lot")]
 use parking_lot::Mutex;
 #[cfg(not(feature = "parking_lot"))]
 use std::sync::Mutex;
 
-static CHECK_TABLE: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+static CHECK_TABLE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 enum ParsedEventType {
