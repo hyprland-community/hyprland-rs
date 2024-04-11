@@ -44,12 +44,16 @@ pub mod prelude {
 }
 
 pub(crate) mod unix_async {
-    #[cfg(feature = "async-lite")]
+    #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use async_net::unix::UnixStream;
-    #[cfg(feature = "async-lite")]
+    #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use futures_lite::io::{AsyncReadExt, AsyncWriteExt};
 
-    #[cfg(feature = "async-std")]
+    #[cfg(all(
+        feature = "async-std",
+        not(feature = "tokio"),
+        not(feature = "async-lite")
+    ))]
     pub use async_std::{
         io::{ReadExt, WriteExt},
         os::unix::net::UnixStream,

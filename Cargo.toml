@@ -22,7 +22,11 @@ strip = true
 lto = true
 
 [workspace]
-members = [ "examples/almost_everything", "examples/almost_everything_async","hyprland-macros"]
+members = [
+    "examples/almost_everything",
+    "examples/almost_everything_async",
+    "hyprland-macros",
+]
 
 [workspace.package]
 version = "0.3.13"
