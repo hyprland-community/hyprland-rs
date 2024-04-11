@@ -776,7 +776,7 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
     ).collect()
 });
 
-/// TODO: Possibly switch to this
+/// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     // TODO: Optimize nested looped regex capturing. Maybe pull in rayon if possible.
     let event_iter = event
@@ -796,7 +796,9 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
 
     for (event_str, matches) in event_iter {
         match matches.len() {
-            0 => unreachable!(),
+            0 => return Err(HyprError::Other(
+                "A Hyprland event that has no regex matches was passed! Please file a bug report!",
+            )),
             1 => {
                 report_unknown!((event_str.split('>').next().unwrap_or("unknown")));
                 continue;
@@ -968,13 +970,12 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     }
 
     // if events.is_empty() {
-    //     return Err(HyprError::IoError(io::Error::other("No events!")));
+    //     return Err(HyprError::Other("No events!"));
     // }
 
     Ok(events)
 }
 
-/// This internal function parses event strings
 pub(crate) fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
     let event_iter = event.trim().lines();
 
