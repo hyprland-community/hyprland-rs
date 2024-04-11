@@ -625,6 +625,9 @@ macro_rules! report_unknown {
     };
 }
 
+#[cfg(feature = "ahash")]
+use ahash::{HashSet, HashSetExt};
+#[cfg(not(feature = "ahash"))]
 use std::collections::HashSet;
 
 #[cfg(feature = "parking_lot")]
@@ -976,7 +979,8 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     Ok(events)
 }
 
-pub(crate) fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
+/// Unused!
+fn event_parser_v1(event: String) -> crate::Result<Vec<Event>> {
     let event_iter = event.trim().lines();
 
     let mut events: Vec<Event> = Vec::new();

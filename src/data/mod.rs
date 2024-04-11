@@ -43,6 +43,9 @@ mod macros;
 
 use crate::shared::*;
 
+#[cfg(feature = "ahash")]
+use ahash::{HashMap, HashMapExt};
+#[cfg(not(feature = "ahash"))]
 use std::collections::HashMap;
 
 mod regular;
