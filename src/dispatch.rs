@@ -462,6 +462,7 @@ pub enum FocusMasterParam {
     Auto,
 }
 
+#[inline(always)]
 fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     int: T,
     extra: &'_ str,
@@ -469,9 +470,9 @@ fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     if int.is_positive() {
         format!("{extra}+{int}")
     } else if int.is_negative() {
-        format!("{extra}-{int}", int = int.abs())
+        format!("{extra}-{}", int.abs())
     } else {
-        "+0".to_string()
+        "+0".to_owned()
     }
 }
 
