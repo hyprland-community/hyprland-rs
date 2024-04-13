@@ -939,8 +939,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     let mut events: Vec<Event> = Vec::new();
 
     for event in parsed_events {
-        let event = event?;
-        events.push(event);
+        events.push(event?);
     }
 
     // if events.is_empty() {

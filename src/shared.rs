@@ -270,7 +270,7 @@ pub(crate) fn write_to_socket_sync(
 
     stream.write_all(&content.as_bytes())?;
 
-    let mut response = vec![];
+    let mut response = Vec::new();
 
     const BUF_SIZE: usize = 8192;
     let mut buf = [0; BUF_SIZE];
@@ -317,7 +317,7 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf>
                 Ok(p) => Ok(p.clone()),
                 Err(e) => Err(match e.try_as_cloned() {
                     Ok(c) => c,
-                    Err(e) => HyprError::Other(format!("{e}")),
+                    Err(e) => HyprError::Other(e.to_string()),
                 }),
             }
         };
