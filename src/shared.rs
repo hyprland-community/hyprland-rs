@@ -303,8 +303,32 @@ impl SocketType {
     }
 }
 
+use once_cell::unsync::Lazy;
+thread_local! {
+    pub(crate) static COMMAND_SOCK: Lazy<crate::Result<PathBuf>> = Lazy::new(|| init_socket_path(SocketType::Command));
+    pub(crate) static LISTENER_SOCK: Lazy<crate::Result<PathBuf>> = Lazy::new(|| init_socket_path(SocketType::Listener));
+}
+
 /// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
 pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
+    macro_rules! me {
+        ($var:ident) => {
+            match $var.as_ref() {
+                Ok(p) => Ok(p.clone()),
+                Err(e) => Err(match e.try_as_cloned() {
+                    Ok(c) => c,
+                    Err(e) => HyprError::Other(format!("{e}")),
+                }),
+            }
+        };
+    }
+    match socket_type {
+        SocketType::Command => COMMAND_SOCK.with(|s| me!(s)),
+        SocketType::Listener => LISTENER_SOCK.with(|s| me!(s)),
+    }
+}
+
+fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     let instance = match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => var,
         Err(VarError::NotPresent) => {
