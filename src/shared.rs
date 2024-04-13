@@ -35,7 +35,7 @@ impl HyprError {
     /// Some dependencies of hyprland do not impl Clone in their error types. This is a partial workaround.
     ///
     /// If it succeeds, it returns the owned version of HyprError in Ok(). Otherwise, it returns a reference to the error type.
-    pub fn try_as_cloned<'a>(&'a self) -> Result<Self, &'a Self> {
+    pub fn try_as_cloned(&self) -> Result<Self, &Self> {
         match self {
             Self::SerdeError(_) => Err(self),
             Self::IoError(_) => Err(self),
@@ -304,7 +304,7 @@ impl SocketType {
 }
 
 /// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
-pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<PathBuf> {
+pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     let instance = match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => var,
         Err(VarError::NotPresent) => {
@@ -319,39 +319,6 @@ pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<Path
     p.push(socket_type.socket_name());
     Ok(p)
 }
-
-// /// This pub(crate) function gets the Hyprland socket path.
-// /// Here for backwards-compatibility and because Lazy cell errors can't be propagated with ?
-// pub(crate) fn get_socket_path<'a>(socket_type: SocketType) -> crate::Result<&'a str> {
-//     let socket_cell = match socket_type {
-//         SocketType::Command => &SOCKET_PATH_COMMAND,
-//         SocketType::Listener => &SOCKET_PATH_LISTENER,
-//     };
-
-//     macro_rules! ret {
-//         () => {
-//             if let Some(c) = socket_cell.get() {
-//                 return match c {
-//                     Ok(s) => Ok(s.as_str()),
-//                     // Safety: The error types that can be cloned are impossible to get here.
-//                     Err(e) => Err(e.try_as_cloned().unwrap_or_else(|e| {
-//                         unreachable!("Unreachable error occured while getting the Hyprland socket path, please file a bug report! {e}")
-//                     })),
-//                 };
-//             }
-//         };
-//     }
-//     ret!();
-
-//     socket_cell
-//         .set(instance_signature().map(|s| format!("/tmp/hypr/{s}/{}", socket_type.socket_name())))
-//         .unwrap_or_else(|e| {
-//             unreachable!("Found previous Hyprland socket path: {e:?}, please file a bug report!")
-//         });
-
-//     ret!();
-//     unreachable!("Hyprland-rs internal error getting the value of socket path right after setting the cell! Please file a bug report!");
-// }
 
 /// Creates a `CommandContent` instance with the given flag and formatted data.
 ///
