@@ -23,12 +23,6 @@ pub struct EventListener {
     pub state: State,
 }
 
-// Mark the EventListener as thread-safe
-#[allow(unsafe_code)]
-unsafe impl Send for EventListener {}
-#[allow(unsafe_code)]
-unsafe impl Sync for EventListener {}
-
 impl HasExecutor for EventListener {
     fn event_executor(&mut self, event: Event) -> crate::Result<()> {
         match event {

@@ -259,7 +259,6 @@ pub(crate) type AsyncClosure<T> = AsyncEventTypes<
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
-#[allow(clippy::type_complexity)]
 pub(crate) struct Events {
     pub(crate) workspace_changed_events: Closures<WorkspaceType>,
     pub(crate) workspace_added_events: Closures<WorkspaceType>,
@@ -347,10 +346,6 @@ pub struct WindowMoveEvent {
     pub workspace_name: String,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowMoveEvent {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowMoveEvent {}
 /// The data for the event executed when opening a new window
 #[derive(Clone, Debug)]
 pub struct WindowOpenEvent {
@@ -364,10 +359,6 @@ pub struct WindowOpenEvent {
     pub window_title: String,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowOpenEvent {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowOpenEvent {}
 /// The data for the event executed when changing keyboard layouts
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LayoutEvent {
@@ -377,10 +368,6 @@ pub struct LayoutEvent {
     pub layout_name: String,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for LayoutEvent {}
-#[allow(unsafe_code)]
-unsafe impl Sync for LayoutEvent {}
 /// The mutable state available to Closures
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct State {
@@ -392,10 +379,6 @@ pub struct State {
     pub fullscreen_state: bool,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for State {}
-#[allow(unsafe_code)]
-unsafe impl Sync for State {}
 impl State {
     /// Execute changes in state
     pub async fn execute_state(self, old: State) -> crate::Result<Self> {
@@ -537,10 +520,6 @@ pub struct WindowEventData {
     pub window_address: Address,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowEventData {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonitorEventData {
@@ -550,10 +529,6 @@ pub struct MonitorEventData {
     pub workspace: WorkspaceType,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for MonitorEventData {}
-#[allow(unsafe_code)]
-unsafe impl Sync for MonitorEventData {}
 /// This tuple struct holds monitor event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowFloatEventData {
@@ -563,10 +538,6 @@ pub struct WindowFloatEventData {
     pub is_floating: bool,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowFloatEventData {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowFloatEventData {}
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {

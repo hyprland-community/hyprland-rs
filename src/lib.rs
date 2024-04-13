@@ -2,7 +2,7 @@
 #![warn(missing_docs)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 #![allow(async_fn_in_trait)]
 
 #[macro_use]

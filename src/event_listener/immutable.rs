@@ -19,12 +19,6 @@ pub struct EventListener {
     pub(crate) events: Events,
 }
 
-// Mark the EventListener as thread-safe
-#[allow(unsafe_code)]
-unsafe impl Send for EventListener {}
-#[allow(unsafe_code)]
-unsafe impl Sync for EventListener {}
-
 impl Default for EventListener {
     fn default() -> Self {
         Self::new()

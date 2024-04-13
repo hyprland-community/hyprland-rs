@@ -21,11 +21,6 @@ pub struct AsyncEventListener {
 }
 
 // Mark the EventListener as thread-safe
-#[allow(unsafe_code)]
-unsafe impl Send for AsyncEventListener {}
-#[allow(unsafe_code)]
-unsafe impl Sync for AsyncEventListener {}
-
 impl Default for AsyncEventListener {
     fn default() -> Self {
         Self::new()
