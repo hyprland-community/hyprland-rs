@@ -286,6 +286,7 @@ macro_rules! init_events {
             minimize_events: vec![],
             window_title_changed_events: vec![],
             screencast_events: vec![],
+            config_reloaded_events: vec![],
         }
     };
 }

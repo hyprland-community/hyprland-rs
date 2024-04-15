@@ -284,6 +284,7 @@ pub(crate) struct Events {
     pub(crate) minimize_events: Closures<MinimizeEventData>,
     pub(crate) window_title_changed_events: Closures<Address>,
     pub(crate) screencast_events: Closures<ScreencastEventData>,
+    pub(crate) config_reloaded_events: Closures<EmptyEventData>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -312,6 +313,7 @@ pub(crate) struct AsyncEvents {
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
+    pub(crate) config_reloaded_events: AsyncClosures<EmptyEventData>,
 }
 
 /// Event data for renameworkspace event
@@ -542,6 +544,10 @@ pub struct WindowFloatEventData {
     pub is_floating: bool,
 }
 
+/// This struct is for events that have no data
+#[derive(Debug, Clone, Copy)]
+pub struct EmptyEventData;
+
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
@@ -571,6 +577,7 @@ pub(crate) enum Event {
     Minimize(MinimizeEventData),
     WindowTitleChanged(Address),
     Screencast(ScreencastEventData),
+    ConfigReloaded(EmptyEventData),
 }
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
@@ -640,6 +647,7 @@ enum ParsedEventType {
     Minimize,
     WindowTitleChanged,
     Screencast,
+    ConfigReloaded,
     Unknown,
 }
 
@@ -739,6 +747,7 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
             ParsedEventType::WindowTitleChanged,
             r"windowtitle>>(?P<address>.*)",
         ),
+        (ParsedEventType::ConfigReloaded, r"configreloaded>>"),
         (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
     ].into_iter()
     .map(|(e, r)| (
@@ -772,7 +781,6 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 .iter()
                 .filter_map(|(event_type, regex)| Some((event_type, regex.captures(event_line)?)))
                 .collect::<Vec<_>>();
-
             (event_line, type_matches)
         })
         .filter(|(_, b)| !b.is_empty());
@@ -932,6 +940,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             }
             ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::fmt_new(&captures["address"]))),
             ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::fmt_new(&captures["address"]))),
+            ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded(EmptyEventData)),
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
                 {
