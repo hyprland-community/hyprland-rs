@@ -43,3 +43,4 @@ add_listener!(urgent_state, Address, "the urgent state of a window is changed", 
 add_listener!(minimize, MinimizeEventData, "the minimize state of a window is changed", "minimize state changed" => data);
 add_listener!(window_title_change d, Address, "a window title is changed", "A window title changed" => data);
 add_listener!(screencast, ScreencastEventData, "the screencast state of a window is changed", "screencast state changed" => data);
+add_listener!(config_reload ed, EmptyEventData, "the configuration of Hyprland is reloaded", "config reloaded" => _empty);
