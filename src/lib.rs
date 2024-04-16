@@ -2,13 +2,18 @@
 #![warn(missing_docs)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
-#![forbid(unsafe_code)]
 #![allow(async_fn_in_trait)]
+#![cfg_attr(feature = "unsafe-impl", allow(unsafe_code))]
+#![cfg_attr(not(feature = "unsafe-impl"), forbid(unsafe_code))]
 
 #[macro_use]
 extern crate paste;
 
 pub use hyprland_macros::*;
+
+/// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
+#[cfg(feature = "unsafe-impl")]
+pub mod unsafe_impl;
 
 /// This module provides shared things throughout the crate
 pub mod shared;
