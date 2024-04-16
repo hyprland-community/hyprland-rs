@@ -2,6 +2,7 @@
 //!
 //! This module provides shared private and public functions, structs, enum, and types
 use derive_more::Display;
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
@@ -303,17 +304,16 @@ impl SocketType {
     }
 }
 
-use once_cell::unsync::Lazy;
-thread_local! {
-    pub(crate) static COMMAND_SOCK: Lazy<crate::Result<PathBuf>> = Lazy::new(|| init_socket_path(SocketType::Command));
-    pub(crate) static LISTENER_SOCK: Lazy<crate::Result<PathBuf>> = Lazy::new(|| init_socket_path(SocketType::Listener));
-}
+pub(crate) static COMMAND_SOCK: Lazy<crate::Result<PathBuf>> =
+    Lazy::new(|| init_socket_path(SocketType::Command));
+pub(crate) static LISTENER_SOCK: Lazy<crate::Result<PathBuf>> =
+    Lazy::new(|| init_socket_path(SocketType::Listener));
 
 /// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
 pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     macro_rules! me {
-        ($var:ident) => {
-            match $var.as_ref() {
+        ($var:expr) => {
+            match $var {
                 Ok(p) => Ok(p.clone()),
                 Err(e) => Err(match e.try_as_cloned() {
                     Ok(c) => c,
@@ -323,8 +323,8 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf>
         };
     }
     match socket_type {
-        SocketType::Command => COMMAND_SOCK.with(|s| me!(s)),
-        SocketType::Listener => LISTENER_SOCK.with(|s| me!(s)),
+        SocketType::Command => me!(COMMAND_SOCK.as_ref()),
+        SocketType::Listener => me!(LISTENER_SOCK.as_ref()),
     }
 }
 
