@@ -143,10 +143,10 @@ impl std::fmt::Display for MonitorIdentifier<'_> {
 #[allow(missing_docs)]
 #[derive(Debug, Clone)]
 pub enum Corner {
-    TopRight = 0,
-    TopLeft = 1,
-    BottomRight = 2,
-    BottomLeft = 3,
+    BottomLeft = 0,
+    BottomRight = 1,
+    TopRight = 2,
+    TopLeft = 3,
 }
 
 /// This enum holds options that are applied to the current workspace
