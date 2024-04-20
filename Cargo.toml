@@ -61,8 +61,8 @@ derive_more = { version = "0.99", default-features = false, features = [
     "constructor",
 ] }
 once_cell = "1.19"
-parking_lot = { version = "0.12.1", optional = true }
-ahash = { version = "0.8.11", features = [
+parking_lot = { version = "0.12", optional = true }
+ahash = { version = "0.8", features = [
     "std",
     "no-rng",
     "serde",
