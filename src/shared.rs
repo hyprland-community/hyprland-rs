@@ -1,24 +1,56 @@
 //! # The Shared Module
 //!
 //! This module provides shared private and public functions, structs, enum, and types
-pub use async_trait::async_trait;
 use derive_more::Display;
-use serde::{Deserialize, Deserializer, Serialize};
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
+use std::path::PathBuf;
 use std::{error, fmt, io};
 
-#[derive(Debug)]
+#[derive(Debug, derive_more::Display)]
 /// Error that unifies different error types used by Hyprland-rs
 pub enum HyprError {
     /// Error coming from serde
+    #[display(format = "{_0}")]
     SerdeError(serde_json::Error),
     /// Error coming from std::io
+    #[display(format = "{_0}")]
     IoError(io::Error),
     /// Error that occurs when parsing UTF-8 string
+    #[display(format = "{_0}")]
     FromUtf8Error(std::string::FromUtf8Error),
     /// Dispatcher returned non `ok` value
+    #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
+    /// Internal Hyprland error
+    Internal(String),
+    /// Error that occurs for other reasons. Avoid using this.
+    #[display(format = "{_0}")]
+    Other(String),
+}
+impl HyprError {
+    /// Try to get an owned version of the internal error.
+    ///
+    /// Some dependencies of hyprland do not impl Clone in their error types. This is a partial workaround.
+    ///
+    /// If it succeeds, it returns the owned version of HyprError in Ok(). Otherwise, it returns a reference to the error type.
+    pub fn try_as_cloned(&self) -> Result<Self, &Self> {
+        match self {
+            Self::SerdeError(_) => Err(self),
+            Self::IoError(_) => Err(self),
+            Self::FromUtf8Error(e) => Ok(Self::FromUtf8Error(e.clone())),
+            Self::NotOkDispatch(s) => Ok(Self::NotOkDispatch(s.clone())),
+            Self::Internal(s) => Ok(Self::Internal(s.clone())),
+            Self::Other(s) => Ok(Self::Other(s.clone())),
+        }
+    }
+    /// Create a Hyprland error with dynamic data.
+    #[inline(always)]
+    pub fn other<S: Into<String>>(other: S) -> Self {
+        Self::Other(other.into())
+    }
 }
 
 impl From<io::Error> for HyprError {
@@ -39,24 +71,25 @@ impl From<std::string::FromUtf8Error> for HyprError {
     }
 }
 
-impl fmt::Display for HyprError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::IoError(err) => err.to_string(),
-                Self::SerdeError(err) => err.to_string(),
-                Self::FromUtf8Error(err) => err.to_string(),
-                Self::NotOkDispatch(msg) => format!(
-                    "A dispatcher retrurned a non `ok`, value which is probably a error: {msg} was returned by it"
-                ),
-            }
-        )
-    }
+impl error::Error for HyprError {}
+
+/// Internal macro to return a Hyprland error
+macro_rules! hypr_err {
+    ($fmt:literal) => {
+        return Err($crate::shared::HyprError::Internal(format!($fmt)))
+    };
+    (other $fmt:literal) => {
+        return Err($crate::shared::HyprError::Other(format!($fmt)))
+    };
+    ($fmt:literal $(, $value:expr)+) => {
+        return Err($crate::shared::HyprError::Internal(format!($fmt $(, $value)+)))
+    };
+    (other $fmt:literal $(, $value:expr)+) => {
+        return Err($crate::shared::HyprError::Other(format!($fmt $(, $value)+)))
+    };
 }
 
-impl error::Error for HyprError {}
+pub(crate) use hypr_err;
 
 /// This type provides the result type used everywhere in Hyprland-rs
 #[deprecated(since = "0.3.1", note = "New location: hyprland::Result")]
@@ -64,11 +97,23 @@ pub type HResult<T> = Result<T, HyprError>;
 
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
-#[derive(Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(
+    Debug, Deserialize, Serialize, Clone, Eq, PartialEq, Hash, Ord, PartialOrd, derive_more::Display,
+)]
 pub struct Address(String);
+impl Address {
+    #[inline(always)]
+    pub(crate) fn fmt_new(address: &str) -> Self {
+        // this way is faster than std::fmt
+        Self("0x".to_owned() + address)
+    }
+    /// This creates a new address from a value that implements [std::string::ToString]
+    pub fn new<T: ToString>(string: T) -> Self {
+        Self(string.to_string())
+    }
+}
 
 /// This trait provides a standardized way to get data
-#[async_trait]
 pub trait HyprData {
     /// This method gets the data
     fn get() -> crate::Result<Self>
@@ -81,7 +126,6 @@ pub trait HyprData {
 }
 
 /// Trait for helper functions to get the active of the implementor
-#[async_trait]
 pub trait HyprDataActive {
     /// This method gets the active data
     fn get_active() -> crate::Result<Self>
@@ -94,7 +138,6 @@ pub trait HyprDataActive {
 }
 
 /// Trait for helper functions to get the active of the implementor, but for optional ones
-#[async_trait]
 pub trait HyprDataActiveOptional {
     /// This method gets the active data
     fn get_active() -> crate::Result<Option<Self>>
@@ -120,10 +163,11 @@ pub type WorkspaceId = i32;
 /// > its a type because it might change at some point
 pub type MonitorId = i128;
 
+#[inline]
 fn ser_spec_opt(opt: &Option<String>) -> String {
     match opt {
-        Some(name) => format!("special:{name}"),
-        None => "special".to_string(),
+        Some(name) => "special:".to_owned() + name,
+        None => "special".to_owned(),
     }
 }
 
@@ -132,7 +176,6 @@ fn ser_spec_opt(opt: &Option<String>) -> String {
 #[serde(untagged)]
 pub enum WorkspaceType {
     /// A named workspace
-    #[display(fmt = "{}", "_0")]
     Regular(
         /// The name
         String,
@@ -150,27 +193,22 @@ impl From<&WorkspaceType> for String {
         value.to_string()
     }
 }
-
-// impl From<i8> for WorkspaceType {
-//     fn from(int: i8) -> Self {
-//         match int {
-//             1.. => WorkspaceType::Unnamed(match int.try_into() {
-//                 Ok(num) => num,
-//                 Err(e) => panic!("Issue with parsing id (i8) as u8: {e}"),
-//             }),
-//             _ => panic!("Unrecognised id"),
-//         }
-//     }
-// }
-
-impl From<i32> for WorkspaceType {
-    fn from(int: i32) -> Self {
-        match int {
-            1.. => WorkspaceType::Regular(int.to_string()),
-            _ => panic!("Unrecognised id"),
-        }
-    }
+macro_rules! from {
+    ($($ty:ty),+$(,)?) => {
+        $(
+            impl TryFrom<$ty> for WorkspaceType {
+                type Error = HyprError;
+                fn try_from(int: $ty) -> Result<Self, Self::Error> {
+                    match int {
+                        1.. => Ok(WorkspaceType::Regular(int.to_string())),
+                        _ => hypr_err!("Conversion error: Unrecognised id"),
+                    }
+                }
+            }
+        )+
+    };
 }
+from![u8, u16, u32, u64, usize, i8, i16, i32, i64, isize];
 
 impl Hash for WorkspaceType {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -184,34 +222,14 @@ impl Hash for WorkspaceType {
     }
 }
 
-impl fmt::Display for Address {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl Address {
-    /// This method returns a vector of bytes
-    pub fn as_vec(self) -> Vec<u8> {
-        let Address(value) = self;
-        match hex::decode(value.trim_start_matches("0x")) {
-            Ok(value) => value,
-            Err(error) => panic!("A error has occured while parsing string as hex: {error}"),
-        }
-    }
-    /// This creates a new address from a value that implements [std::string::ToString]
-    pub fn new<T: ToString>(string: T) -> Self {
-        Self(string.to_string())
-    }
-}
-
 /// This pub(crate) function is used to write a value to a socket and to get the response
 pub(crate) async fn write_to_socket(
-    path: String,
+    ty: SocketType,
     content: CommandContent,
 ) -> crate::Result<String> {
     use crate::unix_async::*;
 
+    let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(&content.as_bytes()).await?;
@@ -233,14 +251,19 @@ pub(crate) async fn write_to_socket(
 }
 
 /// This pub(crate) function is used to write a value to a socket and to get the response
-pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> crate::Result<String> {
+pub(crate) fn write_to_socket_sync(
+    ty: SocketType,
+    content: CommandContent,
+) -> crate::Result<String> {
     use io::prelude::*;
     use std::os::unix::net::UnixStream;
+
+    let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path)?;
 
     stream.write_all(&content.as_bytes())?;
 
-    let mut response = vec![];
+    let mut response = Vec::new();
 
     const BUF_SIZE: usize = 8192;
     let mut buf = [0; BUF_SIZE];
@@ -257,26 +280,60 @@ pub(crate) fn write_to_socket_sync(path: String, content: CommandContent) -> cra
 }
 
 /// This pub(crate) enum holds the different sockets that Hyprland has
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum SocketType {
     /// The socket used to send commands to Hyprland (AKA `.socket.sock`)
     Command,
     /// The socket used to listen for events (AKA `.socket2.sock`)
     Listener,
 }
-/// This pub(crate) function gets the Hyprland socket path
-pub(crate) fn get_socket_path(socket_type: SocketType) -> String {
-    let hypr_instance_sig = match var("HYPRLAND_INSTANCE_SIGNATURE") {
+impl SocketType {
+    pub(crate) const fn socket_name(&self) -> &'static str {
+        match self {
+            Self::Command => ".socket.sock",
+            Self::Listener => ".socket2.sock",
+        }
+    }
+}
+
+pub(crate) static COMMAND_SOCK: Lazy<crate::Result<PathBuf>> =
+    Lazy::new(|| init_socket_path(SocketType::Command));
+pub(crate) static LISTENER_SOCK: Lazy<crate::Result<PathBuf>> =
+    Lazy::new(|| init_socket_path(SocketType::Listener));
+
+/// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
+pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
+    macro_rules! me {
+        ($var:expr) => {
+            match $var {
+                Ok(p) => Ok(p.clone()),
+                Err(e) => Err(match e.try_as_cloned() {
+                    Ok(c) => c,
+                    Err(e) => HyprError::Other(e.to_string()),
+                }),
+            }
+        };
+    }
+    match socket_type {
+        SocketType::Command => me!(COMMAND_SOCK.as_ref()),
+        SocketType::Listener => me!(LISTENER_SOCK.as_ref()),
+    }
+}
+
+fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
+    let instance = match var("HYPRLAND_INSTANCE_SIGNATURE") {
         Ok(var) => var,
-        Err(VarError::NotPresent) => panic!("Is hyprland running?"),
-        Err(VarError::NotUnicode(_)) => panic!("wtf no unicode?"),
+        Err(VarError::NotPresent) => {
+            hypr_err!("Could not get socket path! (Is Hyprland running??)")
+        }
+        Err(VarError::NotUnicode(_)) => {
+            hypr_err!("Corrupted Hyprland socket variable: Invalid unicode!")
+        }
     };
-
-    let socket_name = match socket_type {
-        SocketType::Command => ".socket.sock",
-        SocketType::Listener => ".socket2.sock",
-    };
-
-    format!("/tmp/hypr/{hypr_instance_sig}/{socket_name}")
+    let mut p = PathBuf::from("/tmp/hypr");
+    p.push(instance);
+    p.push(socket_type.socket_name());
+    Ok(p)
 }
 
 /// Creates a `CommandContent` instance with the given flag and formatted data.
@@ -297,14 +354,17 @@ macro_rules! command {
 pub use command;
 
 /// This enum defines the possible command flags that can be used.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CommandFlag {
     /// The JSON flag.
+    #[default]
     JSON,
     /// An empty flag.
     Empty,
 }
 
 /// This struct defines the content of a command, which consists of a flag and a data string.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CommandContent {
     /// The flag for the command.
     pub flag: CommandFlag,

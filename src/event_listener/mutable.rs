@@ -23,18 +23,6 @@ pub struct EventListener {
     pub state: State,
 }
 
-// Mark the EventListener as thread-safe
-#[allow(unsafe_code)]
-unsafe impl Send for EventListener {}
-#[allow(unsafe_code)]
-unsafe impl Sync for EventListener {}
-
-impl Default for EventListener {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl HasExecutor for EventListener {
     fn event_executor(&mut self, event: Event) -> crate::Result<()> {
         match event {
@@ -98,31 +86,22 @@ impl EventListener {
     /// use hyprland::event_listener::EventListenerMutable as EventListener;
     /// let mut listener = EventListener::new();
     /// ```
-    pub fn new() -> EventListener {
+    pub fn new() -> crate::Result<EventListener> {
         use crate::{
             data::{FullscreenState, Monitors, Workspace},
             prelude::*,
         };
-        EventListener {
+        Ok(EventListener {
             events: init_events!(Events),
             state: State {
-                active_workspace: match Workspace::get_active() {
-                    Ok(work) => WorkspaceType::Regular(work.id.to_string()),
-                    Err(e) => panic!("Error parsing data whith serde: {e}"),
+                active_workspace: WorkspaceType::Regular(Workspace::get_active()?.id.to_string()),
+                active_monitor: match Monitors::get()?.into_iter().find(|item| item.focused) {
+                    Some(mon) => mon.name,
+                    None => hypr_err!("No active Hyprland monitor detected!"),
                 },
-                active_monitor: match Monitors::get() {
-                    Ok(monitors) => match monitors.into_iter().find(|item| item.focused) {
-                        Some(mon) => mon.name,
-                        None => panic!("No active monitor?"),
-                    },
-                    Err(e) => panic!("A error occured when parsing json with serde {e}"),
-                },
-                fullscreen_state: match FullscreenState::get() {
-                    Ok(fstate) => fstate.bool(),
-                    Err(e) => panic!("Error parsing data whith serde: {e}"),
-                },
+                fullscreen_state: FullscreenState::get()?.bool(),
             },
-        }
+        })
     }
 
     pub(crate) async fn event_executor_async(&mut self, event: Event) -> crate::Result<()> {
@@ -238,7 +217,7 @@ impl EventListener {
     pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
 
         let mut stream = UnixStream::connect(socket_path).await?;
 
@@ -277,7 +256,7 @@ impl EventListener {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
 
         let mut stream = UnixStream::connect(socket_path)?;
 

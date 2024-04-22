@@ -1,18 +1,15 @@
 use crate::shared::*;
+use once_cell::sync::Lazy;
 use regex::{Error as RegexError, Regex};
-use std::fmt::Debug;
-use std::io;
-use std::pin::Pin;
+use std::{fmt::Debug, pin::Pin};
 
 /// This trait provides shared behaviour for listener types
-#[async_trait]
 pub(crate) trait Listener: HasExecutor {
     /// This method starts the event listener
     fn start_listener() -> crate::Result<()>;
 }
 
 /// This trait provides shared behaviour for listener types
-#[async_trait]
 pub(crate) trait AsyncListener: HasAsyncExecutor {
     /// This method starts the event listener (async)
     async fn start_listener_async() -> crate::Result<()>;
@@ -34,7 +31,7 @@ impl<T> ActiveWindowValue<T> {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ActiveWindowState {
     pub class: ActiveWindowValue<String>,
     pub title: ActiveWindowValue<String>,
@@ -89,7 +86,6 @@ pub(crate) trait HasExecutor {
     }
 }
 
-#[async_trait]
 pub(crate) trait HasAsyncExecutor {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()>;
 
@@ -251,9 +247,9 @@ pub(crate) enum AsyncEventTypes<T: ?Sized, U: ?Sized> {
     Regular(Pin<Box<T>>),
 }
 
-pub(crate) type VoidFuture = std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send>>;
+pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
 pub(crate) type VoidFutureMut =
-    std::pin::Pin<Box<dyn futures::Future<Output = ()> + Send + 'static>>;
+    std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>>;
 
 pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
 pub(crate) type AsyncClosure<T> = AsyncEventTypes<
@@ -263,7 +259,6 @@ pub(crate) type AsyncClosure<T> = AsyncEventTypes<
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
-#[allow(clippy::type_complexity)]
 pub(crate) struct Events {
     pub(crate) workspace_changed_events: Closures<WorkspaceType>,
     pub(crate) workspace_added_events: Closures<WorkspaceType>,
@@ -316,7 +311,7 @@ pub(crate) struct AsyncEvents {
 }
 
 /// Event data for renameworkspace event
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceRenameEventData {
     /// Workspace id
     pub workspace_id: WorkspaceId,
@@ -325,7 +320,7 @@ pub struct WorkspaceRenameEventData {
 }
 
 /// Event data for a minimize event
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MinimizeEventData {
     /// Window address
     pub window_address: Address,
@@ -334,7 +329,7 @@ pub struct MinimizeEventData {
 }
 
 /// Event data for screencast event
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScreencastEventData {
     /// State/Is it turning on?
     pub is_turning_on: bool,
@@ -343,7 +338,7 @@ pub struct ScreencastEventData {
 }
 
 /// The data for the event executed when moving a window to a new workspace
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WindowMoveEvent {
     /// Window address
     pub window_address: Address,
@@ -351,10 +346,6 @@ pub struct WindowMoveEvent {
     pub workspace_name: String,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowMoveEvent {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowMoveEvent {}
 /// The data for the event executed when opening a new window
 #[derive(Clone, Debug)]
 pub struct WindowOpenEvent {
@@ -368,12 +359,8 @@ pub struct WindowOpenEvent {
     pub window_title: String,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowOpenEvent {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowOpenEvent {}
 /// The data for the event executed when changing keyboard layouts
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LayoutEvent {
     /// Keyboard name
     pub keyboard_name: String,
@@ -381,10 +368,6 @@ pub struct LayoutEvent {
     pub layout_name: String,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for LayoutEvent {}
-#[allow(unsafe_code)]
-unsafe impl Sync for LayoutEvent {}
 /// The mutable state available to Closures
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub struct State {
@@ -396,10 +379,6 @@ pub struct State {
     pub fullscreen_state: bool,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for State {}
-#[allow(unsafe_code)]
-unsafe impl Sync for State {}
 impl State {
     /// Execute changes in state
     pub async fn execute_state(self, old: State) -> crate::Result<Self> {
@@ -468,14 +447,18 @@ impl State {
 
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     match f {
-        EventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+        EventTypes::MutableState(_) => {
+            unreachable!("hyprland-rs: using mutable handler with immutable listener")
+        }
         EventTypes::Regular(fun) => fun(val),
     }
 }
 
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     match f {
-        AsyncEventTypes::MutableState(_) => panic!("Using mutable handler with immutable listener"),
+        AsyncEventTypes::MutableState(_) => {
+            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
+        }
         AsyncEventTypes::Regular(fun) => fun(val).await,
     }
 }
@@ -488,7 +471,9 @@ pub(crate) async fn execute_closure_async_state<T: Clone>(
 ) {
     match f {
         AsyncEventTypes::MutableState(fun) => fun(val, state).await,
-        AsyncEventTypes::Regular(_) => panic!("Using mutable handler with immutable listener"),
+        AsyncEventTypes::Regular(_) => {
+            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
+        }
     }
 }
 pub(crate) async fn execute_closure_mut<T>(
@@ -525,7 +510,7 @@ pub(crate) fn execute_closure_mut_sync<T>(
 }
 
 /// This tuple struct holds window event data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowEventData {
     /// The window class
     pub window_class: String,
@@ -535,12 +520,8 @@ pub struct WindowEventData {
     pub window_address: Address,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowEventData {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowEventData {}
 /// This tuple struct holds monitor event data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonitorEventData {
     /// The monitor name
     pub monitor_name: String,
@@ -548,12 +529,8 @@ pub struct MonitorEventData {
     pub workspace: WorkspaceType,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for MonitorEventData {}
-#[allow(unsafe_code)]
-unsafe impl Sync for MonitorEventData {}
 /// This tuple struct holds monitor event data
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowFloatEventData {
     /// The window address
     pub window_address: Address,
@@ -561,10 +538,6 @@ pub struct WindowFloatEventData {
     pub is_floating: bool,
 }
 
-#[allow(unsafe_code)]
-unsafe impl Send for WindowFloatEventData {}
-#[allow(unsafe_code)]
-unsafe impl Sync for WindowFloatEventData {}
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
@@ -594,17 +567,6 @@ pub(crate) enum Event {
     Screencast(ScreencastEventData),
 }
 
-fn check_for_regex_error(val: Result<Regex, RegexError>) -> Regex {
-    match val {
-        Ok(value) => value,
-        Err(RegexError::Syntax(str)) => panic!("syntax error: {str}"),
-        Err(RegexError::CompiledTooBig(size)) => {
-            panic!("The compiled regex size is too big ({size})")
-        }
-        Err(_) => unreachable!(),
-    }
-}
-
 fn parse_string_as_work(str: String) -> WorkspaceType {
     if str == "special" {
         WorkspaceType::Special(None)
@@ -623,10 +585,10 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
 }
 
 macro_rules! report_unknown {
-    ($event:tt) => {
+    ($event:expr) => {
         #[cfg(not(feature = "silent"))]
         eprintln!(
-            "A unknown event was passed into Hyprland-rs
+            "An unknown event was passed into Hyprland-rs
             PLEASE MAKE AN ISSUE!!
             The event was: {event}",
             event = $event
@@ -634,11 +596,19 @@ macro_rules! report_unknown {
     };
 }
 
-use std::collections::{BTreeSet, HashMap};
-use std::sync::Mutex;
-static CHECK_TABLE: Mutex<BTreeSet<String>> = Mutex::new(BTreeSet::new());
+#[cfg(feature = "ahash")]
+use ahash::{HashSet, HashSetExt};
+#[cfg(not(feature = "ahash"))]
+use std::collections::HashSet;
 
-#[derive(PartialEq, Eq, Hash)]
+#[cfg(feature = "parking_lot")]
+use parking_lot::Mutex;
+#[cfg(not(feature = "parking_lot"))]
+use std::sync::Mutex;
+
+static CHECK_TABLE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 enum ParsedEventType {
     WorkspaceChanged,
     WorkspaceDeleted,
@@ -666,146 +636,166 @@ enum ParsedEventType {
     Unknown,
 }
 
+/// All the recognized events
+static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
+    [
+        (
+            ParsedEventType::WorkspaceChanged,
+            r"\bworkspace>>(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceDeleted,
+            r"destroyworkspace>>(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceAdded,
+            r"createworkspace>>(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceMoved,
+            r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
+        ),
+        (
+            ParsedEventType::WorkspaceRename,
+            r"renameworkspace>>(?P<id>.*),(?P<name>.*)",
+        ),
+        (
+            ParsedEventType::ActiveMonitorChanged,
+            r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::ActiveWindowChangedV1,
+            r"activewindow>>(?P<class>.*?),(?P<title>.*)",
+        ),
+        (
+            ParsedEventType::ActiveWindowChangedV2,
+            r"activewindowv2>>(?P<address>.*)",
+        ),
+        (
+            ParsedEventType::FullscreenStateChanged,
+            r"fullscreen>>(?P<state>0|1)",
+        ),
+        (
+            ParsedEventType::MonitorRemoved,
+            r"monitorremoved>>(?P<monitor>.*)",
+        ),
+        (
+            ParsedEventType::MonitorAdded,
+            r"monitoradded>>(?P<monitor>.*)",
+        ),
+        (
+            ParsedEventType::WindowOpened,
+            r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)",
+        ),
+        (
+            ParsedEventType::WindowClosed,
+            r"closewindow>>(?P<address>.*)",
+        ),
+        (
+            ParsedEventType::WindowMoved,
+            r"movewindow>>(?P<address>.*),(?P<workspace>.*)",
+        ),
+        (
+            ParsedEventType::LayoutChanged,
+            r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",
+        ),
+        (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
+        (
+            ParsedEventType::LayerOpened,
+            r"openlayer>>(?P<namespace>.*)",
+        ),
+        (
+            ParsedEventType::LayerClosed,
+            r"closelayer>>(?P<namespace>.*)",
+        ),
+        (
+            ParsedEventType::FloatStateChanged,
+            r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
+        ),
+        (
+            ParsedEventType::Minimize,
+            r"minimize>>(?P<address>.*),(?P<state>[0-1])",
+        ),
+        (
+            ParsedEventType::Screencast,
+            r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])",
+        ),
+        (
+            ParsedEventType::UrgentStateChanged,
+            r"urgent>>(?P<address>.*)",
+        ),
+        (
+            ParsedEventType::WindowTitleChanged,
+            r"windowtitle>>(?P<address>.*)",
+        ),
+        (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
+    ].into_iter()
+    .map(|(e, r)| (
+        e,
+        match Regex::new(r) {
+            Ok(value) => value,
+            Err(e) => {
+                // I believe that panics here are fine because the chances of the library user finding them are extremely high
+                // This check does occur at runtime though...
+                eprintln!("An internal error occured in hyprland-rs while parsing regex! Please open an issue!");
+                match e {
+                    RegexError::Syntax(str) => panic!("Regex syntax error: {str}"),
+                    RegexError::CompiledTooBig(size) => {
+                        panic!("The compiled regex size is too big! ({size})")
+                    }
+                    _ => panic!("Error compiling regex: {e}"),
+                }
+            }
+        })
+    ).collect()
+});
+
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
-    lazy_static! {
-        static ref EVENT_SET: HashMap<ParsedEventType, Regex> = vec![
-            (
-                ParsedEventType::WorkspaceChanged,
-                r"\bworkspace>>(?P<workspace>.*)"
-            ),
-            (
-                ParsedEventType::WorkspaceDeleted,
-                r"destroyworkspace>>(?P<workspace>.*)"
-            ),
-            (
-                ParsedEventType::WorkspaceAdded,
-                r"createworkspace>>(?P<workspace>.*)"
-            ),
-            (
-                ParsedEventType::WorkspaceMoved,
-                r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)"
-            ),
-            (
-                ParsedEventType::WorkspaceRename,
-                r"renameworkspace>>(?P<id>.*),(?P<name>.*)"
-            ),
-            (
-                ParsedEventType::ActiveMonitorChanged,
-                r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)"
-            ),
-            (
-                ParsedEventType::ActiveWindowChangedV1,
-                r"activewindow>>(?P<class>.*?),(?P<title>.*)"
-            ),
-            (
-                ParsedEventType::ActiveWindowChangedV2,
-                r"activewindowv2>>(?P<address>.*)"
-            ),
-            (
-                ParsedEventType::FullscreenStateChanged,
-                r"fullscreen>>(?P<state>0|1)"
-            ),
-            (
-                ParsedEventType::MonitorRemoved,
-                r"monitorremoved>>(?P<monitor>.*)"
-            ),
-            (
-                ParsedEventType::MonitorAdded,
-                r"monitoradded>>(?P<monitor>.*)"
-            ),
-            (
-                ParsedEventType::WindowOpened,
-                r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)"
-            ),
-            (
-                ParsedEventType::WindowClosed,
-                r"closewindow>>(?P<address>.*)"
-            ),
-            (
-                ParsedEventType::WindowMoved,
-                r"movewindow>>(?P<address>.*),(?P<workspace>.*)"
-            ),
-            (
-                ParsedEventType::LayoutChanged,
-                r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)"
-            ),
-            (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
-            (
-                ParsedEventType::LayerOpened,
-                r"openlayer>>(?P<namespace>.*)"
-            ),
-            (
-                ParsedEventType::LayerClosed,
-                r"closelayer>>(?P<namespace>.*)"
-            ),
-            (
-                ParsedEventType::FloatStateChanged,
-                r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])"
-            ),
-            (
-                ParsedEventType::Minimize,
-                r"minimize>>(?P<address>.*),(?P<state>[0-1])"
-            ),
-            (
-                ParsedEventType::Screencast,
-                r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])"
-            ),
-            (
-                ParsedEventType::UrgentStateChanged,
-                r"urgent>>(?P<address>.*)"
-            ),
-            (
-                ParsedEventType::WindowTitleChanged,
-                r"windowtitle>>(?P<address>.*)"
-            ),
-            (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
-        ]
-        .into_iter()
-        .map(|(e, r)| (e, check_for_regex_error(Regex::new(r))))
-        .collect();
-    }
+    // TODO: Optimize nested looped regex capturing. Maybe pull in rayon if possible.
+    let event_iter = event
+        .trim()
+        .lines()
+        .map(|event_line| {
+            let type_matches = EVENT_SET
+                .iter()
+                .filter_map(|(event_type, regex)| Some((event_type, regex.captures(event_line)?)))
+                .collect::<Vec<_>>();
 
-    let event_iter = event.trim().split('\n');
+            (event_line, type_matches)
+        })
+        .filter(|(_, b)| !b.is_empty());
 
-    let mut events: Vec<Event> = vec![];
+    let mut temp_event_holder = Vec::new();
 
-    for item in event_iter {
-        let matched: Vec<_> = EVENT_SET
-            .iter()
-            .filter(|(_, r)| r.is_match(item))
-            .map(|(pet, r)| {
-                (
-                    pet,
-                    r.captures(item).unwrap_or_else(|| {
-                        panic!(
-                            "Unable to find captures while parsing Hyprland event: {}",
-                            item
-                        )
-                    }),
-                )
-            })
-            .collect();
-
-        let (e, captures) = match matched.len() {
-            0 => unreachable!(),
+    for (event_str, matches) in event_iter {
+        match matches.len() {
+            0 => hypr_err!(
+                "A Hyprland event that has no regex matches was passed! Please file a bug report!"
+            ),
             1 => {
-                report_unknown!((item.split('>').next().unwrap_or("unknown")));
+                report_unknown!((event_str.split('>').next().unwrap_or("unknown")));
                 continue;
             }
-            2 => matched
+            2 => {
+                let (event_type, captures) = match matches
                 .into_iter()
-                .find(|(e, _)| **e != ParsedEventType::Unknown)
-                .unwrap_or_else(|| unreachable!()),
-            _ => {
-                return Err(HyprError::IoError(io::Error::new(
-                    io::ErrorKind::InvalidData,
-                    "Event matched more than one regex (not a unknown event issue!)",
-                )));
-            }
-        };
+                .find(|(e, _)| **e != ParsedEventType::Unknown) {
+                    Some(t) => t,
+                    None => hypr_err!("The only events captured were unknown Hyprland events! Please file a bug report!"),
+                };
 
-        match e {
+                temp_event_holder.push((event_str, event_type, captures));
+            }
+            _ => {
+                hypr_err!("Event matched more than one regex (not an unknown event issue!)");
+            }
+        }
+    }
+
+    let parsed_events = temp_event_holder
+        .into_iter()
+        .map(|(event_str, event_type, captures)| match event_type {
             ParsedEventType::WorkspaceChanged => {
                 let captured = &captures["workspace"];
                 let workspace = if !captured.is_empty() {
@@ -813,188 +803,148 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 } else {
                     WorkspaceType::Regular("1".to_string())
                 };
-                events.push(Event::WorkspaceChanged(workspace));
+                Ok(Event::WorkspaceChanged(workspace))
             }
-            ParsedEventType::WorkspaceDeleted => {
-                let workspace = parse_string_as_work(captures["workspace"].to_string());
-                events.push(Event::WorkspaceDeleted(workspace));
-            }
-            ParsedEventType::WorkspaceAdded => {
-                let workspace = parse_string_as_work(captures["workspace"].to_string());
-                events.push(Event::WorkspaceAdded(workspace));
-            }
-            ParsedEventType::WorkspaceMoved => {
-                let workspace = parse_string_as_work(captures["workspace"].to_string());
-                let monitor = &captures["monitor"];
-                events.push(Event::WorkspaceMoved(MonitorEventData {
-                    monitor_name: monitor.to_string(),
-                    workspace,
-                }));
-            }
+            ParsedEventType::WorkspaceDeleted => Ok(Event::WorkspaceDeleted(parse_string_as_work(
+                captures["workspace"].to_string(),
+            ))),
+
+            ParsedEventType::WorkspaceAdded => Ok(Event::WorkspaceAdded(parse_string_as_work(
+                captures["workspace"].to_string(),
+            ))),
+            ParsedEventType::WorkspaceMoved => Ok(Event::WorkspaceMoved(MonitorEventData {
+                monitor_name: captures["monitor"].to_string(),
+                workspace: parse_string_as_work(captures["workspace"].to_string()),
+            })),
             ParsedEventType::WorkspaceRename => {
-                let id = &captures["id"];
-                let name = &captures["name"];
-                events.push(Event::WorkspaceRename(WorkspaceRenameEventData {
-                    workspace_id: id
+                Ok(Event::WorkspaceRename(WorkspaceRenameEventData {
+                    workspace_id: captures["id"]
                         .parse::<WorkspaceId>()
-                        .map_err(|e| HyprError::IoError(std::io::Error::other(e)))?,
-                    workspace_name: name.to_string(),
-                }));
+                        .map_err(|e| HyprError::Internal(format!("Workspace rename: invalid integer error: {e}")))?,
+                    workspace_name: captures["name"].to_string(),
+                }))
             }
             ParsedEventType::ActiveMonitorChanged => {
-                let monitor = &captures["monitor"];
-                let workspace = &captures["workspace"];
-                events.push(Event::ActiveMonitorChanged(MonitorEventData {
-                    monitor_name: monitor.to_string(),
-                    workspace: WorkspaceType::Regular(workspace.to_string()),
-                }));
+                Ok(Event::ActiveMonitorChanged(MonitorEventData {
+                    monitor_name: captures["monitor"].to_string(),
+                    workspace: WorkspaceType::Regular(captures["workspace"].to_string()),
+                }))
             }
             ParsedEventType::ActiveWindowChangedV1 => {
                 let class = &captures["class"];
                 let title = &captures["title"];
-                if !class.is_empty() && !title.is_empty() {
-                    events.push(Event::ActiveWindowChangedV1(Some((
-                        class.to_string(),
-                        title.to_string(),
-                    ))));
+                let event = if !class.is_empty() && !title.is_empty() {
+                    Event::ActiveWindowChangedV1(Some((class.to_string(), title.to_string())))
                 } else {
-                    events.push(Event::ActiveWindowChangedV1(None));
-                }
+                    Event::ActiveWindowChangedV1(None)
+                };
+
+                Ok(event)
             }
             ParsedEventType::ActiveWindowChangedV2 => {
                 let addr = &captures["address"];
-                if addr != "," {
-                    events.push(Event::ActiveWindowChangedV2(Some(Address::new(
-                        format_event_addr(addr),
-                    ))));
+                let event = if addr != "," {
+                    Event::ActiveWindowChangedV2(Some(Address::fmt_new(addr)))
                 } else {
-                    events.push(Event::ActiveWindowChangedV2(None));
-                }
+                    Event::ActiveWindowChangedV2(None)
+                };
+                Ok(event)
             }
             ParsedEventType::FullscreenStateChanged => {
                 let state = &captures["state"] != "0";
-                events.push(Event::FullscreenStateChanged(state))
+                Ok(Event::FullscreenStateChanged(state))
             }
             ParsedEventType::MonitorRemoved => {
-                let monitor = &captures["monitor"];
-                events.push(Event::MonitorRemoved(monitor.to_string()));
+                Ok(Event::MonitorRemoved(captures["monitor"].to_string()))
             }
             ParsedEventType::MonitorAdded => {
-                let monitor = &captures["monitor"];
-                events.push(Event::MonitorAdded(monitor.to_string()));
+                Ok(Event::MonitorAdded(captures["monitor"].to_string()))
             }
-            ParsedEventType::WindowOpened => {
-                let addr = format_event_addr(&captures["address"]);
-                let workspace = &captures["workspace"];
-                let class = &captures["class"];
-                let title = &captures["title"];
-                events.push(Event::WindowOpened(WindowOpenEvent {
-                    window_address: Address::new(addr),
-                    workspace_name: workspace.to_string(),
-                    window_class: class.to_string(),
-                    window_title: title.to_string(),
-                }));
-            }
-            ParsedEventType::WindowClosed => {
-                let addr = format_event_addr(&captures["address"]);
-                events.push(Event::WindowClosed(Address::new(addr)));
-            }
-            ParsedEventType::WindowMoved => {
-                let addr = format_event_addr(&captures["address"]);
-                let work = &captures["workspace"];
-                events.push(Event::WindowMoved(WindowMoveEvent {
-                    window_address: Address::new(addr),
-                    workspace_name: work.to_string(),
-                }));
-            }
-            ParsedEventType::LayoutChanged => {
-                let keyboard_name = &captures["keyboard"];
-                let layout = &captures["layout"];
-                events.push(Event::LayoutChanged(LayoutEvent {
-                    keyboard_name: keyboard_name.to_string(),
-                    layout_name: layout.to_string(),
-                }));
-            }
+            ParsedEventType::WindowOpened => Ok(Event::WindowOpened(WindowOpenEvent {
+                window_address: Address::fmt_new(&captures["address"]),
+                workspace_name: captures["workspace"].to_string(),
+                window_class: captures["class"].to_string(),
+                window_title: captures["title"].to_string(),
+            })),
+            ParsedEventType::WindowClosed => Ok(Event::WindowClosed(Address::fmt_new(&captures["address"]))),
+            ParsedEventType::WindowMoved => Ok(Event::WindowMoved(WindowMoveEvent {
+                window_address: Address::fmt_new(&captures["address"]),
+                workspace_name: captures["workspace"].to_string(),
+            })),
+            ParsedEventType::LayoutChanged => Ok(Event::LayoutChanged(LayoutEvent {
+                keyboard_name: captures["keyboard"].to_string(),
+                layout_name: captures["layout"].to_string(),
+            })),
             ParsedEventType::SubMapChanged => {
-                let submap = &captures["submap"];
-                events.push(Event::SubMapChanged(submap.to_string()));
+                Ok(Event::SubMapChanged(captures["submap"].to_string()))
             }
             ParsedEventType::LayerOpened => {
-                let namespace = &captures["namespace"];
-                events.push(Event::LayerOpened(namespace.to_string()));
+                Ok(Event::LayerOpened(captures["namespace"].to_string()))
             }
             ParsedEventType::LayerClosed => {
-                let namespace = &captures["namespace"];
-                events.push(Event::LayerClosed(namespace.to_string()));
+                Ok(Event::LayerClosed(captures["namespace"].to_string()))
             }
             ParsedEventType::FloatStateChanged => {
-                let addr = format_event_addr(&captures["address"]);
                 let state = &captures["floatstate"] == "0"; // FIXME: does 0 mean it's floating?
-                events.push(Event::FloatStateChanged(WindowFloatEventData {
-                    window_address: Address::new(addr),
+                Ok(Event::FloatStateChanged(WindowFloatEventData {
+                    window_address: Address::fmt_new(&captures["address"]),
                     is_floating: state,
-                }));
+                }))
             }
             ParsedEventType::Minimize => {
-                let addr = format_event_addr(&captures["address"]);
                 let state = &captures["state"] == "1";
-                events.push(Event::Minimize(MinimizeEventData {
-                    window_address: Address::new(addr),
+                Ok(Event::Minimize(MinimizeEventData {
+                    window_address: Address::fmt_new(&captures["address"]),
                     is_minimized: state,
-                }));
+                }))
             }
             ParsedEventType::Screencast => {
                 let state = &captures["state"] == "1";
                 let owner = &captures["owner"] == "1";
-                events.push(Event::Screencast(ScreencastEventData {
+                Ok(Event::Screencast(ScreencastEventData {
                     is_turning_on: state,
                     is_monitor: owner,
-                }));
+                }))
             }
-            ParsedEventType::UrgentStateChanged => {
-                let addr = format_event_addr(&captures["address"]);
-                events.push(Event::UrgentStateChanged(Address::new(addr)));
-            }
-            ParsedEventType::WindowTitleChanged => {
-                let addr = format_event_addr(&captures["address"]);
-                events.push(Event::WindowTitleChanged(Address::new(addr)));
-            }
+            ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::fmt_new(&captures["address"]))),
+            ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::fmt_new(&captures["address"]))),
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
-                match &captures.name("event") {
-                    Some(s) => {
-                        let table = CHECK_TABLE.lock();
-                        if let Ok(mut tbl) = table {
-                            let should_run = tbl.insert(s.as_str().to_string());
-                            if should_run {
-                                eprintln!(
-                                    "A unknown event was passed into Hyprland-rs
-                        PLEASE MAKE AN ISSUE!!
-                        The event was: {}",
-                                    s.as_str()
-                                );
-                            }
+                {
+                    let table = CHECK_TABLE.lock();
+                    // The std mutex returns a Result, the parking_lot mutex does not. This is a hack that allows us to
+                    // keep the table code how it is, without duplicating or `return`ing.
+                    #[cfg(feature = "parking_lot")]
+                    let table = Ok::<_, std::convert::Infallible>(table);
+
+                    if let Ok(mut tbl) = table {
+                        let (event_string, print_str) =
+                            match captures.name("event").map(|s| s.as_str()) {
+                                Some(s) => (s.to_string(), s),
+                                None => ("Unknown".to_owned(), event_str),
+                            };
+
+                        let should_run = tbl.insert(event_string);
+                        if should_run {
+                            eprintln!(
+                                "An unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {print_str}"
+                            );
                         }
                     }
-                    None => {
-                        let table = CHECK_TABLE.lock();
-                        if let Ok(mut tbl) = table {
-                            let should_run = tbl.insert("unknown".to_string());
-                            if should_run {
-                                eprintln!(
-                            "A unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {item}"
-                        );
-                            }
-                        }
-                    }
-                };
+                }
+                hypr_err!("Unknown event: {event_str}");
             }
-        }
+        });
+
+    let mut events: Vec<Event> = Vec::new();
+
+    for event in parsed_events {
+        events.push(event?);
     }
 
-    Ok(events)
-}
+    // if events.is_empty() {
+    //     hypr_err!("No events!");
+    // }
 
-fn format_event_addr(addr: &str) -> String {
-    format!("0x{addr}")
+    Ok(events)
 }

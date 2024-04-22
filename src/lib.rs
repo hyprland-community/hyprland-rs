@@ -2,18 +2,18 @@
 #![warn(missing_docs)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
-#![deny(unsafe_code)]
-
-#[macro_use]
-extern crate lazy_static;
-
-#[macro_use]
-extern crate doc_comment;
+#![allow(async_fn_in_trait)]
+#![cfg_attr(feature = "unsafe-impl", allow(unsafe_code))]
+#![cfg_attr(not(feature = "unsafe-impl"), forbid(unsafe_code))]
 
 #[macro_use]
 extern crate paste;
 
 pub use hyprland_macros::*;
+
+/// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
+#[cfg(feature = "unsafe-impl")]
+pub mod unsafe_impl;
 
 /// This module provides shared things throughout the crate
 pub mod shared;
@@ -49,15 +49,21 @@ pub mod prelude {
 }
 
 pub(crate) mod unix_async {
-    #[cfg(feature = "async-net")]
+    #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use async_net::unix::UnixStream;
-    #[cfg(feature = "async-std")]
+    #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
+    pub use futures_lite::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[cfg(all(
+        feature = "async-std",
+        not(feature = "tokio"),
+        not(feature = "async-lite")
+    ))]
     pub use async_std::{
         io::{ReadExt, WriteExt},
         os::unix::net::UnixStream,
     };
-    #[cfg(feature = "async-net")]
-    pub use futures_lite::io::{AsyncReadExt, AsyncWriteExt};
+
     #[cfg(feature = "tokio")]
     pub use tokio::{
         io::{AsyncReadExt, AsyncWriteExt},

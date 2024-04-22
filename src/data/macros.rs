@@ -1,6 +1,5 @@
 macro_rules! impl_on {
     ($name:ident) => {
-        #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd(DataCommands::$name)?;
@@ -145,7 +144,6 @@ macro_rules! create_data_struct {
             holding_type: $holding_type,
         );
 
-        #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd($cmd_kind)?;
@@ -186,7 +184,6 @@ macro_rules! create_data_struct {
             value: $value,
         );
 
-        #[async_trait]
         impl HyprData for $name {
             fn get() -> $crate::Result<Self> {
                 let data = call_hyprctl_data_cmd($cmd_kind)?;

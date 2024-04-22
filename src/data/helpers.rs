@@ -1,12 +1,12 @@
 use super::*;
 
 /// A helper struct that provides the current fullscreen state
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
 pub struct FullscreenState(
     /// State
     pub bool,
 );
 
-#[async_trait]
 impl HyprData for FullscreenState {
     fn get() -> crate::Result<Self> {
         Ok(Self(Workspace::get_active()?.fullscreen))

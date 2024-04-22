@@ -19,12 +19,6 @@ pub struct EventListener {
     pub(crate) events: Events,
 }
 
-// Mark the EventListener as thread-safe
-#[allow(unsafe_code)]
-unsafe impl Send for EventListener {}
-#[allow(unsafe_code)]
-unsafe impl Sync for EventListener {}
-
 impl Default for EventListener {
     fn default() -> Self {
         Self::new()
@@ -92,7 +86,7 @@ impl EventListener {
     pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
         let mut stream = UnixStream::connect(socket_path).await?;
 
         let mut active_windows = vec![];
@@ -128,7 +122,7 @@ impl EventListener {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
         let mut stream = UnixStream::connect(socket_path)?;
 
         let mut active_windows = vec![];

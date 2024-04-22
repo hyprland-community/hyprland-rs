@@ -5,7 +5,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// This private function is to call socket commands
 async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String> {
-    let socket_path = get_socket_path(SocketType::Command);
+    let socket_path = SocketType::Command;
 
     let command = CommandContent {
         flag: CommandFlag::JSON,
@@ -16,7 +16,7 @@ async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String>
 }
 
 fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
-    let socket_path = get_socket_path(SocketType::Command);
+    let socket_path = SocketType::Command;
 
     let command = CommandContent {
         flag: CommandFlag::JSON,
@@ -27,7 +27,7 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
 }
 
 /// This pub(crate) enum holds every socket command that returns data
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DataCommands {
     #[display(fmt = "monitors")]
     Monitors,
@@ -56,7 +56,7 @@ pub(crate) enum DataCommands {
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceBasic {
     /// The workspace Id
     pub id: WorkspaceId,
@@ -65,7 +65,7 @@ pub struct WorkspaceBasic {
 }
 
 /// This enum provides the different monitor transforms
-#[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, Clone, PartialEq, Eq, Copy)]
 #[repr(u8)]
 pub enum Transforms {
     /// No transform
@@ -87,7 +87,7 @@ pub enum Transforms {
 }
 
 /// This struct holds information for a monitor
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Monitor {
     /// The monitor id
     pub id: MonitorId,
@@ -124,14 +124,13 @@ pub struct Monitor {
     pub vrr: bool,
 }
 
-#[async_trait]
 impl HyprDataActive for Monitor {
     fn get_active() -> crate::Result<Self> {
         let all = Monitors::get()?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
-            panic!("No active monitor?")
+            hypr_err!("No active Hyprland monitor detected!")
         }
     }
     async fn get_active_async() -> crate::Result<Self> {
@@ -139,7 +138,7 @@ impl HyprDataActive for Monitor {
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
-            panic!("No active monitor?")
+            hypr_err!("No active Hyprland monitor detected!")
         }
     }
 }
@@ -153,7 +152,7 @@ create_data_struct!(
 );
 
 /// This struct holds information for a workspace
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Workspace {
     /// The workspace Id
     pub id: WorkspaceId,
@@ -177,7 +176,6 @@ pub struct Workspace {
     pub last_window_title: String,
 }
 
-#[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> crate::Result<Self> {
         let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace)?;
@@ -200,7 +198,7 @@ create_data_struct!(
 );
 
 /// This struct holds information for a client/window
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Client {
     /// The client's [`Address`][crate::shared::Address]
     pub address: Address,
@@ -250,7 +248,6 @@ pub struct Client {
 #[serde(deny_unknown_fields)]
 struct Empty {}
 
-#[async_trait]
 impl HyprDataActiveOptional for Client {
     fn get_active() -> crate::Result<Option<Self>> {
         let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow)?;
@@ -283,7 +280,7 @@ create_data_struct!(
 );
 
 /// This struct holds information about a layer surface/client
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct LayerClient {
     /// The layer's [`Address`][crate::shared::Address]
     pub address: Address,
@@ -300,7 +297,7 @@ pub struct LayerClient {
 }
 
 /// This struct holds all the layer surfaces for a display
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct LayerDisplay {
     /// The different levels of layers
     pub levels: HashMap<String, Vec<LayerClient>>,
@@ -324,7 +321,7 @@ create_data_struct!(
 );
 
 /// This struct holds information about a mouse device
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Mouse {
     /// The mouse's address
     pub address: Address,
@@ -333,7 +330,7 @@ pub struct Mouse {
 }
 
 /// This struct holds information about a keyboard device
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Keyboard {
     /// The keyboard's address
     pub address: Address,
@@ -356,7 +353,7 @@ pub struct Keyboard {
 }
 
 /// A enum that holds the types of tablets
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TabletType {
     /// The TabletPad type of tablet
     #[serde(rename = "tabletPad")]
@@ -367,7 +364,7 @@ pub enum TabletType {
 }
 
 /// A enum to match what the tablet belongs to
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum TabletBelongsTo {
     /// The belongsTo data if the tablet is of type TabletPad
     TabletPad {
@@ -381,7 +378,7 @@ pub enum TabletBelongsTo {
 }
 
 /// This struct holds information about a tablet device
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tablet {
     /// The tablet's address
     pub address: Address,
@@ -396,7 +393,7 @@ pub struct Tablet {
 }
 
 /// This struct holds all current devices
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Devices {
     /// All the mice
     pub mice: Vec<Mouse>,
@@ -408,7 +405,7 @@ pub struct Devices {
 impl_on!(Devices);
 
 /// This struct holds version information
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Version {
     /// The git branch Hyprland was built on
     pub branch: String,
@@ -424,7 +421,7 @@ pub struct Version {
 impl_on!(Version);
 
 /// This struct holds information on the cursor position
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CursorPosition {
     /// The x position of the cursor
     pub x: i64,
@@ -434,7 +431,7 @@ pub struct CursorPosition {
 impl_on!(CursorPosition);
 
 /// A keybinding returned from the binds command
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Bind {
     /// Is it locked?
     pub locked: bool,
@@ -467,13 +464,15 @@ create_data_struct!(
 );
 
 /// Animation styles
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AnimationStyle {
     /// Slide animation
     Slide,
     /// Vertical slide animation
     SlideVert,
+    /// Fading slide animation
     SlideFade,
+    /// Fading slide animation in a vertical direction
     SlideFadeVert,
     /// Popin animation (with percentage)
     PopIn(u8),
@@ -516,7 +515,7 @@ impl From<String> for AnimationStyle {
     }
 }
 /// Bezier identifier
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum BezierIdent {
     /// No bezier specified
     #[serde(rename = "")]
@@ -539,13 +538,13 @@ impl From<String> for BezierIdent {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 struct RawBezierIdent {
     pub name: String,
 }
 
 /// A bezier curve
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Bezier {
     ///. Name of the bezier
     pub name: String,
@@ -560,7 +559,7 @@ pub struct Bezier {
 }
 
 /// A struct representing a animation
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct AnimationRaw {
     /// The name of the animation
     pub name: String,
@@ -577,7 +576,7 @@ struct AnimationRaw {
 }
 
 /// A struct representing a animation
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Animation {
     /// The name of the animation
     pub name: String,
@@ -593,14 +592,13 @@ pub struct Animation {
     pub style: AnimationStyle,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 
 /// Struct that holds animations and beziers
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
-#[async_trait]
 impl HyprData for Animations {
     fn get() -> crate::Result<Self>
     where
@@ -648,7 +646,8 @@ impl HyprData for Animations {
 
 // HACK: shadow and decorate are actually missing from the hyprctl json output for some reason
 // HACK: gaps_in and gaps_out are returned as arrays with 4 integers, even though Hyprland doesn't support per-side gaps
-#[derive(Serialize, Deserialize, Debug, Clone)]
+/// The rules of an individual workspace, as returned by hyprctl json.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceRuleset {
     /// The name of the workspace
     #[serde(rename = "workspaceString")]

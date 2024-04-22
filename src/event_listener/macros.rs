@@ -34,33 +34,31 @@ macro_rules! add_listener_reg {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListener {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+                    #[doc = concat!("This methods adds a event which ", stringify!($c), r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) + 'static) {
                     self.events.[<$name $end _events>].push(EventTypes::Regular(Box::new(f)));
                 }
             }
         }
-        }
     };
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListener {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+                #[doc = concat!("This methods adds a event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) + 'static) {
                     self.events.[<$name _events>].push(EventTypes::Regular(Box::new(f)));
                 }
             }
-        }
         }
     };
 }
@@ -69,33 +67,31 @@ macro_rules! add_async_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncEventListener {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+                #[doc = concat!("This methods adds a event which ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) -> VoidFuture + Send + Sync + 'static) {
                     self.events.[<$name $end _events>].push(AsyncEventTypes::Regular(Box::pin(f)));
                 }
             }
         }
-        }
     };
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncEventListener {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+                #[doc = concat!("This methods adds a event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f) -> VoidFuture + Send + Sync + 'static) {
                     self.events.[<$name _events>].push(AsyncEventTypes::Regular(Box::pin(f)));
                 }
             }
-        }
         }
     };
 }
@@ -105,33 +101,31 @@ macro_rules! add_mut_async_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncMutableEventListener {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+                #[doc = concat!("This methods adds a event which ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f, &mut StateV2) -> VoidFuture + Send + Sync + 'static) {
                     self.events.[<$name $end _events>].push(AsyncEventTypes::MutableState(Box::pin(f)));
                 }
             }
         }
-        }
     };
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl AsyncMutableEventListener {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+                #[doc = concat!("This methods adds a event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f, &mut StateV2) -> VoidFuture + Send + Sync + 'static) {
                     self.events.[<$name _events>].push(AsyncEventTypes::MutableState(Box::pin(f)));
                 }
             }
-        }
         }
     };
 }
@@ -140,33 +134,31 @@ macro_rules! mut_add_listener {
     ($name:ident $end:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListenerMutable {
-            doc_comment! { concat!("This methods adds a event which ", $c, r#"
+                #[doc = concat!("This methods adds a event which ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListenerMutable as EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#", _| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f, &mut State) + 'static) {
                     self.events.[<$name $end _events>].push(EventTypes::MutableState(Box::new(f)));
                 }
             }
         }
-        }
     };
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
             impl EventListenerMutable {
-            doc_comment! { concat!("This methods adds a event which executes when ", $c, r#"
+                #[doc = concat!("This methods adds a event which executes when ", $c, r#"
 ```rust, no_run
 use hyprland::event_listener::EventListenerMutable as EventListener;
 let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#", _| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
-listener.start_listener();"#),
+listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: impl Fn($f, &mut State) + 'static) {
                     self.events.[<$name _events>].push(EventTypes::MutableState(Box::new(f)));
                 }
             }
-        }
         }
     };
 }
