@@ -448,7 +448,7 @@ impl State {
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     match f {
         EventTypes::MutableState(_) => {
-            unreachable!("Hyprland: using mutable handler with immutable listener")
+            unreachable!("hyprland-rs: using mutable handler with immutable listener")
         }
         EventTypes::Regular(fun) => fun(val),
     }
@@ -457,7 +457,7 @@ pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     match f {
         AsyncEventTypes::MutableState(_) => {
-            unreachable!("Hyprland: Using mutable handler with immutable listener")
+            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
         }
         AsyncEventTypes::Regular(fun) => fun(val).await,
     }
@@ -472,7 +472,7 @@ pub(crate) async fn execute_closure_async_state<T: Clone>(
     match f {
         AsyncEventTypes::MutableState(fun) => fun(val, state).await,
         AsyncEventTypes::Regular(_) => {
-            unreachable!("Hyprland: Using mutable handler with immutable listener")
+            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
         }
     }
 }

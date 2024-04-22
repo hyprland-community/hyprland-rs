@@ -107,14 +107,6 @@ impl Address {
         // this way is faster than std::fmt
         Self("0x".to_owned() + address)
     }
-    // /// This method returns a vector of bytes
-    // pub fn as_vec(self) -> Vec<u8> {
-    //     let Address(value) = self;
-    //     match hex::decode(value.trim_start_matches("0x")) {
-    //         Ok(value) => value,
-    //         Err(error) => panic!("A error has occured while parsing string as hex: {error}"),
-    //     }
-    // }
     /// This creates a new address from a value that implements [std::string::ToString]
     pub fn new<T: ToString>(string: T) -> Self {
         Self(string.to_string())
@@ -202,7 +194,7 @@ impl From<&WorkspaceType> for String {
     }
 }
 macro_rules! from {
-    (try $($ty:ty),+$(,)?) => {
+    ($($ty:ty),+$(,)?) => {
         $(
             impl TryFrom<$ty> for WorkspaceType {
                 type Error = HyprError;
@@ -216,7 +208,7 @@ macro_rules! from {
         )+
     };
 }
-from![try u8, u16, u32, u64, usize, i8, i16, i32, i64, isize];
+from![u8, u16, u32, u64, usize, i8, i16, i32, i64, isize];
 
 impl Hash for WorkspaceType {
     fn hash<H: Hasher>(&self, state: &mut H) {
