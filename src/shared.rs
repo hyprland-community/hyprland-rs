@@ -334,16 +334,18 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     let mut p: PathBuf;
     fn var_path() -> Option<PathBuf> {
         if let Ok(runtime_path) = var("XDG_RUNTIME_DIR") {
-            if Path::new(runtime_path).exists() {
-                Some(PathBuf::from(runtime_path))
+            let buf = PathBuf::from(runtime_path);
+            if buf.exists() {
+                return Some(buf);
             }
         }
         None
     }
     fn uid_path() -> Option<PathBuf> {
         if let Ok(uid) = var("UID") {
-            if Path::new("/run/user/" + uid).exists() {
-                Some(PathBuf::from("/run/user/" + uid))
+            let buf = PathBuf::from("/run/user/".to_owned() + &uid);
+            if buf.exists() {
+                return Some(buf);
             }
         }
         None
