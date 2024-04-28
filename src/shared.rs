@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::{error, fmt, io};
 
 #[derive(Debug, derive_more::Display)]
@@ -330,7 +330,37 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
             hypr_err!("Corrupted Hyprland socket variable: Invalid unicode!")
         }
     };
-    let mut p = PathBuf::from("/tmp/hypr");
+    
+    let mut p: PathBuf;
+    fn var_path() -> Option<PathBuf> {
+        if let Ok(runtime_path) = var("XDG_RUNTIME_DIR") {
+            if Path::new(runtime_path).exists() {
+                Some(PathBuf::from(runtime_path))
+            }
+        }
+        None
+    }
+    fn uid_path() -> Option<PathBuf> {
+        if let Ok(uid) = var("UID") {
+            if Path::new("/run/user/" + uid).exists() {
+                Some(PathBuf::from("/run/user/" + uid))
+            }
+        }
+        None
+    }
+
+    if let Some(path) = var_path() {
+        p = path;
+        p.push("hypr");
+    } else if let Some(path) = uid_path() {
+        p = path;
+        p.push("hypr");
+    } else if Path::new("/tmp/hypr").exists() {
+        p = PathBuf::from("/tmp/hypr");
+    } else {
+        hypr_err!("No xdg runtime path found!")
+    }
+    
     p.push(instance);
     p.push(socket_type.socket_name());
     Ok(p)
