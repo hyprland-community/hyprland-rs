@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
 use std::path::PathBuf;
-use std::{error, fmt, io};
+use std::{error, fmt, io, env};
 
 #[derive(Debug, derive_more::Display)]
 /// Error that unifies different error types used by Hyprland-rs
@@ -330,7 +330,11 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
             hypr_err!("Corrupted Hyprland socket variable: Invalid unicode!")
         }
     };
-    let mut p = PathBuf::from("/tmp/hypr");
+    let xdg_runtime_dir = env::var("XDG_RUNTIME_DIR").unwrap();
+        
+    
+    let mut p = PathBuf::from(xdg_runtime_dir);
+    p.push("hypr/");
     p.push(instance);
     p.push(socket_type.socket_name());
     Ok(p)
