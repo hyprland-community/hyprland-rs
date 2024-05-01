@@ -6,7 +6,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::env::{var, VarError};
 use std::hash::{Hash, Hasher};
-use std::path::{PathBuf, Path};
+use std::path::PathBuf;
 use std::{error, fmt, io};
 
 #[derive(Debug, derive_more::Display)]
@@ -357,7 +357,7 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     let old_buf = PathBuf::from("/tmp/hypr/".to_owned() + &instance);
     if let Some(path) = var_path(instance.clone()) {
         p = path;
-    } else if let Some(path) = uid_path(&instance) {
+    } else if let Some(path) = uid_path(instance) {
         p = path;
     } else if old_buf.exists() {
         p = old_buf;
