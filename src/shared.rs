@@ -332,7 +332,7 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     };
     
     let mut p: PathBuf;
-    fn var_path() -> Option<PathBuf> {
+    fn var_path(instance: String) -> Option<PathBuf> {
         if let Ok(runtime_path) = var("XDG_RUNTIME_DIR") {
             let mut buf = PathBuf::from(runtime_path);
             buf.push("hypr");
@@ -343,7 +343,7 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
         }
         None
     }
-    fn uid_path() -> Option<PathBuf> {
+    fn uid_path(instance: String) -> Option<PathBuf> {
         if let Ok(uid) = var("UID") {
             let mut buf = PathBuf::from("/run/user/".to_owned() + &uid);
             buf.push("hypr");
@@ -355,9 +355,9 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
         None
     }
     let old_buf = PathBuf::from("/tmp/hypr/".to_owned() + &instance);
-    if let Some(path) = var_path() {
+    if let Some(path) = var_path(&instance) {
         p = path;
-    } else if let Some(path) = uid_path() {
+    } else if let Some(path) = uid_path(&instance) {
         p = path;
     } else if old_buf.exists() {
         p = old_buf;
