@@ -4,36 +4,30 @@ use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 /// This private function is to call socket commands
-async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> String {
-    let socket_path = get_socket_path(SocketType::Command);
+async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String> {
+    let socket_path = SocketType::Command;
 
     let command = CommandContent {
         flag: CommandFlag::JSON,
         data: cmd.to_string(),
     };
 
-    match write_to_socket(socket_path, command).await {
-        Ok(data) => data,
-        Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
-    }
+    write_to_socket(socket_path, command).await
 }
 
-fn call_hyprctl_data_cmd(cmd: DataCommands) -> String {
-    let socket_path = get_socket_path(SocketType::Command);
+fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
+    let socket_path = SocketType::Command;
 
     let command = CommandContent {
         flag: CommandFlag::JSON,
         data: cmd.to_string(),
     };
 
-    match write_to_socket_sync(socket_path, command) {
-        Ok(data) => data,
-        Err(e) => panic!("A error occured while parsing the output from the hypr socket: {e:?}"),
-    }
+    write_to_socket_sync(socket_path, command)
 }
 
 /// This pub(crate) enum holds every socket command that returns data
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DataCommands {
     #[display(fmt = "monitors")]
     Monitors,
@@ -57,10 +51,12 @@ pub(crate) enum DataCommands {
     Binds,
     #[display(fmt = "animations")]
     Animations,
+    #[display(fmt = "workspacerules")]
+    WorkspaceRules,
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceBasic {
     /// The workspace Id
     pub id: WorkspaceId,
@@ -69,7 +65,7 @@ pub struct WorkspaceBasic {
 }
 
 /// This enum provides the different monitor transforms
-#[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Debug, Clone, PartialEq, Eq, Copy)]
 #[repr(u8)]
 pub enum Transforms {
     /// No transform
@@ -91,10 +87,10 @@ pub enum Transforms {
 }
 
 /// This struct holds information for a monitor
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Monitor {
     /// The monitor id
-    pub id: i128,
+    pub id: MonitorId,
     /// The monitor's name
     pub name: String,
     /// The monitor's description
@@ -128,35 +124,35 @@ pub struct Monitor {
     pub vrr: bool,
 }
 
-#[async_trait]
 impl HyprDataActive for Monitor {
     fn get_active() -> crate::Result<Self> {
-        let mut all = Monitors::get()?;
-        if let Some(it) = all.find(|item| item.focused) {
+        let all = Monitors::get()?;
+        if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
-            panic!("No active monitor?")
+            hypr_err!("No active Hyprland monitor detected!")
         }
     }
     async fn get_active_async() -> crate::Result<Self> {
-        let mut all = Monitors::get_async().await?;
-        if let Some(it) = all.find(|item| item.focused) {
+        let all = Monitors::get_async().await?;
+        if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
-            panic!("No active monitor?")
+            hypr_err!("No active Hyprland monitor detected!")
         }
     }
 }
 
 create_data_struct!(
-    vec Monitors,
-    DataCommands::Monitors,
-    Monitor,
-    "This struct holds a vector of monitors"
+    vector,
+    name: Monitors,
+    command: DataCommands::Monitors,
+    holding_type: Monitor,
+    doc: "This struct holds a vector of monitors"
 );
 
 /// This struct holds information for a workspace
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Workspace {
     /// The workspace Id
     pub id: WorkspaceId,
@@ -180,29 +176,29 @@ pub struct Workspace {
     pub last_window_title: String,
 }
 
-#[async_trait]
 impl HyprDataActive for Workspace {
     fn get_active() -> crate::Result<Self> {
-        let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace);
+        let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace)?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
     async fn get_active_async() -> crate::Result<Self> {
-        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWorkspace).await;
+        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWorkspace).await?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
 }
 
 create_data_struct!(
-    vec Workspaces,
-    DataCommands::Workspaces,
-    Workspace,
-    "This type provides a vector of workspaces"
+    vector,
+    name: Workspaces,
+    command: DataCommands::Workspaces,
+    holding_type: Workspace,
+    doc: "This type provides a vector of workspaces"
 );
 
 /// This struct holds information for a client/window
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Client {
     /// The client's [`Address`][crate::shared::Address]
     pub address: Address,
@@ -220,7 +216,7 @@ pub struct Client {
     #[serde(rename = "fullscreenMode")]
     pub fullscreen_mode: i8,
     /// The monitor id the window is on
-    pub monitor: i128,
+    pub monitor: MonitorId,
     /// The initial window class
     #[serde(rename = "initialClass")]
     pub initial_class: String,
@@ -252,10 +248,9 @@ pub struct Client {
 #[serde(deny_unknown_fields)]
 struct Empty {}
 
-#[async_trait]
 impl HyprDataActiveOptional for Client {
     fn get_active() -> crate::Result<Option<Self>> {
-        let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow);
+        let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow)?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -265,7 +260,7 @@ impl HyprDataActiveOptional for Client {
         }
     }
     async fn get_active_async() -> crate::Result<Option<Self>> {
-        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await;
+        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -277,14 +272,15 @@ impl HyprDataActiveOptional for Client {
 }
 
 create_data_struct!(
-    vec Clients,
-    DataCommands::Clients,
-    Client,
-    "This struct holds a vector of clients"
+    vector,
+    name: Clients,
+    command: DataCommands::Clients,
+    holding_type: Client,
+    doc: "This struct holds a vector of clients"
 );
 
 /// This struct holds information about a layer surface/client
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct LayerClient {
     /// The layer's [`Address`][crate::shared::Address]
     pub address: Address,
@@ -301,29 +297,31 @@ pub struct LayerClient {
 }
 
 /// This struct holds all the layer surfaces for a display
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct LayerDisplay {
     /// The different levels of layers
     pub levels: HashMap<String, Vec<LayerClient>>,
 }
 
-impl LayerDisplay {
-    /// Returns an iterator over the levels map
-    pub fn iter(&self) -> impl Iterator<Item = (&String, &Vec<LayerClient>)> {
-        self.levels.iter()
-    }
-}
+implement_iterators!(
+    table,
+    name: LayerDisplay,
+    iterated_field: levels,
+    key: String,
+    value: Vec<LayerClient>,
+);
 
 create_data_struct!(
-    sing Layers,
-    DataCommands::Layers,
-    HashMap<String, LayerDisplay>,
-    "This struct holds a hashmap of all current displays, and their layer surfaces",
-    iter_item = (&String, &LayerDisplay)
+    table,
+    name: Layers,
+    command: DataCommands::Layers,
+    key: String,
+    value: LayerDisplay,
+    doc: "This struct holds a hashmap of all current displays, and their layer surfaces"
 );
 
 /// This struct holds information about a mouse device
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Mouse {
     /// The mouse's address
     pub address: Address,
@@ -332,7 +330,7 @@ pub struct Mouse {
 }
 
 /// This struct holds information about a keyboard device
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Keyboard {
     /// The keyboard's address
     pub address: Address,
@@ -355,7 +353,7 @@ pub struct Keyboard {
 }
 
 /// A enum that holds the types of tablets
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TabletType {
     /// The TabletPad type of tablet
     #[serde(rename = "tabletPad")]
@@ -366,7 +364,7 @@ pub enum TabletType {
 }
 
 /// A enum to match what the tablet belongs to
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum TabletBelongsTo {
     /// The belongsTo data if the tablet is of type TabletPad
     TabletPad {
@@ -380,7 +378,7 @@ pub enum TabletBelongsTo {
 }
 
 /// This struct holds information about a tablet device
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Tablet {
     /// The tablet's address
     pub address: Address,
@@ -395,7 +393,7 @@ pub struct Tablet {
 }
 
 /// This struct holds all current devices
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Devices {
     /// All the mice
     pub mice: Vec<Mouse>,
@@ -407,7 +405,7 @@ pub struct Devices {
 impl_on!(Devices);
 
 /// This struct holds version information
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Version {
     /// The git branch Hyprland was built on
     pub branch: String,
@@ -423,7 +421,7 @@ pub struct Version {
 impl_on!(Version);
 
 /// This struct holds information on the cursor position
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CursorPosition {
     /// The x position of the cursor
     pub x: i64,
@@ -433,7 +431,7 @@ pub struct CursorPosition {
 impl_on!(CursorPosition);
 
 /// A keybinding returned from the binds command
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Bind {
     /// Is it locked?
     pub locked: bool,
@@ -458,22 +456,23 @@ pub struct Bind {
 }
 
 create_data_struct!(
-    vec Binds,
-    DataCommands::Binds,
-    Bind,
-    "This struct holds a vector of binds"
+    vector,
+    name: Binds,
+    command: DataCommands::Binds,
+    holding_type: Bind,
+    doc: "This struct holds a vector of binds"
 );
 
 /// Animation styles
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum AnimationStyle {
     /// Slide animation
     Slide,
     /// Vertical slide animation
     SlideVert,
-    /// Slide with fade animation
+    /// Fading slide animation
     SlideFade,
-    /// Vertical slide with fade animation
+    /// Fading slide animation in a vertical direction
     SlideFadeVert,
     /// Popin animation (with percentage)
     PopIn(u8),
@@ -489,11 +488,10 @@ pub enum AnimationStyle {
     Unknown(String),
 }
 
-impl<Str: ToString + Clone> From<Str> for AnimationStyle {
-    fn from(value: Str) -> Self {
-        let string = value.to_string();
-        if string.starts_with("popin") {
-            let mut iter = string.split(' ');
+impl From<String> for AnimationStyle {
+    fn from(value: String) -> Self {
+        if value.starts_with("popin") {
+            let mut iter = value.split(' ');
             iter.next();
             AnimationStyle::PopIn({
                 let mut str = iter.next().unwrap_or("100%").to_string();
@@ -502,7 +500,7 @@ impl<Str: ToString + Clone> From<Str> for AnimationStyle {
                 str.parse().unwrap_or(100_u8)
             })
         } else {
-            match value.to_string().as_str() {
+            match value.as_str() {
                 "slide" => AnimationStyle::Slide,
                 "slidevert" => AnimationStyle::SlideVert,
                 "fade" => AnimationStyle::Fade,
@@ -511,13 +509,13 @@ impl<Str: ToString + Clone> From<Str> for AnimationStyle {
                 "once" => AnimationStyle::Once,
                 "loop" => AnimationStyle::Loop,
                 "" => AnimationStyle::None,
-                _ => AnimationStyle::Unknown(string),
+                _ => AnimationStyle::Unknown(value),
             }
         }
     }
 }
 /// Bezier identifier
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub enum BezierIdent {
     /// No bezier specified
     #[serde(rename = "")]
@@ -530,24 +528,23 @@ pub enum BezierIdent {
     Specified(String),
 }
 
-impl<Str: ToString + Clone> From<Str> for BezierIdent {
-    fn from(value: Str) -> Self {
-        let str = value.to_string();
-        match str.as_str() {
+impl From<String> for BezierIdent {
+    fn from(value: String) -> Self {
+        match value.as_str() {
             "" => BezierIdent::None,
             "default" => BezierIdent::Default,
-            _ => BezierIdent::Specified(str),
+            _ => BezierIdent::Specified(value),
         }
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 struct RawBezierIdent {
     pub name: String,
 }
 
 /// A bezier curve
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Bezier {
     ///. Name of the bezier
     pub name: String,
@@ -562,7 +559,7 @@ pub struct Bezier {
 }
 
 /// A struct representing a animation
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct AnimationRaw {
     /// The name of the animation
     pub name: String,
@@ -579,7 +576,7 @@ struct AnimationRaw {
 }
 
 /// A struct representing a animation
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Animation {
     /// The name of the animation
     pub name: String,
@@ -595,61 +592,95 @@ pub struct Animation {
     pub style: AnimationStyle,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 
 /// Struct that holds animations and beziers
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
-#[async_trait]
 impl HyprData for Animations {
     fn get() -> crate::Result<Self>
     where
         Self: Sized,
     {
-        let out = call_hyprctl_data_cmd(DataCommands::Animations);
+        let out = call_hyprctl_data_cmd(DataCommands::Animations)?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
-            .iter()
+            .into_iter()
             .map(|item| Animation {
-                name: item.name.clone(),
+                name: item.name,
                 overridden: item.overridden,
-                bezier: item.bezier.clone().into(),
+                bezier: item.bezier.into(),
                 enabled: item.enabled,
                 speed: item.speed,
-                style: item.style.clone().into(),
+                style: item.style.into(),
             })
             .collect();
-        let new_bezs: Vec<BezierIdent> = beziers
-            .iter()
-            .map(|item| item.name.clone().into())
-            .collect();
+        let new_bezs: Vec<BezierIdent> = beziers.into_iter().map(|item| item.name.into()).collect();
         Ok(Animations(new_anims, new_bezs))
     }
     async fn get_async() -> crate::Result<Self>
     where
         Self: Sized,
     {
-        let out = call_hyprctl_data_cmd_async(DataCommands::Animations).await;
+        let out = call_hyprctl_data_cmd_async(DataCommands::Animations).await?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
-            .iter()
+            .into_iter()
             .map(|item| Animation {
-                name: item.name.clone(),
+                name: item.name,
                 overridden: item.overridden,
-                bezier: item.bezier.clone().into(),
+                bezier: item.bezier.into(),
                 enabled: item.enabled,
                 speed: item.speed,
-                style: item.style.clone().into(),
+                style: item.style.into(),
             })
             .collect();
-        let new_bezs: Vec<BezierIdent> = beziers
-            .iter()
-            .map(|item| item.name.clone().into())
-            .collect();
+        let new_bezs: Vec<BezierIdent> = beziers.into_iter().map(|item| item.name.into()).collect();
         Ok(Animations(new_anims, new_bezs))
     }
 }
+
+// HACK: shadow and decorate are actually missing from the hyprctl json output for some reason
+// HACK: gaps_in and gaps_out are returned as arrays with 4 integers, even though Hyprland doesn't support per-side gaps
+/// The rules of an individual workspace, as returned by hyprctl json.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceRuleset {
+    /// The name of the workspace
+    #[serde(rename = "workspaceString")]
+    pub workspace_string: String,
+    /// The monitor the workspace is on
+    pub monitor: Option<String>,
+    /// Is it default?
+    pub default: Option<bool>,
+    /// The gaps between windows
+    #[serde(rename = "gapsIn")]
+    pub gaps_in: Option<Vec<i64>>,
+    /// The gaps between windows and monitor edges
+    #[serde(rename = "gapsOut")]
+    pub gaps_out: Option<Vec<i64>>,
+    /// The size of window borders
+    #[serde(rename = "borderSize")]
+    pub border_size: Option<i64>,
+    /// Are borders enabled?
+    pub border: Option<bool>,
+    /// Are shadows enabled?
+    pub shadow: Option<bool>,
+    /// Is rounding enabled?
+    pub rounding: Option<bool>,
+    /// Are window decorations enabled?
+    pub decorate: Option<bool>,
+    /// Is it persistent?
+    pub persistent: Option<bool>,
+}
+
+create_data_struct!(
+    vector,
+    name: WorkspaceRules,
+    command: DataCommands::WorkspaceRules,
+    holding_type: WorkspaceRuleset,
+    doc: "This struct holds a vector of workspace rules per workspace"
+);

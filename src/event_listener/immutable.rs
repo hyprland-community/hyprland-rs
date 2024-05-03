@@ -19,12 +19,6 @@ pub struct EventListener {
     pub(crate) events: Events,
 }
 
-// Mark the EventListener as thread-safe
-#[allow(unsafe_code)]
-unsafe impl Send for EventListener {}
-#[allow(unsafe_code)]
-unsafe impl Sync for EventListener {}
-
 impl Default for EventListener {
     fn default() -> Self {
         Self::new()
@@ -32,7 +26,7 @@ impl Default for EventListener {
 }
 
 impl HasExecutor for EventListener {
-    fn event_executor(&mut self, event: &Event) -> crate::Result<()> {
+    fn event_executor(&mut self, event: Event) -> crate::Result<()> {
         use Event::*;
         match event {
             WorkspaceChanged(id) => arm!(id, workspace_changed_events, self),
@@ -94,7 +88,7 @@ impl EventListener {
     pub async fn start_listener_async(&mut self) -> crate::Result<()> {
         use crate::unix_async::*;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
         let mut stream = UnixStream::connect(socket_path).await?;
 
         let mut active_windows = vec![];
@@ -109,7 +103,7 @@ impl EventListener {
             let string = String::from_utf8(buf.to_vec())?;
             let parsed: Vec<Event> = event_parser(string)?;
 
-            for event in parsed.iter() {
+            for event in parsed {
                 self.event_primer(event, &mut active_windows)?;
             }
         }
@@ -130,7 +124,7 @@ impl EventListener {
         use io::prelude::*;
         use std::os::unix::net::UnixStream;
 
-        let socket_path = get_socket_path(SocketType::Listener);
+        let socket_path = get_socket_path(SocketType::Listener)?;
         let mut stream = UnixStream::connect(socket_path)?;
 
         let mut active_windows = vec![];
@@ -145,7 +139,7 @@ impl EventListener {
             let string = String::from_utf8(buf.to_vec())?;
             let parsed: Vec<Event> = event_parser(string)?;
 
-            for event in parsed.iter() {
+            for event in parsed {
                 self.event_primer(event, &mut active_windows)?;
             }
         }

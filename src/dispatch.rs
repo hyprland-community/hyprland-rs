@@ -15,33 +15,24 @@
 //! ````
 
 use crate::shared::*;
-use std::string::ToString;
-//use strum::Display;
 use derive_more::Display;
+use std::string::ToString;
 
 /// This enum is for identifying a window
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum WindowIdentifier<'a> {
     /// The address of a window
+    #[display(fmt = "address:{_0}")]
     Address(Address),
     /// A Regular Expression to match the window class (handled by Hyprland)
+    #[display(fmt = "{_0}")]
     ClassRegularExpression(&'a str),
     /// The window title
+    #[display(fmt = "title:{_0}")]
     Title(&'a str),
     /// The window's process Id
+    #[display(fmt = "pid:{_0}")]
     ProcessId(u32),
-}
-
-impl std::fmt::Display for WindowIdentifier<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let out = match self {
-            WindowIdentifier::Address(addr) => format!("address:{addr}"),
-            WindowIdentifier::ProcessId(id) => format!("pid:{id}"),
-            WindowIdentifier::ClassRegularExpression(regex) => regex.to_string(),
-            WindowIdentifier::Title(title) => format!("title:{title}"),
-        };
-        write!(f, "{out}")
-    }
 }
 
 /// This enum holds the fullscreen types
@@ -117,7 +108,7 @@ pub enum MonitorIdentifier<'a> {
     /// The monitor that is to the specified direction of the active one
     Direction(Direction),
     /// The monitor id
-    Id(u8),
+    Id(MonitorId),
     /// The monitor name
     Name(&'a str),
     /// The current monitor
@@ -143,10 +134,10 @@ impl std::fmt::Display for MonitorIdentifier<'_> {
 #[allow(missing_docs)]
 #[derive(Debug, Clone)]
 pub enum Corner {
-    TopRight = 0,
-    TopLeft = 1,
-    BottomRight = 2,
-    BottomLeft = 3,
+    BottomLeft = 0,
+    BottomRight = 1,
+    TopRight = 2,
+    TopLeft = 3,
 }
 
 /// This enum holds options that are applied to the current workspace
@@ -161,52 +152,46 @@ pub enum WorkspaceOptions {
 }
 
 /// This enum is for identifying workspaces that also includes the special workspace
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
+    #[display(fmt = "{}", "format_relative(*_0, \"\")")]
     Relative(i32),
     /// The workspace on the monitor relative to the current workspace
+    #[display(fmt = "{}", "format_relative(*_0, \"m\")")]
     RelativeMonitor(i32),
     /// The workspace on the monitor relative to the current workspace, including empty workspaces
+    #[display(fmt = "{}", "format_relative(*_0, \"r\")")]
     RelativeMonitorIncludingEmpty(i32),
     /// The open workspace relative to the current workspace
+    #[display(fmt = "{}", "format_relative(*_0, \"e\")")]
     RelativeOpen(i32),
     /// The previous Workspace
+    #[display(fmt = "previous")]
     Previous,
     /// The first available empty workspace
+    #[display(fmt = "empty")]
     Empty,
     /// The name of the workspace
+    #[display(fmt = "name:{_0}")]
     Name(&'a str),
     /// The special workspace
+    #[display(fmt = "special{}", "format_special_workspace_ident(_0)")]
     Special(Option<&'a str>),
 }
 
-impl std::fmt::Display for WorkspaceIdentifierWithSpecial<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use WorkspaceIdentifierWithSpecial::*;
-        let out = match self {
-            Id(id) => format!("{id}"),
-            Name(name) => format!("name:{name}"),
-            Relative(int) => format_relative(*int, ""),
-            RelativeMonitor(int) => format_relative(*int, "m"),
-            RelativeMonitorIncludingEmpty(int) => format_relative(*int, "r"),
-            RelativeOpen(int) => format_relative(*int, "e"),
-            Previous => "previous".to_string(),
-            Empty => "empty".to_string(),
-            Special(opt) => match opt {
-                Some(name) => format!("special:{name}"),
-                None => "special".to_string(),
-            },
-        };
-
-        write!(f, "{out}")
+#[inline(always)]
+fn format_special_workspace_ident<'a>(opt: &'a Option<&'a str>) -> String {
+    match opt {
+        Some(o) => ":".to_owned() + o,
+        None => String::new(),
     }
 }
 
 /// This enum is for identifying workspaces
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WorkspaceIdentifier<'a> {
     /// The workspace Id
     Id(WorkspaceId),
@@ -295,17 +280,6 @@ pub enum DispatchType<'a> {
         WorkspaceIdentifierWithSpecial<'a>,
         Option<WindowIdentifier<'a>>,
     ),
-    /// This dispatcher moves the focused window to a specified workspace, and
-    /// changes the active workspace aswell
-    #[deprecated(since = "0.3.13", note = "use MoveToWorkspace(work, None) instead")]
-    MoveFocusedWindowToWorkspace(WorkspaceIdentifier<'a>),
-    /// This dispatcher moves the focused window to a specified workspace, and
-    /// does not change workspaces
-    #[deprecated(
-        since = "0.3.13",
-        note = "use MoveToWorkspaceSilent(work, None) instead"
-    )]
-    MoveFocusedWindowToWorkspaceSilent(WorkspaceIdentifier<'a>),
     /// This dispatcher floats a window (current if not specified)
     ToggleFloating(Option<WindowIdentifier<'a>>),
     /// This dispatcher toggles the current window fullscreen state
@@ -439,7 +413,7 @@ pub enum LockType {
 }
 
 /// Param for [DispatchType::SwapWithMaster] dispatcher
-#[derive(Debug, Clone, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum SwapWithMasterParam {
     /// New focus is the new master window
     #[display(fmt = "master")]
@@ -453,7 +427,7 @@ pub enum SwapWithMasterParam {
 }
 
 /// Param for [DispatchType::FocusMaster] dispatcher
-#[derive(Debug, Clone, Display)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum FocusMasterParam {
     /// Focus stays at master, (even if it was selected before)
     #[display(fmt = "master")]
@@ -463,6 +437,7 @@ pub enum FocusMasterParam {
     Auto,
 }
 
+#[inline(always)]
 fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     int: T,
     extra: &'_ str,
@@ -470,9 +445,9 @@ fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
     if int.is_positive() {
         format!("{extra}+{int}")
     } else if int.is_negative() {
-        format!("{extra}-{int}", int = int.abs())
+        format!("{extra}-{}", int.abs())
     } else {
-        "+0".to_string()
+        "+0".to_owned()
     }
 }
 
@@ -491,10 +466,6 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         MoveToWorkspace(work, None) => format!("movetoworkspace{sep}{work}"),
         MoveToWorkspaceSilent(work, Some(win)) => format!("movetoworkspacesilent{sep}{work},{win}"),
         MoveToWorkspaceSilent(work, None) => format!("movetoworkspacesilent{sep}{work}"),
-        #[allow(deprecated)]
-        MoveFocusedWindowToWorkspace(work) => format!("movetoworkspace{sep}{work}"),
-        #[allow(deprecated)]
-        MoveFocusedWindowToWorkspaceSilent(work) => format!("movetoworkspacesilent{sep}{work}"),
         ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
         ToggleFloating(None) => "togglefloating".to_string(),
         ToggleFullscreen(ftype) => format!("fullscreen{sep}{ftype}"),
@@ -590,8 +561,8 @@ impl Dispatch {
     /// # }
     /// ```
     pub fn call(dispatch_type: DispatchType) -> crate::Result<()> {
-        let socket_path = get_socket_path(SocketType::Command);
-        let output = write_to_socket_sync(socket_path, gen_dispatch_str(dispatch_type, true)?);
+        let output =
+            write_to_socket_sync(SocketType::Command, gen_dispatch_str(dispatch_type, true)?);
 
         match output {
             Ok(msg) => match msg.as_str() {
@@ -614,8 +585,8 @@ impl Dispatch {
     /// # }
     /// ```
     pub async fn call_async(dispatch_type: DispatchType<'_>) -> crate::Result<()> {
-        let socket_path = get_socket_path(SocketType::Command);
-        let output = write_to_socket(socket_path, gen_dispatch_str(dispatch_type, true)?).await;
+        let output =
+            write_to_socket(SocketType::Command, gen_dispatch_str(dispatch_type, true)?).await;
 
         match output {
             Ok(msg) => match msg.as_str() {
