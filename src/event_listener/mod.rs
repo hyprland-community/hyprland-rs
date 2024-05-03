@@ -6,18 +6,11 @@ use crate::shared::*;
 mod shared;
 pub use crate::event_listener::shared::*;
 
-mod mutable;
+mod immutable;
 pub use crate::event_listener::immutable::EventListener;
 
 mod async_im;
 pub use crate::event_listener::async_im::AsyncEventListener;
-
-mod immutable;
-#[deprecated(
-    since = "0.3.9",
-    note = "It's rarely used and is pretty badly implemented, use the not mutable one."
-)]
-pub use crate::event_listener::mutable::EventListener as EventListenerMutable;
 
 add_listener!(workspace_change d, WorkspaceType, "on workspace change", "changed workspace to" => id);
 add_listener!(workspace_added, WorkspaceType, "a workspace is created", "workspace was added" => id);

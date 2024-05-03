@@ -176,28 +176,6 @@ impl ActiveWindowState {
         }
         Ok(())
     }
-    pub async fn execute_async_mut(
-        &mut self,
-        listener: &mut super::EventListenerMutable,
-    ) -> crate::Result<()> {
-        use ActiveWindowValue::{None, Queued};
-        let data = (&self.title, &self.class, &self.addr);
-        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
-            listener
-                .event_executor_async(Event::ActiveWindowChangedMerged(Some(WindowEventData {
-                    window_class: class.to_string(),
-                    window_title: title.to_string(),
-                    window_address: addr.clone(),
-                })))
-                .await?;
-            self.reset();
-        } else if let (None, None, None) = data {
-            listener
-                .event_executor_async(Event::ActiveWindowChangedMerged(Option::None))
-                .await?;
-        }
-        Ok(())
-    }
 
     pub fn ready(&self) -> bool {
         !self.class.is_empty() && !self.title.is_empty() && !self.addr.is_empty()
@@ -236,26 +214,13 @@ pub(crate) fn into<T>(from: Option<(T, T)>) -> (ActiveWindowValue<T>, ActiveWind
     }
 }
 
-pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
-    MutableState(Box<U>),
-    Regular(Box<T>),
-}
-
-pub(crate) enum AsyncEventTypes<T: ?Sized, U: ?Sized> {
-    #[allow(dead_code)]
-    MutableState(Pin<Box<U>>),
-    Regular(Pin<Box<T>>),
-}
+pub(crate) type EventType<T> = Box<T>;
+pub(crate) type AsyncEventType<T> = Pin<Box<T>>;
 
 pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
-pub(crate) type VoidFutureMut =
-    std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>>;
 
-pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
-pub(crate) type AsyncClosure<T> = AsyncEventTypes<
-    dyn Sync + Send + Fn(T) -> VoidFuture,
-    dyn Sync + Send + Fn(T, &mut State) -> VoidFutureMut,
->;
+pub(crate) type Closure<T> = EventType<dyn Fn(T)>;
+pub(crate) type AsyncClosure<T> = AsyncEventType<dyn Sync + Send + Fn(T) -> VoidFuture>;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
@@ -446,67 +411,11 @@ impl State {
 }
 
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
-    match f {
-        EventTypes::MutableState(_) => {
-            unreachable!("hyprland-rs: using mutable handler with immutable listener")
-        }
-        EventTypes::Regular(fun) => fun(val),
-    }
+    f(val);
 }
 
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
-    match f {
-        AsyncEventTypes::MutableState(_) => {
-            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
-        }
-        AsyncEventTypes::Regular(fun) => fun(val).await,
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) async fn execute_closure_async_state<T: Clone>(
-    f: &AsyncClosure<T>,
-    val: T,
-    state: &mut State,
-) {
-    match f {
-        AsyncEventTypes::MutableState(fun) => fun(val, state).await,
-        AsyncEventTypes::Regular(_) => {
-            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
-        }
-    }
-}
-pub(crate) async fn execute_closure_mut<T>(
-    state: State,
-    f: &Closure<T>,
-    val: T,
-) -> crate::Result<State> {
-    let old_state = state.clone();
-    let mut new_state = state;
-    match f {
-        EventTypes::MutableState(fun) => fun(val, &mut new_state),
-        EventTypes::Regular(fun) => fun(val),
-    }
-
-    let new_state = new_state.execute_state(old_state).await?;
-    Ok(new_state)
-}
-
-#[allow(clippy::redundant_clone)]
-pub(crate) fn execute_closure_mut_sync<T>(
-    state: State,
-    f: &Closure<T>,
-    val: T,
-) -> crate::Result<State> {
-    let old_state = state.clone();
-    let mut new_state = state;
-    match f {
-        EventTypes::MutableState(fun) => fun(val, &mut new_state),
-        EventTypes::Regular(fun) => fun(val),
-    }
-
-    let new_state = new_state.execute_state_sync(old_state)?;
-    Ok(new_state)
+    f(val).await;
 }
 
 /// This tuple struct holds window event data

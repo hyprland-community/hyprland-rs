@@ -11,9 +11,6 @@ pub mod listeners {
     unsafe impl Send for EventListener {}
     unsafe impl Sync for EventListener {}
 
-    unsafe impl Send for EventListenerMutable {}
-    unsafe impl Sync for EventListenerMutable {}
-
     unsafe impl Send for WindowMoveEvent {}
     unsafe impl Sync for WindowMoveEvent {}
 
