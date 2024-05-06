@@ -227,7 +227,7 @@ pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 pub(crate) struct Events {
     pub(crate) workspace_changed_events: Closures<WorkspaceType>,
     pub(crate) workspace_added_events: Closures<WorkspaceType>,
-    pub(crate) workspace_destroyed_events: Closures<WorkspaceType>,
+    pub(crate) workspace_destroyed_events: Closures<WorkspaceDestroyedEventData>,
     pub(crate) workspace_moved_events: Closures<MonitorEventData>,
     pub(crate) workspace_rename_events: Closures<WorkspaceRenameEventData>,
     pub(crate) active_monitor_changed_events: Closures<MonitorEventData>,
@@ -253,7 +253,7 @@ pub(crate) struct Events {
 pub(crate) struct AsyncEvents {
     pub(crate) workspace_changed_events: AsyncClosures<WorkspaceType>,
     pub(crate) workspace_added_events: AsyncClosures<WorkspaceType>,
-    pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceType>,
+    pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceDestroyedEventData>,
     pub(crate) workspace_moved_events: AsyncClosures<MonitorEventData>,
     pub(crate) workspace_rename_events: AsyncClosures<WorkspaceRenameEventData>,
     pub(crate) active_monitor_changed_events: AsyncClosures<MonitorEventData>,
@@ -273,6 +273,15 @@ pub(crate) struct AsyncEvents {
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
+}
+
+/// Event data for destroyworkspacev2 event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceDestroyedEventData {
+    /// Workspace Id
+    pub workspace_id: WorkspaceId,
+    /// Workspace name
+    pub workspace_name: String,
 }
 
 /// Event data for renameworkspace event
@@ -451,7 +460,7 @@ pub struct WindowFloatEventData {
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
     WorkspaceChanged(WorkspaceType),
-    WorkspaceDeleted(WorkspaceType),
+    WorkspaceDeleted(WorkspaceDestroyedEventData),
     WorkspaceAdded(WorkspaceType),
     WorkspaceMoved(MonitorEventData),
     WorkspaceRename(WorkspaceRenameEventData),
@@ -520,7 +529,7 @@ static CHECK_TABLE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashS
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 enum ParsedEventType {
     WorkspaceChanged,
-    WorkspaceDeleted,
+    WorkspaceDeletedV2,
     WorkspaceAdded,
     WorkspaceMoved,
     WorkspaceRename,
@@ -551,10 +560,10 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
         (
             ParsedEventType::WorkspaceChanged,
             r"\bworkspace>>(?P<workspace>.*)",
-        ),
+        ), 
         (
-            ParsedEventType::WorkspaceDeleted,
-            r"destroyworkspace>>(?P<workspace>.*)",
+            ParsedEventType::WorkspaceDeletedV2,
+            r"destroyworkspacev2>>(?P<id>.*),(?P<name>.*)",
         ),
         (
             ParsedEventType::WorkspaceAdded,
@@ -714,10 +723,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 };
                 Ok(Event::WorkspaceChanged(workspace))
             }
-            ParsedEventType::WorkspaceDeleted => Ok(Event::WorkspaceDeleted(parse_string_as_work(
-                captures["workspace"].to_string(),
-            ))),
-
+            ParsedEventType::WorkspaceDeletedV2 => Ok(Event::WorkspaceDeleted(WorkspaceDestroyedEventData { workspace_id: captures["id"].parse::<WorkspaceId>().map_err(|e| HyprError::Internal(format!("Workspace delete v2: invalid integer error: {e}")))?, workspace_name: captures["name"].to_string() })),
             ParsedEventType::WorkspaceAdded => Ok(Event::WorkspaceAdded(parse_string_as_work(
                 captures["workspace"].to_string(),
             ))),
