@@ -54,7 +54,7 @@ regex = { version = "1.10", default-features = false, features = [
     "perf",
     "unicode",
 ] }
-num-traits = "0.2.18"
+num-traits = "0.2.19"
 paste = "1.0.14"
 derive_more = { version = "0.99", default-features = false, features = [
     "display",
