@@ -1,8 +1,8 @@
 /// Demostrates how to fetch and set keywords
 /// 
 /// Usage: cargo run --example keyword <keyword> <value>
-/// Example: cargo run --example decoration:rounding (prints value) 
-/// Example: cargo run --example decoration:rounding  15 (sets value)
+/// Example: cargo run --example keyword decoration:rounding (prints value) 
+/// Example: cargo run --example keyword decoration:rounding  15 (sets value)
 
 use hyprland::keyword::Keyword;
 

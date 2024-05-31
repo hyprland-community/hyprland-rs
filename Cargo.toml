@@ -23,8 +23,6 @@ lto = true
 
 [workspace]
 members = [
-    "examples/almost_everything",
-    "examples/almost_everything_async",
     "hyprland-macros",
 ]
 
@@ -42,6 +40,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_repr = "0.1"
 tokio = { version = "1", features = [
+    "full",
     "io-std",
     "io-util",
     "net",

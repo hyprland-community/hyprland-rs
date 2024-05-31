@@ -3,8 +3,6 @@
 /// Usage: cargo run --example dispatch
 
 use hyprland::dispatch::*;
-use hyprland::shared::HyprError;
-use hyprland::Result;
 
 fn do_call(desc: &str, action: DispatchType) -> hyprland::Result<()> {
     println!("{}: {:?}", desc, action); 
