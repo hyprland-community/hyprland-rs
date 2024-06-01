@@ -7,7 +7,6 @@ use std::io::Read;
 use hyprland::dispatch;
 use hyprland::dispatch::{Dispatch, DispatchType};
 use hyprland::keyword::Keyword;
-//use hyprland::config::binds::Flag;
 
 fn main() -> hyprland::Result<()> {
     Keyword::set("submap", "example")?;
@@ -18,8 +17,9 @@ fn main() -> hyprland::Result<()> {
 
     dispatch!(Custom, "submap", "example")?;
     println!("Press enter to revert to default keymap");
-    let _ = std::io::stdin().read(&mut [0u8]).unwrap();
+    let _ = std::io::stdin().read(&mut [0u8])
+        .expect("Crashed: Run `hyprctl dispatch submap reset` to return to default submap");
     dispatch!(Custom, "submap", "reset")?;
     
-    return Ok(());
+    Ok(())
 }

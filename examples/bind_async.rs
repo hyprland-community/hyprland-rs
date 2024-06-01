@@ -5,9 +5,8 @@
 
 use std::io::Read;
 use hyprland::dispatch;
-use hyprland::dispatch::{Dispatch, DispatchType;
+use hyprland::dispatch::{Dispatch, DispatchType};
 use hyprland::keyword::Keyword;
-//use hyprland::config::binds::Flag;
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
 async fn main() -> hyprland::Result<()> {
@@ -21,5 +20,5 @@ async fn main() -> hyprland::Result<()> {
     println!("Press enter to revert to default keymap");
     let _ = std::io::stdin().read(&mut [0u8]).unwrap();
     dispatch!(async; Custom, "submap", "reset").await?;
-    return Ok(());
+    Ok(())
 }

@@ -27,5 +27,5 @@ async fn main() -> hyprland::Result<()>{
         _ => println!("Specify one of client(s), monitor(s) or workspace(s)")
     };
 
-    return Ok(());
+    Ok(())
 }

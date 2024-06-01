@@ -2,32 +2,63 @@
 ///
 /// Usage: cargo run --example dispatch_async
 
-use hyprland::dispatch::*;
+use hyprland::dispatch;
+use hyprland::dispatch::{Corner, Dispatch, DispatchType, FullscreenType, WorkspaceIdentifierWithSpecial};
+use hyprland::dispatch::DispatchType::*;
 
-async fn do_call(desc: &str, action: DispatchType<'_>) -> hyprland::Result<()> {
-    println!("{}: {:?}", desc, action); 
-    Dispatch::call_async(action).await?; 
+fn describe(desc: &str)  {
     std::thread::sleep(std::time::Duration::from_secs(2)); 
-    return Ok(());
+    println!("{desc}"); 
 }
 
-async fn do_toggle(desc: &str, action: DispatchType<'_>) -> hyprland::Result<()> { 
-    do_call(desc, action.clone()).await?; 
-    do_call(desc, action).await?;
-    return Ok(());
-}
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 2)]
-async fn main() -> hyprland::Result<()>{
-    do_call("Moving cursor to top left", DispatchType::MoveCursorToCorner(Corner::TopLeft)).await?;
-    do_call("Moving cursor to top right", DispatchType::MoveCursorToCorner(Corner::TopRight)).await?;
-    do_call("Moving cursor to bottom right", DispatchType::MoveCursorToCorner(Corner::BottomRight)).await?;
-    do_call("Moving cursor to bottom left", DispatchType::MoveCursorToCorner(Corner::BottomLeft)).await?;
-    do_call("Moving window to next workspace", DispatchType::MoveToWorkspace(WorkspaceIdentifierWithSpecial::Relative(1), None)).await?;
-    do_call("Moving window to previous workspace", DispatchType::MoveToWorkspace(WorkspaceIdentifierWithSpecial::Relative(-1), None)).await?;
-    do_toggle("Toggling fullsceen", DispatchType::ToggleFullscreen(FullscreenType::Maximize)).await?;
-    do_toggle("Toggling floating window", DispatchType::ToggleFloating(None)).await?;
-    do_toggle("Toggling split layout", DispatchType::ToggleSplit).await?;
-    do_toggle("Toggling opaque", DispatchType::ToggleOpaque).await?;
-    return Ok(());
-}   
+async fn main() -> hyprland::Result<()> {
+    let args = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+    let program = if args.len() == 0 { "kitty" } else { &args };
+    println!("Executing {program}");
+    dispatch!(async; Exec, program).await?;
+
+    describe("Moving cursor to top left");
+    dispatch!(async; MoveCursorToCorner, Corner::TopLeft).await?; 
+    
+    describe("Moving cursor to top right");
+    dispatch!(async; MoveCursorToCorner, Corner::TopRight).await?;
+    
+    describe("Moving cursor to bottom right");
+    dispatch!(async; MoveCursorToCorner, Corner::BottomRight).await?;
+    
+    describe("Moving cursor to bottom left");
+    dispatch!(async; MoveCursorToCorner, Corner::BottomLeft).await?;
+    
+    describe("Moving window to next workspace");
+    dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(1), None).await?;
+    
+    describe("Moving window to previous workspace");
+    dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(-1), None).await?;
+    
+    describe("Toggling fullscreen");
+	dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
+	describe("Reverting fullscreen");
+	dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
+
+    describe("Toggling floating window");
+	dispatch!(async; ToggleFloating, None).await?;
+	describe("Reverting floating window");
+	Dispatch::call_async(ToggleFloating(None)).await?;
+
+    describe("Toggling split layout");
+	Dispatch::call_async(ToggleSplit).await?;
+	describe("Reverting split layout");
+	Dispatch::call_async(ToggleSplit).await?;
+
+    describe("Toggling opaque");
+	Dispatch::call_async(ToggleOpaque).await?;
+	describe("Reverting opaque");
+	Dispatch::call_async(ToggleOpaque).await?;
+
+    describe("Closing window");
+    Dispatch::call_async(KillActiveWindow).await?;
+
+    Ok(())
+}  

@@ -5,20 +5,20 @@
 use hyprland::event_listener::EventListener;
 
 fn main() -> hyprland::Result<()> {
-        // Create a event listener
-        let mut event_listener = EventListener::new();
+    // Create a event listener
+    let mut event_listener = EventListener::new();
 
-        event_listener.add_active_window_change_handler(|data| println!("{data:#?}"));
-        event_listener.add_fullscreen_state_change_handler(
-            |fstate| println!("Window {} fullscreen", if fstate { "is" } else { "is not" })
-        );
-        event_listener.add_active_monitor_change_handler(|state| println!("Monitor state: {state:#?}"));    
-        event_listener.add_workspace_change_handler(|id| println!("workspace changed to {id:?}"));
-    
-        // and execute the function
-        // here we are using the blocking variant
-        // but there is a async version too
-        event_listener.start_listener()?;
+    event_listener.add_active_window_change_handler(|data| println!("{data:#?}"));
+    event_listener.add_fullscreen_state_change_handler(
+        |fstate| println!("Window {} fullscreen", if fstate { "is" } else { "is not" })
+    );
+    event_listener.add_active_monitor_change_handler(|state| println!("Monitor state: {state:#?}"));    
+    event_listener.add_workspace_change_handler(|id| println!("workspace changed to {id:?}"));
 
-        return Ok(());
+    // and execute the function
+    // here we are using the blocking variant
+    // but there is a async version too
+    event_listener.start_listener()?;
+
+    Ok(())
 }
