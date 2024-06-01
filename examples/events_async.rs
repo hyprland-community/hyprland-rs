@@ -5,7 +5,7 @@
 use hyprland::async_closure;
 use hyprland::event_listener::AsyncEventListener;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     // Create a event listener
     let mut event_listener = AsyncEventListener::new();

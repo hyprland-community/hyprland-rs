@@ -6,7 +6,7 @@
 
 use hyprland::keyword::Keyword;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let keyword = args[0].clone();

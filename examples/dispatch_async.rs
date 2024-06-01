@@ -12,7 +12,7 @@ fn describe(desc: &str)  {
 }
 
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     let args = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
     let program = if args.len() == 0 { "kitty" } else { &args };

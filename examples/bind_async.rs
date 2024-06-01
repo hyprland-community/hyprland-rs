@@ -8,7 +8,7 @@ use hyprland::dispatch;
 use hyprland::dispatch::{Dispatch, DispatchType};
 use hyprland::keyword::Keyword;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 2)]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     Keyword::set_async("submap", "example").await?;
     hyprland::bind!(async; SUPER, Key, "I" => ToggleFloating, None).await?;   
