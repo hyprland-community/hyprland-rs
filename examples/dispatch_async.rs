@@ -39,22 +39,22 @@ async fn main() -> hyprland::Result<()> {
     
     describe("Toggling fullscreen");
     dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
-	describe("Reverting fullscreen");
+    describe("Reverting fullscreen");
     dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
 
     describe("Toggling floating window");
     dispatch!(async; ToggleFloating, None).await?;
-	describe("Reverting floating window");
+    describe("Reverting floating window");
     Dispatch::call_async(ToggleFloating(None)).await?;
 
     describe("Toggling split layout");
     Dispatch::call_async(ToggleSplit).await?;
-	describe("Reverting split layout");
+    describe("Reverting split layout");
     Dispatch::call_async(ToggleSplit).await?;
 
     describe("Toggling opaque");
     Dispatch::call_async(ToggleOpaque).await?;
-	describe("Reverting opaque");
+    describe("Reverting opaque");
     Dispatch::call_async(ToggleOpaque).await?;
 
     describe("Closing window");
