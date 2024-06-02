@@ -14,10 +14,10 @@ fn describe(desc: &str)  {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
-    let args = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
-    let program = if args.len() == 0 { "kitty" } else { &args };
+    let program = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+    
     println!("Executing {program}");
-    dispatch!(async; Exec, program).await?;
+    dispatch!(async; Exec, &program).await?;
 
     describe("Moving cursor to top left");
     dispatch!(async; MoveCursorToCorner, Corner::TopLeft).await?; 
@@ -38,24 +38,24 @@ async fn main() -> hyprland::Result<()> {
     dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(-1), None).await?;
     
     describe("Toggling fullscreen");
-	dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
+    dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
 	describe("Reverting fullscreen");
-	dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
+    dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
 
     describe("Toggling floating window");
-	dispatch!(async; ToggleFloating, None).await?;
+    dispatch!(async; ToggleFloating, None).await?;
 	describe("Reverting floating window");
-	Dispatch::call_async(ToggleFloating(None)).await?;
+    Dispatch::call_async(ToggleFloating(None)).await?;
 
     describe("Toggling split layout");
-	Dispatch::call_async(ToggleSplit).await?;
+    Dispatch::call_async(ToggleSplit).await?;
 	describe("Reverting split layout");
-	Dispatch::call_async(ToggleSplit).await?;
+    Dispatch::call_async(ToggleSplit).await?;
 
     describe("Toggling opaque");
-	Dispatch::call_async(ToggleOpaque).await?;
+    Dispatch::call_async(ToggleOpaque).await?;
 	describe("Reverting opaque");
-	Dispatch::call_async(ToggleOpaque).await?;
+    Dispatch::call_async(ToggleOpaque).await?;
 
     describe("Closing window");
     Dispatch::call_async(KillActiveWindow).await?;

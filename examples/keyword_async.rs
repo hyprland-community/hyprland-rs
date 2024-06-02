@@ -14,7 +14,8 @@ async fn main() -> hyprland::Result<()> {
     match args.len() {
         0 => panic!("You need to pass a keyword"),
         1 => println!("{} value is {}", keyword, Keyword::get_async(&keyword).await?.value),
-        _ => Keyword::set_async(keyword, args[1].clone()).await?
+        2 => Keyword::set_async(keyword, args[1].clone()).await?
+        _ => panic!("Takes up to 2 arguments only!")
     }
 
     Ok(())

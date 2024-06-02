@@ -12,49 +12,48 @@ fn describe(desc: &str) {
     println!("{}", desc); 
 }
 
-fn main() -> hyprland::Result<()>{
-    let args = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
-    let program = if args.len() == 0 { "kitty" } else { &args };
-    println!("Executing {program}");
-    dispatch!(Exec, program)?;
+fn main() -> hyprland::Result<()> {
+    let program = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
+
+    dispatch!(Exec, &program)?;
 
     describe("Moving cursor to top left");
-	dispatch!(MoveCursorToCorner, Corner::TopLeft)?;
+    dispatch!(MoveCursorToCorner, Corner::TopLeft)?;
 
     describe("Moving cursor to top right");
-	dispatch!(MoveCursorToCorner, Corner::TopRight)?;
+    dispatch!(MoveCursorToCorner, Corner::TopRight)?;
 
     describe("Moving cursor to bottom right");
-	dispatch!(MoveCursorToCorner, Corner::BottomRight)?;
+    dispatch!(MoveCursorToCorner, Corner::BottomRight)?;
 
     describe("Moving cursor to bottom left");
-	dispatch!(MoveCursorToCorner, Corner::BottomLeft)?;
+    dispatch!(MoveCursorToCorner, Corner::BottomLeft)?;
 
     describe("Moving window to next workspace");
-	dispatch!(MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(1), None)?;
+    dispatch!(MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(1), None)?;
 
     describe("Moving window to previous workspace");
-	dispatch!(MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(-1), None)?;
+    dispatch!(MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(-1), None)?;
 
     describe("Toggling fullscreen");
-	dispatch!(ToggleFullscreen, FullscreenType::Maximize)?;
+    dispatch!(ToggleFullscreen, FullscreenType::Maximize)?;
     describe("Reverting fullscreen");
-	Dispatch::call(ToggleFullscreen(FullscreenType::Maximize))?;
+    Dispatch::call(ToggleFullscreen(FullscreenType::Maximize))?;
 
     describe("Toggling floating window");
-	dispatch!(ToggleFloating, None)?;
+    dispatch!(ToggleFloating, None)?;
     describe("Reverting floating window");
-	Dispatch::call(ToggleFloating(None))?;
+    Dispatch::call(ToggleFloating(None))?;
 
     describe("Toggling split layout");
-	Dispatch::call(ToggleSplit)?;
+    Dispatch::call(ToggleSplit)?;
     describe("Reverting split layout");
-	Dispatch::call(ToggleSplit)?;
+    Dispatch::call(ToggleSplit)?;
 
     describe("Toggling opaque");
-	Dispatch::call(ToggleOpaque)?;
+    Dispatch::call(ToggleOpaque)?;
     describe("Reverting opaque");
-	Dispatch::call(ToggleOpaque)?;
+    Dispatch::call(ToggleOpaque)?;
 
     describe("Closing window");
     Dispatch::call(KillActiveWindow)?;
