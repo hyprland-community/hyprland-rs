@@ -65,6 +65,12 @@ impl HasAsyncExecutor for AsyncEventListener {
             Event::WindowTitleChanged(addr) => arm_async!(addr, window_title_changed_events, self),
             Event::Screencast(data) => arm_async!(data, screencast_events, self),
             Event::ConfigReloaded => arm_async!(config_reloaded_events, self),
+            Event::IgnoreGroupLockStateChanged(bool) => {
+                arm_async!(bool, ignore_group_lock_state_changed_events, self)
+            }
+            Event::LockGroupsStateChanged(bool) => {
+                arm_async!(bool, lock_groups_state_changed_events, self)
+            }
         }
         Ok(())
     }

@@ -149,6 +149,8 @@ macro_rules! init_events {
             window_title_changed_events: vec![],
             screencast_events: vec![],
             config_reloaded_events: vec![],
+            ignore_group_lock_state_changed_events: vec![],
+            lock_groups_state_changed_events: vec![],
         }
     };
 }

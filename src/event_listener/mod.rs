@@ -37,3 +37,5 @@ add_listener!(minimize, MinimizeEventData, "the minimize state of a window is ch
 add_listener!(window_title_change d, Address, "a window title is changed", "A window title changed" => data);
 add_listener!(screencast, ScreencastEventData, "the screencast state of a window is changed", "screencast state changed" => data);
 add_listener!(config_reload ed, "the configuration of Hyprland is reloaded", "config reloaded" => _empty);
+add_listener!(ignore_group_lock_state_change d, bool, "the state of ignore group lock is toggled", "ignore group lock toggled to" => data);
+add_listener!(lock_groups_state_change d, bool, "the state of lock groups is toggled ", "lock group state toggled to" => data);

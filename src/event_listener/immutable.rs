@@ -56,6 +56,10 @@ impl HasExecutor for EventListener {
             WindowTitleChanged(addr) => arm!(addr, window_title_changed_events, self),
             Screencast(data) => arm!(data, screencast_events, self),
             ConfigReloaded => arm!(config_reloaded_events, self),
+            IgnoreGroupLockStateChanged(bool) => {
+                arm!(bool, ignore_group_lock_state_changed_events, self)
+            }
+            LockGroupsStateChanged(bool) => arm!(bool, lock_groups_state_changed_events, self),
         }
         Ok(())
     }

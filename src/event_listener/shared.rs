@@ -252,6 +252,8 @@ pub(crate) struct Events {
     pub(crate) window_title_changed_events: Closures<Address>,
     pub(crate) screencast_events: Closures<ScreencastEventData>,
     pub(crate) config_reloaded_events: Vec<EmptyClosure>,
+    pub(crate) ignore_group_lock_state_changed_events: Closures<bool>,
+    pub(crate) lock_groups_state_changed_events: Closures<bool>
 }
 
 #[allow(clippy::type_complexity)]
@@ -281,6 +283,8 @@ pub(crate) struct AsyncEvents {
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
     pub(crate) config_reloaded_events: Vec<EmptyAsyncClosure>,
+    pub(crate) ignore_group_lock_state_changed_events: AsyncClosures<bool>,
+    pub(crate) lock_groups_state_changed_events: AsyncClosures<bool>
 }
 
 /// Event data for destroyworkspacev2 event
@@ -501,6 +505,8 @@ pub(crate) enum Event {
     WindowTitleChanged(Address),
     Screencast(ScreencastEventData),
     ConfigReloaded,
+    IgnoreGroupLockStateChanged(bool),
+    LockGroupsStateChanged(bool)
 }
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
@@ -571,6 +577,8 @@ enum ParsedEventType {
     WindowTitleChanged,
     Screencast,
     ConfigReloaded,
+    IgnoreGroupLock,
+    LockGroups,
     Unknown,
 }
 
@@ -671,6 +679,8 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
             r"windowtitle>>(?P<address>.*)",
         ),
         (ParsedEventType::ConfigReloaded, r"configreloaded>>"),
+        (ParsedEventType::IgnoreGroupLock, r"ignoregrouplock>>(?P<state>[0-1])"),
+        (ParsedEventType::LockGroups, r"lockgroups>>(?P<state>[0-1])"),
         (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
     ].into_iter()
     .map(|(e, r)| (
@@ -861,6 +871,8 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::fmt_new(&captures["address"]))),
             ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::fmt_new(&captures["address"]))),
             ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded),
+            ParsedEventType::IgnoreGroupLock => Ok(Event::IgnoreGroupLockStateChanged(&captures["state"] == "1")),
+            ParsedEventType::LockGroups => Ok(Event::LockGroupsStateChanged(&captures["state"] == "1")),
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
                 {
