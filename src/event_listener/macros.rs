@@ -28,7 +28,7 @@ let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
 listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: $f) {
-                    self.events.[<$list_name _events>].push(EventTypes::Regular(Box::new(f)));
+                    self.events.[<$list_name _events>].push(Box::new(f));
                 }
             }
         }
@@ -65,7 +65,7 @@ let mut listener = EventListener::new();
 listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
 listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: $f) {
-                    self.events.[<$list_name _events>].push(AsyncEventTypes::Regular(Box::pin(f)));
+                    self.events.[<$list_name _events>].push(Box::pin(f));
                 }
             }
         }
