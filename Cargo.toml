@@ -23,8 +23,6 @@ lto = true
 
 [workspace]
 members = [
-    "examples/almost_everything",
-    "examples/almost_everything_async",
     "hyprland-macros",
 ]
 
@@ -44,7 +42,9 @@ serde_repr = "0.1"
 tokio = { version = "1", features = [
     "io-std",
     "io-util",
+    "macros",
     "net",
+    "rt"
 ], optional = true }
 async-net = { version = "2.0", optional = true }
 async-std = { version = "1.12", optional = true }

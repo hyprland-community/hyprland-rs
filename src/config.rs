@@ -114,7 +114,7 @@ pub mod binds {
                 "{mods},{key},{dispatcher}",
                 mods = binding.mods.join(),
                 key = binding.key,
-                dispatcher = gen_dispatch_str(binding.dispatcher, false)?
+                dispatcher = gen_dispatch_str(binding.dispatcher, false)?.data
             ))
         }
         /// Binds a keybinding
