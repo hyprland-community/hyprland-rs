@@ -252,10 +252,13 @@ pub(crate) type VoidFutureMut =
     std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>>;
 
 pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
+pub(crate) type EmptyClosure = EventTypes<dyn Fn(), dyn Fn()>;
 pub(crate) type AsyncClosure<T> = AsyncEventTypes<
     dyn Sync + Send + Fn(T) -> VoidFuture,
     dyn Sync + Send + Fn(T, &mut State) -> VoidFutureMut,
 >;
+pub(crate) type EmptyAsyncClosure =
+    AsyncEventTypes<dyn Sync + Send + Fn() -> VoidFuture, dyn Sync + Send + Fn() -> VoidFutureMut>;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
@@ -284,7 +287,7 @@ pub(crate) struct Events {
     pub(crate) minimize_events: Closures<MinimizeEventData>,
     pub(crate) window_title_changed_events: Closures<Address>,
     pub(crate) screencast_events: Closures<ScreencastEventData>,
-    pub(crate) config_reloaded_events: Closures<EmptyEventData>,
+    pub(crate) config_reloaded_events: Vec<EmptyClosure>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -313,7 +316,7 @@ pub(crate) struct AsyncEvents {
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
-    pub(crate) config_reloaded_events: AsyncClosures<EmptyEventData>,
+    pub(crate) config_reloaded_events: Vec<EmptyAsyncClosure>,
 }
 
 /// Event data for renameworkspace event
@@ -451,12 +454,25 @@ impl State {
     }
 }
 
+pub(crate) fn execute_empty_closure(f: &EmptyClosure) {
+    match f {
+        EventTypes::MutableState(_) => unreachable!(),
+        EventTypes::Regular(fun) => fun(),
+    }
+}
+
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     match f {
         EventTypes::MutableState(_) => {
             unreachable!("hyprland-rs: using mutable handler with immutable listener")
         }
         EventTypes::Regular(fun) => fun(val),
+    }
+}
+pub(crate) async fn execute_empty_closure_async(f: &EmptyAsyncClosure) {
+    match f {
+        AsyncEventTypes::MutableState(_) => unreachable!(),
+        AsyncEventTypes::Regular(fun) => fun().await,
     }
 }
 
@@ -544,10 +560,6 @@ pub struct WindowFloatEventData {
     pub is_floating: bool,
 }
 
-/// This struct is for events that have no data
-#[derive(Debug, Clone, Copy)]
-pub struct EmptyEventData;
-
 /// This enum holds every event type
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
@@ -577,7 +589,7 @@ pub(crate) enum Event {
     Minimize(MinimizeEventData),
     WindowTitleChanged(Address),
     Screencast(ScreencastEventData),
-    ConfigReloaded(EmptyEventData),
+    ConfigReloaded,
 }
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
@@ -940,7 +952,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             }
             ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::fmt_new(&captures["address"]))),
             ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::fmt_new(&captures["address"]))),
-            ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded(EmptyEventData)),
+            ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded),
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
                 {
