@@ -55,7 +55,7 @@ impl HasExecutor for EventListener {
             Minimize(data) => arm!(data, minimize_events, self),
             WindowTitleChanged(addr) => arm!(addr, window_title_changed_events, self),
             Screencast(data) => arm!(data, screencast_events, self),
-            ConfigReloaded(empty) => arm!(empty, config_reloaded_events, self),
+            ConfigReloaded => arm!(config_reloaded_events, self),
         }
         Ok(())
     }
