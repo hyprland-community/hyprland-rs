@@ -32,7 +32,9 @@ impl HasAsyncExecutor for AsyncEventListener {
         match event {
             Event::WorkspaceChanged(id) => arm_async!(id, workspace_changed_events, self),
             Event::WorkspaceAdded(id) => arm_async!(id, workspace_added_events, self),
-            Event::WorkspaceDeleted(id) => arm_async!(id, workspace_destroyed_events, self),
+            Event::WorkspaceDeleted(data) => {
+                arm_async!(data, workspace_destroyed_events, self)
+            }
             Event::WorkspaceMoved(evend) => arm_async!(evend, workspace_moved_events, self),
             Event::WorkspaceRename(even) => arm_async!(even, workspace_rename_events, self),
             Event::ActiveMonitorChanged(evend) => {

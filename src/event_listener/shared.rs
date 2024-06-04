@@ -176,28 +176,6 @@ impl ActiveWindowState {
         }
         Ok(())
     }
-    pub async fn execute_async_mut(
-        &mut self,
-        listener: &mut super::EventListenerMutable,
-    ) -> crate::Result<()> {
-        use ActiveWindowValue::{None, Queued};
-        let data = (&self.title, &self.class, &self.addr);
-        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
-            listener
-                .event_executor_async(Event::ActiveWindowChangedMerged(Some(WindowEventData {
-                    window_class: class.to_string(),
-                    window_title: title.to_string(),
-                    window_address: addr.clone(),
-                })))
-                .await?;
-            self.reset();
-        } else if let (None, None, None) = data {
-            listener
-                .event_executor_async(Event::ActiveWindowChangedMerged(Option::None))
-                .await?;
-        }
-        Ok(())
-    }
 
     pub fn ready(&self) -> bool {
         !self.class.is_empty() && !self.title.is_empty() && !self.addr.is_empty()
@@ -236,36 +214,22 @@ pub(crate) fn into<T>(from: Option<(T, T)>) -> (ActiveWindowValue<T>, ActiveWind
     }
 }
 
-pub(crate) enum EventTypes<T: ?Sized, U: ?Sized> {
-    MutableState(Box<U>),
-    Regular(Box<T>),
-}
-
-pub(crate) enum AsyncEventTypes<T: ?Sized, U: ?Sized> {
-    #[allow(dead_code)]
-    MutableState(Pin<Box<U>>),
-    Regular(Pin<Box<T>>),
-}
+pub(crate) type EventType<T> = Box<T>;
+pub(crate) type AsyncEventType<T> = Pin<Box<T>>;
 
 pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
-pub(crate) type VoidFutureMut =
-    std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send + 'static>>;
 
-pub(crate) type Closure<T> = EventTypes<dyn Fn(T), dyn Fn(T, &mut State)>;
-pub(crate) type EmptyClosure = EventTypes<dyn Fn(), dyn Fn()>;
-pub(crate) type AsyncClosure<T> = AsyncEventTypes<
-    dyn Sync + Send + Fn(T) -> VoidFuture,
-    dyn Sync + Send + Fn(T, &mut State) -> VoidFutureMut,
->;
-pub(crate) type EmptyAsyncClosure =
-    AsyncEventTypes<dyn Sync + Send + Fn() -> VoidFuture, dyn Sync + Send + Fn() -> VoidFutureMut>;
+pub(crate) type EmptyClosure = EventType<dyn Fn()>;
+pub(crate) type Closure<T> = EventType<dyn Fn(T)>;
+pub(crate) type AsyncClosure<T> = AsyncEventType<dyn Sync + Send + Fn(T) -> VoidFuture>;
+pub(crate) type EmptyAsyncClosure = AsyncEventType<dyn Sync + Send + Fn() -> VoidFuture>;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
 pub(crate) struct Events {
     pub(crate) workspace_changed_events: Closures<WorkspaceType>,
     pub(crate) workspace_added_events: Closures<WorkspaceType>,
-    pub(crate) workspace_destroyed_events: Closures<WorkspaceType>,
+    pub(crate) workspace_destroyed_events: Closures<WorkspaceDestroyedEventData>,
     pub(crate) workspace_moved_events: Closures<MonitorEventData>,
     pub(crate) workspace_rename_events: Closures<WorkspaceRenameEventData>,
     pub(crate) active_monitor_changed_events: Closures<MonitorEventData>,
@@ -294,7 +258,7 @@ pub(crate) struct Events {
 pub(crate) struct AsyncEvents {
     pub(crate) workspace_changed_events: AsyncClosures<WorkspaceType>,
     pub(crate) workspace_added_events: AsyncClosures<WorkspaceType>,
-    pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceType>,
+    pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceDestroyedEventData>,
     pub(crate) workspace_moved_events: AsyncClosures<MonitorEventData>,
     pub(crate) workspace_rename_events: AsyncClosures<WorkspaceRenameEventData>,
     pub(crate) active_monitor_changed_events: AsyncClosures<MonitorEventData>,
@@ -317,6 +281,15 @@ pub(crate) struct AsyncEvents {
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
     pub(crate) config_reloaded_events: Vec<EmptyAsyncClosure>,
+}
+
+/// Event data for destroyworkspacev2 event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceDestroyedEventData {
+    /// Workspace Id
+    pub workspace_id: WorkspaceId,
+    /// Workspace name
+    pub workspace_name: String,
 }
 
 /// Event data for renameworkspace event
@@ -455,80 +428,18 @@ impl State {
 }
 
 pub(crate) fn execute_empty_closure(f: &EmptyClosure) {
-    match f {
-        EventTypes::MutableState(_) => unreachable!(),
-        EventTypes::Regular(fun) => fun(),
-    }
+    f();
 }
 
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
-    match f {
-        EventTypes::MutableState(_) => {
-            unreachable!("hyprland-rs: using mutable handler with immutable listener")
-        }
-        EventTypes::Regular(fun) => fun(val),
-    }
+    f(val);
 }
 pub(crate) async fn execute_empty_closure_async(f: &EmptyAsyncClosure) {
-    match f {
-        AsyncEventTypes::MutableState(_) => unreachable!(),
-        AsyncEventTypes::Regular(fun) => fun().await,
-    }
+    f().await;
 }
 
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
-    match f {
-        AsyncEventTypes::MutableState(_) => {
-            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
-        }
-        AsyncEventTypes::Regular(fun) => fun(val).await,
-    }
-}
-
-#[allow(dead_code)]
-pub(crate) async fn execute_closure_async_state<T: Clone>(
-    f: &AsyncClosure<T>,
-    val: T,
-    state: &mut State,
-) {
-    match f {
-        AsyncEventTypes::MutableState(fun) => fun(val, state).await,
-        AsyncEventTypes::Regular(_) => {
-            unreachable!("hyprland-rs: Using mutable handler with immutable listener")
-        }
-    }
-}
-pub(crate) async fn execute_closure_mut<T>(
-    state: State,
-    f: &Closure<T>,
-    val: T,
-) -> crate::Result<State> {
-    let old_state = state.clone();
-    let mut new_state = state;
-    match f {
-        EventTypes::MutableState(fun) => fun(val, &mut new_state),
-        EventTypes::Regular(fun) => fun(val),
-    }
-
-    let new_state = new_state.execute_state(old_state).await?;
-    Ok(new_state)
-}
-
-#[allow(clippy::redundant_clone)]
-pub(crate) fn execute_closure_mut_sync<T>(
-    state: State,
-    f: &Closure<T>,
-    val: T,
-) -> crate::Result<State> {
-    let old_state = state.clone();
-    let mut new_state = state;
-    match f {
-        EventTypes::MutableState(fun) => fun(val, &mut new_state),
-        EventTypes::Regular(fun) => fun(val),
-    }
-
-    let new_state = new_state.execute_state_sync(old_state)?;
-    Ok(new_state)
+    f(val).await;
 }
 
 /// This struct holds window event data
@@ -564,7 +475,7 @@ pub struct WindowFloatEventData {
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
     WorkspaceChanged(WorkspaceType),
-    WorkspaceDeleted(WorkspaceType),
+    WorkspaceDeleted(WorkspaceDestroyedEventData),
     WorkspaceAdded(WorkspaceType),
     WorkspaceMoved(MonitorEventData),
     WorkspaceRename(WorkspaceRenameEventData),
@@ -636,7 +547,7 @@ static CHECK_TABLE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashS
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 enum ParsedEventType {
     WorkspaceChanged,
-    WorkspaceDeleted,
+    WorkspaceDeletedV2,
     WorkspaceAdded,
     WorkspaceMoved,
     WorkspaceRename,
@@ -669,10 +580,10 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
         (
             ParsedEventType::WorkspaceChanged,
             r"\bworkspace>>(?P<workspace>.*)",
-        ),
+        ), 
         (
-            ParsedEventType::WorkspaceDeleted,
-            r"destroyworkspace>>(?P<workspace>.*)",
+            ParsedEventType::WorkspaceDeletedV2,
+            r"destroyworkspacev2>>(?P<id>.*),(?P<name>.*)",
         ),
         (
             ParsedEventType::WorkspaceAdded,
@@ -836,10 +747,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 };
                 Ok(Event::WorkspaceChanged(workspace))
             }
-            ParsedEventType::WorkspaceDeleted => Ok(Event::WorkspaceDeleted(parse_string_as_work(
-                captures["workspace"].to_string(),
-            ))),
-
+            ParsedEventType::WorkspaceDeletedV2 => Ok(Event::WorkspaceDeleted(WorkspaceDestroyedEventData { workspace_id: captures["id"].parse::<WorkspaceId>().map_err(|e| HyprError::Internal(format!("Workspace delete v2: invalid integer error: {e}")))?, workspace_name: captures["name"].to_string() })),
             ParsedEventType::WorkspaceAdded => Ok(Event::WorkspaceAdded(parse_string_as_work(
                 captures["workspace"].to_string(),
             ))),

@@ -1,6 +1,8 @@
+use std::fmt::Display;
+
 use hyprland::data::{Client, Clients, Monitors, Workspace};
 use hyprland::dispatch::*;
-use hyprland::event_listener::EventListenerMutable as EventListener;
+use hyprland::event_listener::EventListener;
 use hyprland::keyword::*;
 use hyprland::prelude::*;
 use hyprland::shared::WorkspaceType;
@@ -48,7 +50,7 @@ fn main() -> hyprland::Result<()> {
     let mut event_listener = EventListener::new()?;
 
     // Shows when active window changes
-    event_listener.add_active_window_change_handler(|data, _| {
+    event_listener.add_active_window_change_handler(|data| {
         println!("{data:#?}");
     });
 
@@ -60,9 +62,9 @@ fn main() -> hyprland::Result<()> {
         }
     });
     // This makes it so you can't turn on fullscreen lol
-    event_listener.add_fullscreen_state_change_handler(|fstate, state| {
+    event_listener.add_fullscreen_state_change_handler(|fstate| {
         if fstate {
-            state.fullscreen_state = false;
+            dispatch!(ToggleFullscreen, FullscreenType::Real);
         }
     });
     // Makes a monitor unfocusable
@@ -75,7 +77,7 @@ fn main() -> hyprland::Result<()> {
     });
 
     // add event, yes functions and closures both work!
-    event_listener.add_workspace_change_handler(|id, _| println!("workspace changed to {id:#?}"));
+    event_listener.add_workspace_change_handler(|id| println!("workspace changed to {id:#?}"));
 
     // and execute the function
     // here we are using the blocking variant

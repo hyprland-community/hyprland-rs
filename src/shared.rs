@@ -330,7 +330,7 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
             hypr_err!("Corrupted Hyprland socket variable: Invalid unicode!")
         }
     };
-    
+
     let mut p: PathBuf;
     fn var_path(instance: String) -> Option<PathBuf> {
         if let Ok(runtime_path) = var("XDG_RUNTIME_DIR") {
@@ -364,7 +364,7 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
     } else {
         hypr_err!("No xdg runtime path found!")
     }
-    
+
     p.push(socket_type.socket_name());
     Ok(p)
 }
