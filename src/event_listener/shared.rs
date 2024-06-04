@@ -3,18 +3,6 @@ use once_cell::sync::Lazy;
 use regex::{Error as RegexError, Regex};
 use std::{fmt::Debug, pin::Pin};
 
-/// This trait provides shared behaviour for listener types
-pub(crate) trait Listener: HasExecutor {
-    /// This method starts the event listener
-    fn start_listener() -> crate::Result<()>;
-}
-
-/// This trait provides shared behaviour for listener types
-pub(crate) trait AsyncListener: HasAsyncExecutor {
-    /// This method starts the event listener (async)
-    async fn start_listener_async() -> crate::Result<()>;
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ActiveWindowValue<T> {
     Queued(T), // aka Some(T)
@@ -253,7 +241,8 @@ pub(crate) struct Events {
     pub(crate) screencast_events: Closures<ScreencastEventData>,
     pub(crate) config_reloaded_events: Vec<EmptyClosure>,
     pub(crate) ignore_group_lock_state_changed_events: Closures<bool>,
-    pub(crate) lock_groups_state_changed_events: Closures<bool>
+    pub(crate) lock_groups_state_changed_events: Closures<bool>,
+    pub(crate) window_pin_state_toggled_events: Closures<WindowPinEventData>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -284,7 +273,8 @@ pub(crate) struct AsyncEvents {
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
     pub(crate) config_reloaded_events: Vec<EmptyAsyncClosure>,
     pub(crate) ignore_group_lock_state_changed_events: AsyncClosures<bool>,
-    pub(crate) lock_groups_state_changed_events: AsyncClosures<bool>
+    pub(crate) lock_groups_state_changed_events: AsyncClosures<bool>,
+    pub(crate) window_pin_state_toggled_events: AsyncClosures<WindowPinEventData>,
 }
 
 /// Event data for destroyworkspacev2 event
@@ -466,13 +456,22 @@ pub struct MonitorEventData {
     pub workspace: WorkspaceType,
 }
 
-/// This struct holds monitor event data
+/// This struct holds window float event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowFloatEventData {
     /// The window address
     pub window_address: Address,
     /// The float state
     pub is_floating: bool,
+}
+
+/// This struct holds window pin event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowPinEventData {
+    /// The window address
+    pub window_address: Address,
+    /// The pin state
+    pub is_pinned: bool,
 }
 
 /// This enum holds every event type
@@ -506,7 +505,8 @@ pub(crate) enum Event {
     Screencast(ScreencastEventData),
     ConfigReloaded,
     IgnoreGroupLockStateChanged(bool),
-    LockGroupsStateChanged(bool)
+    LockGroupsStateChanged(bool),
+    WindowPinned(WindowPinEventData)
 }
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
@@ -579,6 +579,7 @@ enum ParsedEventType {
     ConfigReloaded,
     IgnoreGroupLock,
     LockGroups,
+    Pin,
     Unknown,
 }
 
@@ -681,6 +682,7 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
         (ParsedEventType::ConfigReloaded, r"configreloaded>>"),
         (ParsedEventType::IgnoreGroupLock, r"ignoregrouplock>>(?P<state>[0-1])"),
         (ParsedEventType::LockGroups, r"lockgroups>>(?P<state>[0-1])"),
+        (ParsedEventType::Pin, r"pin>>(?P<address>.*),(?P<state>[0-1])"),
         (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
     ].into_iter()
     .map(|(e, r)| (
@@ -873,6 +875,10 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded),
             ParsedEventType::IgnoreGroupLock => Ok(Event::IgnoreGroupLockStateChanged(&captures["state"] == "1")),
             ParsedEventType::LockGroups => Ok(Event::LockGroupsStateChanged(&captures["state"] == "1")),
+            ParsedEventType::Pin => Ok(Event::WindowPinned(WindowPinEventData { 
+                window_address: Address::fmt_new(&captures["address"]),
+                is_pinned: &captures["state"] == "1"
+            })),
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
                 {

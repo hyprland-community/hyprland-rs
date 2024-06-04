@@ -151,6 +151,7 @@ macro_rules! init_events {
             config_reloaded_events: vec![],
             ignore_group_lock_state_changed_events: vec![],
             lock_groups_state_changed_events: vec![],
+            window_pin_state_toggled_events: vec![],
         }
     };
 }

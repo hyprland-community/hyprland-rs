@@ -60,6 +60,7 @@ impl HasExecutor for EventListener {
                 arm!(bool, ignore_group_lock_state_changed_events, self)
             }
             LockGroupsStateChanged(bool) => arm!(bool, lock_groups_state_changed_events, self),
+            WindowPinned(data) => arm!(data, window_pin_state_toggled_events, self),
         }
         Ok(())
     }
