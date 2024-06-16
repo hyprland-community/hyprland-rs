@@ -3,18 +3,6 @@ use once_cell::sync::Lazy;
 use regex::{Error as RegexError, Regex};
 use std::{fmt::Debug, pin::Pin};
 
-/// This trait provides shared behaviour for listener types
-pub(crate) trait Listener: HasExecutor {
-    /// This method starts the event listener
-    fn start_listener() -> crate::Result<()>;
-}
-
-/// This trait provides shared behaviour for listener types
-pub(crate) trait AsyncListener: HasAsyncExecutor {
-    /// This method starts the event listener (async)
-    async fn start_listener_async() -> crate::Result<()>;
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ActiveWindowValue<T> {
     Queued(T), // aka Some(T)
@@ -219,8 +207,10 @@ pub(crate) type AsyncEventType<T> = Pin<Box<T>>;
 
 pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
 
+pub(crate) type EmptyClosure = EventType<dyn Fn()>;
 pub(crate) type Closure<T> = EventType<dyn Fn(T)>;
 pub(crate) type AsyncClosure<T> = AsyncEventType<dyn Sync + Send + Fn(T) -> VoidFuture>;
+pub(crate) type EmptyAsyncClosure = AsyncEventType<dyn Sync + Send + Fn() -> VoidFuture>;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
@@ -235,6 +225,8 @@ pub(crate) struct Events {
     pub(crate) fullscreen_state_changed_events: Closures<bool>,
     pub(crate) monitor_removed_events: Closures<String>,
     pub(crate) monitor_added_events: Closures<String>,
+    pub(crate) special_removed_events: Closures<String>,
+    pub(crate) special_changed_events: Closures<MonitorEventData>,
     pub(crate) keyboard_layout_change_events: Closures<LayoutEvent>,
     pub(crate) sub_map_changed_events: Closures<String>,
     pub(crate) window_open_events: Closures<WindowOpenEvent>,
@@ -247,6 +239,10 @@ pub(crate) struct Events {
     pub(crate) minimize_events: Closures<MinimizeEventData>,
     pub(crate) window_title_changed_events: Closures<Address>,
     pub(crate) screencast_events: Closures<ScreencastEventData>,
+    pub(crate) config_reloaded_events: Vec<EmptyClosure>,
+    pub(crate) ignore_group_lock_state_changed_events: Closures<bool>,
+    pub(crate) lock_groups_state_changed_events: Closures<bool>,
+    pub(crate) window_pin_state_toggled_events: Closures<WindowPinEventData>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -261,6 +257,8 @@ pub(crate) struct AsyncEvents {
     pub(crate) fullscreen_state_changed_events: AsyncClosures<bool>,
     pub(crate) monitor_removed_events: AsyncClosures<String>,
     pub(crate) monitor_added_events: AsyncClosures<String>,
+    pub(crate) special_removed_events: AsyncClosures<String>,
+    pub(crate) special_changed_events: AsyncClosures<MonitorEventData>,
     pub(crate) keyboard_layout_change_events: AsyncClosures<LayoutEvent>,
     pub(crate) sub_map_changed_events: AsyncClosures<String>,
     pub(crate) window_open_events: AsyncClosures<WindowOpenEvent>,
@@ -273,6 +271,10 @@ pub(crate) struct AsyncEvents {
     pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
     pub(crate) window_title_changed_events: AsyncClosures<Address>,
     pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
+    pub(crate) config_reloaded_events: Vec<EmptyAsyncClosure>,
+    pub(crate) ignore_group_lock_state_changed_events: AsyncClosures<bool>,
+    pub(crate) lock_groups_state_changed_events: AsyncClosures<bool>,
+    pub(crate) window_pin_state_toggled_events: AsyncClosures<WindowPinEventData>,
 }
 
 /// Event data for destroyworkspacev2 event
@@ -419,15 +421,22 @@ impl State {
     }
 }
 
+pub(crate) fn execute_empty_closure(f: &EmptyClosure) {
+    f();
+}
+
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     f(val);
+}
+pub(crate) async fn execute_empty_closure_async(f: &EmptyAsyncClosure) {
+    f().await;
 }
 
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     f(val).await;
 }
 
-/// This tuple struct holds window event data
+/// This struct holds window event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowEventData {
     /// The window class
@@ -438,7 +447,7 @@ pub struct WindowEventData {
     pub window_address: Address,
 }
 
-/// This tuple struct holds monitor event data
+/// This struct holds monitor event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonitorEventData {
     /// The monitor name
@@ -447,13 +456,22 @@ pub struct MonitorEventData {
     pub workspace: WorkspaceType,
 }
 
-/// This tuple struct holds monitor event data
+/// This struct holds window float event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowFloatEventData {
     /// The window address
     pub window_address: Address,
     /// The float state
     pub is_floating: bool,
+}
+
+/// This struct holds window pin event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowPinEventData {
+    /// The window address
+    pub window_address: Address,
+    /// The pin state
+    pub is_pinned: bool,
 }
 
 /// This enum holds every event type
@@ -474,6 +492,8 @@ pub(crate) enum Event {
     WindowOpened(WindowOpenEvent),
     WindowClosed(Address),
     WindowMoved(WindowMoveEvent),
+    SpecialRemoved(String),
+    ChangedSpecial(MonitorEventData),
     LayoutChanged(LayoutEvent),
     SubMapChanged(String),
     LayerOpened(String),
@@ -483,6 +503,10 @@ pub(crate) enum Event {
     Minimize(MinimizeEventData),
     WindowTitleChanged(Address),
     Screencast(ScreencastEventData),
+    ConfigReloaded,
+    IgnoreGroupLockStateChanged(bool),
+    LockGroupsStateChanged(bool),
+    WindowPinned(WindowPinEventData)
 }
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
@@ -542,6 +566,7 @@ enum ParsedEventType {
     WindowOpened,
     WindowClosed,
     WindowMoved,
+    ActiveSpecial,
     LayoutChanged,
     SubMapChanged,
     LayerOpened,
@@ -551,6 +576,10 @@ enum ParsedEventType {
     Minimize,
     WindowTitleChanged,
     Screencast,
+    ConfigReloaded,
+    IgnoreGroupLock,
+    LockGroups,
+    Pin,
     Unknown,
 }
 
@@ -617,6 +646,10 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
             ParsedEventType::LayoutChanged,
             r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",
         ),
+        (
+            ParsedEventType::ActiveSpecial,
+            r"activespecial>>(?P<workspace>.*),(?P<monitor>.*)",
+        ),
         (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
         (
             ParsedEventType::LayerOpened,
@@ -646,6 +679,10 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
             ParsedEventType::WindowTitleChanged,
             r"windowtitle>>(?P<address>.*)",
         ),
+        (ParsedEventType::ConfigReloaded, r"configreloaded>>"),
+        (ParsedEventType::IgnoreGroupLock, r"ignoregrouplock>>(?P<state>[0-1])"),
+        (ParsedEventType::LockGroups, r"lockgroups>>(?P<state>[0-1])"),
+        (ParsedEventType::Pin, r"pin>>(?P<address>.*),(?P<state>[0-1])"),
         (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
     ].into_iter()
     .map(|(e, r)| (
@@ -679,7 +716,6 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 .iter()
                 .filter_map(|(event_type, regex)| Some((event_type, regex.captures(event_line)?)))
                 .collect::<Vec<_>>();
-
             (event_line, type_matches)
         })
         .filter(|(_, b)| !b.is_empty());
@@ -786,6 +822,19 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 window_address: Address::fmt_new(&captures["address"]),
                 workspace_name: captures["workspace"].to_string(),
             })),
+            ParsedEventType::ActiveSpecial => {
+                let work = &captures["workspace"];
+                if work.is_empty() {
+                    Ok(Event::SpecialRemoved(work.to_string()))
+                } else {
+                    let workspace = parse_string_as_work(work.to_string());
+                    let monitor = &captures["monitor"];
+                    Ok(Event::ChangedSpecial(MonitorEventData {
+                        monitor_name: monitor.to_string(),
+                        workspace,
+                    }))
+                }
+            }
             ParsedEventType::LayoutChanged => Ok(Event::LayoutChanged(LayoutEvent {
                 keyboard_name: captures["keyboard"].to_string(),
                 layout_name: captures["layout"].to_string(),
@@ -823,6 +872,13 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             }
             ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::fmt_new(&captures["address"]))),
             ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::fmt_new(&captures["address"]))),
+            ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded),
+            ParsedEventType::IgnoreGroupLock => Ok(Event::IgnoreGroupLockStateChanged(&captures["state"] == "1")),
+            ParsedEventType::LockGroups => Ok(Event::LockGroupsStateChanged(&captures["state"] == "1")),
+            ParsedEventType::Pin => Ok(Event::WindowPinned(WindowPinEventData { 
+                window_address: Address::fmt_new(&captures["address"]),
+                is_pinned: &captures["state"] == "1"
+            })),
             ParsedEventType::Unknown => {
                 #[cfg(not(feature = "silent"))]
                 {
