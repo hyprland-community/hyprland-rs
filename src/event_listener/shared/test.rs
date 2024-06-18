@@ -1,5 +1,5 @@
 use crate::event_listener::{
-    event_parser, Event, MonitorEventData, WorkspaceType, WorkspaceV2Data,
+    event_parser, Event, MonitorEventData, WorkspaceRenameEventData, WorkspaceType, WorkspaceV2Data,
 };
 
 #[test]
@@ -47,6 +47,19 @@ fn test_parsing_createworkspacev2_special() {
         vec![Event::WorkspaceAddedV2(WorkspaceV2Data {
             workspace_id: -98,
             workspace_name: WorkspaceType::Special(Some("name-2".into())),
+        })]
+    )
+}
+
+#[test]
+fn test_parsing_workspacerename() {
+    let events = r#"renameworkspace>>3,new name"#;
+    let parsed = event_parser(events.into()).unwrap();
+    assert_eq!(
+        parsed,
+        vec![Event::WorkspaceRename(WorkspaceRenameEventData {
+            workspace_id: 3,
+            workspace_name: "new name".into(),
         })]
     )
 }
