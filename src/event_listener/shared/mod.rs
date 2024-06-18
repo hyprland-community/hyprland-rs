@@ -3,6 +3,9 @@ use once_cell::sync::Lazy;
 use regex::{Error as RegexError, Regex};
 use std::{fmt::Debug, pin::Pin};
 
+#[cfg(test)]
+mod test;
+
 /// This trait provides shared behaviour for listener types
 pub(crate) trait Listener: HasExecutor {
     /// This method starts the event listener
@@ -321,7 +324,7 @@ pub struct WindowMoveEvent {
 }
 
 /// The data for the event executed when opening a new window
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct WindowOpenEvent {
     /// Window address
     pub window_address: Address,
@@ -457,7 +460,7 @@ pub struct WindowFloatEventData {
 }
 
 /// This enum holds every event type
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Event {
     WorkspaceChanged(WorkspaceType),
     WorkspaceDeleted(WorkspaceDestroyedEventData),
