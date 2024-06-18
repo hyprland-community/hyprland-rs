@@ -3,6 +3,13 @@ use crate::event_listener::{
 };
 
 #[test]
+fn test_parsing_unknown_event() {
+    let events = r#"unknowevent>>2"#;
+    let parsed = event_parser(events.into()).unwrap();
+    assert_eq!(parsed, vec![])
+}
+
+#[test]
 fn test_parsing_createworkspace() {
     let events = r#"createworkspace>>2"#;
     let parsed = event_parser(events.into()).unwrap();
@@ -74,5 +81,23 @@ fn test_parsing_workspacerename() {
             workspace_id: 3,
             workspace_name: "new name".into(),
         })]
+    )
+}
+
+#[test]
+fn test_parsing_multiple_events() {
+    let events = r#"createworkspace>>2
+createworkspacev2>>2,named 2
+"#;
+    let parsed = event_parser(events.into()).unwrap();
+    assert_eq!(
+        parsed,
+        vec![
+            Event::WorkspaceAdded(WorkspaceType::Regular("2".into())),
+            Event::WorkspaceAddedV2(WorkspaceV2Data {
+                workspace_id: 2,
+                workspace_name: WorkspaceType::Regular("named 2".into()),
+            }),
+        ]
     )
 }
