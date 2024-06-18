@@ -10,6 +10,17 @@ fn test_parsing_unknown_event() {
 }
 
 #[test]
+fn test_parsing_bad_id() {
+    let events = r#"createworkspacev2>>NOT_A_NUMBER,name"#;
+    let error = event_parser(events.into()).err();
+    assert!(error.is_some());
+    assert_eq!(
+        format!("{}", error.unwrap()),
+        "Cannot parse workspace id: invalid integer error: invalid digit found in string"
+    )
+}
+
+#[test]
 fn test_parsing_createworkspace() {
     let events = r#"createworkspace>>2"#;
     let parsed = event_parser(events.into()).unwrap();
