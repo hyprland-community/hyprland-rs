@@ -508,6 +508,14 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
     }
 }
 
+fn parse_string_as_workspace_id(id: &str) -> crate::Result<WorkspaceId> {
+    id.parse::<WorkspaceId>().map_err(|e| {
+        HyprError::Internal(format!(
+            "Cannot parse workspace id: invalid integer error: {e}"
+        ))
+    })
+}
+
 macro_rules! report_unknown {
     ($event:expr) => {
         #[cfg(not(feature = "silent"))]
@@ -735,15 +743,15 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 Ok(Event::WorkspaceChanged(workspace))
             }
             ParsedEventType::WorkspaceDeletedV2 => Ok(Event::WorkspaceDeleted(WorkspaceV2Data {
-                workspace_id: captures["id"].parse::<WorkspaceId>().map_err(|e| HyprError::Internal(format!("Workspace delete v2: invalid integer error: {e}")))?,
+                workspace_id: parse_string_as_workspace_id(&captures["id"])?,
                 workspace_name: parse_string_as_work(captures["name"].to_string())
             })),
             ParsedEventType::WorkspaceAdded => Ok(Event::WorkspaceAdded(parse_string_as_work(
                 captures["workspace"].to_string(),
             ))),
             ParsedEventType::WorkspaceAddedV2 => Ok(Event::WorkspaceAddedV2(
-                WorkspaceV2Data{
-                    workspace_id: captures["id"].parse::<WorkspaceId>().map_err(|e| HyprError::Internal(format!("Workspace delete v2: invalid integer error: {e}")))?,
+                WorkspaceV2Data {
+                    workspace_id: parse_string_as_workspace_id(&captures["id"])?,
                     workspace_name: parse_string_as_work(captures["name"].to_string()),
                 }
             )),
