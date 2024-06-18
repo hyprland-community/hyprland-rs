@@ -4,7 +4,7 @@ use regex::{Error as RegexError, Regex};
 use std::{fmt::Debug, pin::Pin};
 
 #[cfg(test)]
-mod test;
+mod event_parsing_test;
 
 /// This trait provides shared behaviour for listener types
 pub(crate) trait Listener: HasExecutor {
