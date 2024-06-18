@@ -452,7 +452,7 @@ pub struct WindowFloatEventData {
     pub is_floating: bool,
 }
 
-/// This tuple struct workspacev2 creation and deletion data
+/// This struct workspacev2 creation and deletion data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceV2Data {
     /// Workspace Id
