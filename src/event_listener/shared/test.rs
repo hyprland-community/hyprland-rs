@@ -39,6 +39,19 @@ fn test_parsing_createworkspacev2() {
 }
 
 #[test]
+fn test_parsing_destroyworkspacev2() {
+    let events = r#"destroyworkspacev2>>2,name-2"#;
+    let parsed = event_parser(events.into()).unwrap();
+    assert_eq!(
+        parsed,
+        vec![Event::WorkspaceDeleted(WorkspaceV2Data {
+            workspace_id: 2,
+            workspace_name: WorkspaceType::Regular("name-2".into()),
+        })]
+    )
+}
+
+#[test]
 fn test_parsing_createworkspacev2_special() {
     let events = r#"createworkspacev2>>-98,special:name-2"#;
     let parsed = event_parser(events.into()).unwrap();
