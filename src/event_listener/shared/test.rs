@@ -1,4 +1,6 @@
-use crate::event_listener::{event_parser, Event, MonitorEventData, WorkspaceType};
+use crate::event_listener::{
+    event_parser, Event, MonitorEventData, WorkspaceType, WorkspaceV2Data,
+};
 
 #[test]
 fn test_parsing_createworkspace() {
@@ -19,6 +21,32 @@ fn test_parsing_moveworkspace() {
         vec![Event::WorkspaceMoved(MonitorEventData {
             monitor_name: "monitor-1".into(),
             workspace: WorkspaceType::Regular("2".into()),
+        })]
+    )
+}
+
+#[test]
+fn test_parsing_createworkspacev2() {
+    let events = r#"createworkspacev2>>2,name-2"#;
+    let parsed = event_parser(events.into()).unwrap();
+    assert_eq!(
+        parsed,
+        vec![Event::WorkspaceAddedV2(WorkspaceV2Data {
+            workspace_id: 2,
+            workspace_name: WorkspaceType::Regular("name-2".into()),
+        })]
+    )
+}
+
+#[test]
+fn test_parsing_createworkspacev2_special() {
+    let events = r#"createworkspacev2>>-98,special:name-2"#;
+    let parsed = event_parser(events.into()).unwrap();
+    assert_eq!(
+        parsed,
+        vec![Event::WorkspaceAddedV2(WorkspaceV2Data {
+            workspace_id: -98,
+            workspace_name: WorkspaceType::Special(Some("name-2".into())),
         })]
     )
 }
