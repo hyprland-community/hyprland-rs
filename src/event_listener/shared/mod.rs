@@ -761,9 +761,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             })),
             ParsedEventType::WorkspaceRename => {
                 Ok(Event::WorkspaceRename(WorkspaceRenameEventData {
-                    workspace_id: captures["id"]
-                        .parse::<WorkspaceId>()
-                        .map_err(|e| HyprError::Internal(format!("Workspace rename: invalid integer error: {e}")))?,
+                    workspace_id: parse_string_as_workspace_id(&captures["id"])?,
                     workspace_name: captures["name"].to_string(),
                 }))
             }
