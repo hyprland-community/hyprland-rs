@@ -365,6 +365,7 @@ pub enum TabletType {
 
 /// A enum to match what the tablet belongs to
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(untagged)]
 pub enum TabletBelongsTo {
     /// The belongsTo data if the tablet is of type TabletPad
     TabletPad {
