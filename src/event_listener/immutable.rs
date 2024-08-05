@@ -44,6 +44,8 @@ impl HasExecutor for EventListener {
             WindowClosed(addr) => arm!(addr, window_close_events, self),
             WindowMoved(even) => arm!(even, window_moved_events, self),
             WindowOpened(even) => arm!(even, window_open_events, self),
+            SpecialRemoved(monitor) => arm!(monitor, special_removed_events, self),
+            ChangedSpecial(data) => arm!(data, special_changed_events, self),
             LayoutChanged(even) => arm!(even, keyboard_layout_change_events, self),
             SubMapChanged(map) => arm!(map, sub_map_changed_events, self),
             LayerOpened(namespace) => arm!(namespace, layer_open_events, self),
@@ -53,6 +55,12 @@ impl HasExecutor for EventListener {
             Minimize(data) => arm!(data, minimize_events, self),
             WindowTitleChanged(addr) => arm!(addr, window_title_changed_events, self),
             Screencast(data) => arm!(data, screencast_events, self),
+            ConfigReloaded => arm!(config_reloaded_events, self),
+            IgnoreGroupLockStateChanged(bool) => {
+                arm!(bool, ignore_group_lock_state_changed_events, self)
+            }
+            LockGroupsStateChanged(bool) => arm!(bool, lock_groups_state_changed_events, self),
+            WindowPinned(data) => arm!(data, window_pin_state_toggled_events, self),
         }
         Ok(())
     }
