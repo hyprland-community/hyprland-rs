@@ -13,7 +13,7 @@ fn main() -> hyprland::Result<()> {
     match args.len() {
         0 => panic!("You need to pass a keyword"),
         1 => println!("{} value is {}", keyword, Keyword::get(&keyword)?.value),
-        2 => Keyword::set(keyword, args[1].clone())?
+        2 => Keyword::set(keyword, args[1].clone())?,
         _ => panic!("Takes up to 2 arguments only!")
     }
 
