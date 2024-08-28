@@ -27,7 +27,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.4.0-alpha.2"
+version = "0.4.0-alpha.3"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
 keywords = ["hyprland", "ipc", "hypr", "wayland", "linux"]
