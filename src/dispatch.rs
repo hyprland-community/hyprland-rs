@@ -309,8 +309,10 @@ pub enum DispatchType<'a> {
     MoveWindowPixel(Position, WindowIdentifier<'a>),
     /// This dispatcher cycles windows using a specified direction
     CycleWindow(CycleDirection),
+    /// This dispatcher swaps the focused window with the window on a workspace using a specified direction
+    SwapNext(CycleDirection),
     /// This dispatcher swaps windows using a specified direction
-    SwapWindow(CycleDirection),
+    SwapWindow(Direction),
     /// This dispatcher focuses a specified window
     FocusWindow(WindowIdentifier<'a>),
     /// This dispatcher focuses a specified monitor
@@ -493,7 +495,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ResizeWindowPixel(pos, win) => format!("resizewindowpixel{sep}{pos},{win}"),
         MoveWindowPixel(pos, win) => format!("movewindowpixel{sep}{pos},{win}"),
         CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
-        SwapWindow(dir) => format!("swapnext{sep}{dir}"),
+        SwapNext(dir) => format!("swapnext{sep}{dir}"),
+        SwapWindow(dir) => format!("swapwindow{sep}{dir}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
         FocusMonitor(mon) => format!("focusmonitor{sep}{mon}"),
         ChangeSplitRatio(ratio) => format!("splitratio {ratio}"),

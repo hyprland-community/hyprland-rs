@@ -197,6 +197,20 @@ create_data_struct!(
     doc: "This type provides a vector of workspaces"
 );
 
+/// This struct holds information for a client/window fullscreen mode
+#[derive(Serialize_repr, Deserialize_repr, Debug, Clone, PartialEq, Eq, Copy)]
+#[repr(u8)]
+pub enum FullscreenMode {
+    /// Normal window
+    None = 0,
+    /// Maximized window
+    Maximized = 1,
+    /// Fullscreen window
+    Fullscreen = 2,
+    /// Maximized and fullscreen window
+    MaximizedFullscreen = 3,
+}
+
 /// This struct holds information for a client/window
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct Client {
@@ -210,11 +224,11 @@ pub struct Client {
     pub workspace: WorkspaceBasic,
     /// Is this window floating?
     pub floating: bool,
-    /// Is this window fullscreen?
-    pub fullscreen: bool,
-    /// What type of fullscreen?
-    #[serde(rename = "fullscreenMode")]
-    pub fullscreen_mode: i8,
+    /// The internal fullscreen mode
+    pub fullscreen: FullscreenMode,
+    /// The client fullscreen mode
+    #[serde(rename = "fullscreenClient")]
+    pub fullscreen_client: FullscreenMode,
     /// The monitor id the window is on
     pub monitor: MonitorId,
     /// The initial window class
@@ -365,6 +379,7 @@ pub enum TabletType {
 
 /// A enum to match what the tablet belongs to
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(untagged)]
 pub enum TabletBelongsTo {
     /// The belongsTo data if the tablet is of type TabletPad
     TabletPad {
