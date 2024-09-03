@@ -91,10 +91,6 @@ macro_rules! hypr_err {
 
 pub(crate) use hypr_err;
 
-/// This type provides the result type used everywhere in Hyprland-rs
-#[deprecated(since = "0.3.1", note = "New location: hyprland::Result")]
-pub type HResult<T> = Result<T, HyprError>;
-
 /// The address struct holds a address as a tuple with a single value
 /// and has methods to reveal the address in different data formats
 #[derive(
@@ -109,7 +105,12 @@ impl Address {
     }
     /// This creates a new address from a value that implements [std::string::ToString]
     pub fn new<T: ToString>(string: T) -> Self {
-        Self(string.to_string())
+        let str = string.to_string();
+        if str.starts_with("0x") {
+            Self(str)
+        } else {
+            Self("0x".to_owned() + str.as_str())
+        }
     }
 }
 

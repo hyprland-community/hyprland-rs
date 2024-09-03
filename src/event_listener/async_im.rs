@@ -1,6 +1,4 @@
-use crate::shared::*;
-
-use crate::event_listener::shared::*;
+use super::*;
 
 /// This struct is used for adding event handlers and executing them on events
 /// # The Event Listener
@@ -27,51 +25,6 @@ impl Default for AsyncEventListener {
     }
 }
 
-impl HasAsyncExecutor for AsyncEventListener {
-    async fn event_executor_async(&mut self, event: Event) -> crate::Result<()> {
-        use Event::*;
-        match event {
-            WorkspaceChanged(id) => arm_async!(id, workspace_changed_events, self),
-            WorkspaceAdded(id) => arm_async!(id, workspace_added_events, self),
-            WorkspaceDeleted(data) => arm_async!(data, workspace_destroyed_events, self),
-            WorkspaceMoved(evend) => arm_async!(evend, workspace_moved_events, self),
-            WorkspaceRename(even) => arm_async!(even, workspace_rename_events, self),
-            ActiveMonitorChanged(evend) => arm_async!(evend, active_monitor_changed_events, self),
-            ActiveWindowChangedMerged(event) => {
-                arm_async!(event, active_window_changed_events, self)
-            }
-            ActiveWindowChangedV1(_) => (),
-            ActiveWindowChangedV2(_) => (),
-            FullscreenStateChanged(bool) => arm_async!(bool, fullscreen_state_changed_events, self),
-            MonitorAdded(monitor) => arm_async!(monitor, monitor_added_events, self),
-            MonitorRemoved(monitor) => arm_async!(monitor, monitor_removed_events, self),
-            WindowClosed(addr) => arm_async!(addr, window_close_events, self),
-            WindowMoved(even) => arm_async!(even, window_moved_events, self),
-            WindowOpened(even) => arm_async!(even, window_open_events, self),
-            SpecialRemoved(monitor) => arm_async!(monitor, special_removed_events, self),
-            ChangedSpecial(data) => arm_async!(data, special_changed_events, self),
-            LayoutChanged(even) => arm_async!(even, keyboard_layout_change_events, self),
-            SubMapChanged(map) => arm_async!(map, sub_map_changed_events, self),
-            LayerOpened(namespace) => arm_async!(namespace, layer_open_events, self),
-            LayerClosed(namespace) => arm_async!(namespace, layer_closed_events, self),
-            FloatStateChanged(even) => arm_async!(even, float_state_events, self),
-            UrgentStateChanged(even) => arm_async!(even, urgent_state_events, self),
-            Minimize(data) => arm_async!(data, minimize_events, self),
-            WindowTitleChanged(addr) => arm_async!(addr, window_title_changed_events, self),
-            Screencast(data) => arm_async!(data, screencast_events, self),
-            ConfigReloaded => arm_async!(config_reloaded_events, self),
-            IgnoreGroupLockStateChanged(bool) => {
-                arm_async!(bool, ignore_group_lock_state_changed_events, self)
-            }
-            LockGroupsStateChanged(bool) => {
-                arm_async!(bool, lock_groups_state_changed_events, self)
-            }
-            WindowPinned(data) => arm_async!(data, window_pin_state_toggled_events, self),
-        }
-        Ok(())
-    }
-}
-
 impl AsyncEventListener {
     /// This method creates a new EventListener instance
     ///
@@ -81,7 +34,7 @@ impl AsyncEventListener {
     /// ```
     pub fn new() -> Self {
         Self {
-            events: init_events!(AsyncEvents),
+            events: create_events_async(),
         }
     }
 
@@ -116,7 +69,8 @@ impl AsyncEventListener {
             let parsed: Vec<Event> = event_parser(string)?;
 
             for event in parsed {
-                self.event_primer_async(event, &mut active_windows).await?;
+                self.event_primer_exec_async(event, &mut active_windows)
+                    .await?;
             }
         }
 
