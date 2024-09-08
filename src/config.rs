@@ -1,6 +1,6 @@
 //! # Hyprland Configuration in Rust
 //!
-use crate::dispatch::{gen_dispatch_str, DispatchType};
+use crate::dispatch::{DispatchType, gen_dispatch_str};
 use crate::keyword::Keyword;
 
 /// Module providing stuff for adding an removing keybinds
@@ -71,22 +71,40 @@ pub mod binds {
         /// Works when screen is locked
         #[display(fmt = "l")]
         l,
-        /// Used for mouse binds
-        #[display(fmt = "m")]
-        m,
-        /// Repeats when held
-        #[display(fmt = "e")]
-        e,
         /// Activates on release
         #[display(fmt = "r")]
         r,
+        /// Repeats when held
+        #[display(fmt = "e")]
+        e,
+        /// Non-consuming, key/mouse events will be passed to the active window in addition to triggering the dispatcher.
+        #[display(fmt = "n")]
+        n,
+        /// Used for mouse binds
+        #[display(fmt = "m")]
+        m,
+        /// Transparent, cannot be shadowed by other binds.
+        #[display(fmt = "t")]
+        t,
+        /// Ignore mods, will ignore modifiers.
+        #[display(fmt = "i")]
+        i,
+        /// Separate, will arbitrarily combine keys between each mod/key
+        #[display(fmt = "s")]
+        s,
+        /// Has description, will allow you to write a description for your bind.
+        #[display(fmt = "d")]
+        d,
+        /// Bypasses the app's requests to inhibit keybinds.
+        #[display(fmt = "p")]
+        p,
     }
 
     impl Join for Vec<Flag> {
         fn join(&self) -> String {
             let mut buf = String::new();
-            for i in self {
-                buf.push_str(&i.to_string());
+            for f in self {
+                buf.push_str(&f.to_string());
             }
             buf
         }
@@ -131,7 +149,7 @@ pub mod binds {
                 format!("bind{}", binding.flags.join()),
                 Self::gen_str(binding)?,
             )
-            .await?;
+                .await?;
             Ok(())
         }
     }
