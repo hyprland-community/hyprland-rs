@@ -29,7 +29,7 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
 /// This pub(crate) enum holds every socket command that returns data
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DataCommands {
-    #[display(fmt = "monitors")]
+    #[display(fmt = "monitors all")]
     Monitors,
     #[display(fmt = "workspaces")]
     Workspaces,
@@ -122,6 +122,8 @@ pub struct Monitor {
     pub dpms_status: bool,
     /// VRR state
     pub vrr: bool,
+    /// Is the monitor disabled or not
+    pub disabled: bool,
 }
 
 impl HyprDataActive for Monitor {
