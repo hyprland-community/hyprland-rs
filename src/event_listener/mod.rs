@@ -44,7 +44,6 @@ events! {
     LayerClosed => String, "a layer is closed", "Layer closed" => data;
     FloatStateChanged => WindowFloatEventData, "the float state of a window is changed", "Float state changed" => data;
     UrgentStateChanged => Address, "the urgent state of a window is changed", "urgent state changed" => data;
-    Minimize => MinimizeEventData, "the minimize state of a window is changed", "minimize state changed" => data;
     WindowTitleChanged => WindowTitleEventData, "a window title is changed", "A window title changed" => data;
     Screencast => ScreencastEventData, "the screencast state of a window is changed", "screencast state changed" => data;
     ConfigReloaded => (), "the configuration of Hyprland is reloaded", "config reloaded" => _empty;

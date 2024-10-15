@@ -221,15 +221,6 @@ pub(crate) type EmptyAsyncClosure = AsyncEventType<dyn Sync + Send + Fn() -> Voi
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
-/// Event data for a minimize event
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MinimizeEventData {
-    /// Window address
-    pub window_address: Address,
-    /// whether it's minimized or not
-    pub minimized: bool,
-}
-
 /// Event data for screencast event
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScreencastEventData {
@@ -564,9 +555,6 @@ pub enum Event {
     /// An event that emits when the a window requests the urgent state,
     /// it is the equivelant of the `urgent` event
     UrgentStateChanged(Address),
-    /// An event that emits when a window requests to be minimized,
-    /// it is the equivelant of the `minimize` event
-    Minimize(MinimizeEventData),
     /// An event that emits when the title of a window changes,
     /// it is the equivelant of the `windowtitlev2` event
     WindowTitleChanged(WindowTitleEventData),
@@ -637,7 +625,6 @@ pub(crate) enum ParsedEventType {
     LayerClosed,
     FloatStateChanged,
     UrgentStateChanged,
-    Minimize,
     WindowTitleChangedV2,
     Screencast,
     ConfigReloaded,
@@ -674,7 +661,6 @@ pub(crate) static EVENTS: phf::Map<&'static str, (usize, ParsedEventType)> = phf
     "openlayer" => ((1),ParsedEventType::LayerOpened),
     "closelayer" => ((1),ParsedEventType::LayerClosed),
     "changefloatingmode" => ((2),ParsedEventType::FloatStateChanged),
-    "minimize" => ((2),ParsedEventType::Minimize),
     "screencast" => ((2),ParsedEventType::Screencast),
     "urgent" => ((1),ParsedEventType::UrgentStateChanged),
     "windowtitlev2" => ((2),ParsedEventType::WindowTitleChangedV2),
@@ -859,13 +845,6 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 Ok(Event::FloatStateChanged(WindowFloatEventData {
                     address: Address::new(get![ref args;0]),
                     floating: state,
-                }))
-            }
-            ParsedEventType::Minimize => {
-                let state = get![ref args;1] == "1";
-                Ok(Event::Minimize(MinimizeEventData {
-                    window_address: Address::new(get![ref args;0]),
-                    minimized: state,
                 }))
             }
             ParsedEventType::Screencast => {
