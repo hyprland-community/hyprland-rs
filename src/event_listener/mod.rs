@@ -13,6 +13,7 @@ mod async_im;
 pub use crate::event_listener::async_im::AsyncEventListener;
 
 add_listener!(workspace_change d, WorkspaceType, "on workspace change", "changed workspace to" => id);
+add_listener!(workspace_changed_v2, WorkspaceChangeEventData, "on workspace change", "changed workspace to" => id);
 add_listener!(workspace_added, WorkspaceType, "a workspace is created", "workspace was added" => id);
 add_listener!(workspace_destroy ed, WorkspaceDestroyedEventData, "a workspace is destroyed", "a workspace was destroyed" => data);
 add_listener!(workspace_moved, MonitorEventData, "a workspace is moved", "workspace was moved" => id);

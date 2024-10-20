@@ -109,6 +109,7 @@ macro_rules! init_events {
     ($name:ident) => {
         $name {
             workspace_changed_events: vec![],
+            workspace_changed_v2_events: vec![],
             workspace_added_events: vec![],
             workspace_destroyed_events: vec![],
             workspace_moved_events: vec![],

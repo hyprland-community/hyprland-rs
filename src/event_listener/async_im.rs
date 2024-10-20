@@ -31,6 +31,7 @@ impl HasAsyncExecutor for AsyncEventListener {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()> {
         match event {
             Event::WorkspaceChanged(id) => arm_async!(id, workspace_changed_events, self),
+            Event::WorkspaceChangedV2(id) => arm_async!(id, workspace_changed_v2_events, self),
             Event::WorkspaceAdded(id) => arm_async!(id, workspace_added_events, self),
             Event::WorkspaceDeleted(data) => {
                 arm_async!(data, workspace_destroyed_events, self)

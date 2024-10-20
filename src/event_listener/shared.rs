@@ -226,6 +226,7 @@ pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
 
 pub(crate) struct Events {
     pub(crate) workspace_changed_events: Closures<WorkspaceType>,
+    pub(crate) workspace_changed_v2_events: Closures<WorkspaceChangeEventData>,
     pub(crate) workspace_added_events: Closures<WorkspaceType>,
     pub(crate) workspace_destroyed_events: Closures<WorkspaceDestroyedEventData>,
     pub(crate) workspace_moved_events: Closures<MonitorEventData>,
@@ -252,6 +253,7 @@ pub(crate) struct Events {
 #[allow(clippy::type_complexity)]
 pub(crate) struct AsyncEvents {
     pub(crate) workspace_changed_events: AsyncClosures<WorkspaceType>,
+    pub(crate) workspace_changed_v2_events: AsyncClosures<WorkspaceChangeEventData>,
     pub(crate) workspace_added_events: AsyncClosures<WorkspaceType>,
     pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceDestroyedEventData>,
     pub(crate) workspace_moved_events: AsyncClosures<MonitorEventData>,
@@ -278,6 +280,15 @@ pub(crate) struct AsyncEvents {
 /// Event data for destroyworkspacev2 event
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceDestroyedEventData {
+    /// Workspace Id
+    pub workspace_id: WorkspaceId,
+    /// Workspace name
+    pub workspace_name: String,
+}
+
+/// Event data for workspacechangev2 event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceChangeEventData {
     /// Workspace Id
     pub workspace_id: WorkspaceId,
     /// Workspace name
@@ -460,6 +471,7 @@ pub struct WindowFloatEventData {
 #[derive(Debug, Clone)]
 pub(crate) enum Event {
     WorkspaceChanged(WorkspaceType),
+    WorkspaceChangedV2(WorkspaceChangeEventData),
     WorkspaceDeleted(WorkspaceDestroyedEventData),
     WorkspaceAdded(WorkspaceType),
     WorkspaceMoved(MonitorEventData),
@@ -529,6 +541,7 @@ static CHECK_TABLE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashS
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 enum ParsedEventType {
     WorkspaceChanged,
+    WorkspaceChangedV2,
     WorkspaceDeletedV2,
     WorkspaceAdded,
     WorkspaceMoved,
@@ -560,6 +573,10 @@ static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
         (
             ParsedEventType::WorkspaceChanged,
             r"\bworkspace>>(?P<workspace>.*)",
+        ), 
+        (
+            ParsedEventType::WorkspaceChangedV2,
+            r"workspacev2>>(?P<id>.*),(?P<name>.*)",
         ), 
         (
             ParsedEventType::WorkspaceDeletedV2,
@@ -714,6 +731,11 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     let parsed_events = temp_event_holder
         .into_iter()
         .map(|(event_str, event_type, captures)| match event_type {
+            ParsedEventType::WorkspaceChangedV2 => {
+                let workspace_id =  captures["id"].parse::<WorkspaceId>().map_err(|e| HyprError::Internal(format!("Workspace delete v2: invalid integer error: {e}")))?;
+                let workspace_name = captures["name"].to_string();
+                Ok(Event::WorkspaceChangedV2(WorkspaceChangeEventData{ workspace_id, workspace_name }))
+            },
             ParsedEventType::WorkspaceChanged => {
                 let captured = &captures["workspace"];
                 let workspace = if !captured.is_empty() {

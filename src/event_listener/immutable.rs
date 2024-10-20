@@ -30,6 +30,7 @@ impl HasExecutor for EventListener {
         use Event::*;
         match event {
             WorkspaceChanged(id) => arm!(id, workspace_changed_events, self),
+            WorkspaceChangedV2(id) => arm!(id, workspace_changed_v2_events, self),
             WorkspaceAdded(id) => arm!(id, workspace_added_events, self),
             WorkspaceDeleted(data) => arm!(data, workspace_destroyed_events, self),
             WorkspaceMoved(evend) => arm!(evend, workspace_moved_events, self),
