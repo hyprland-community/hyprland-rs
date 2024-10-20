@@ -1,7 +1,6 @@
 /// Demostrats using hyprland-rs to asynchronously listen for events
-/// 
+///
 /// Usage: cargo run --example events
-
 use hyprland::async_closure;
 use hyprland::event_listener::AsyncEventListener;
 
@@ -22,6 +21,10 @@ async fn main() -> hyprland::Result<()> {
         |state| println!("Monitor state: {state:#?}")
     });
 
+    event_listener.add_workspace_changed_v2_handler(async_closure! {
+        |id| println!("Workspace changed to {:#?}", id)
+    });
+
     // add event, yes functions and closures both work!
     event_listener.add_workspace_change_handler(async_closure! {
         |id| println!("workspace changed to {id:?}")
@@ -34,3 +37,4 @@ async fn main() -> hyprland::Result<()> {
 
     Ok(())
 }
+
