@@ -432,6 +432,15 @@ pub struct Version {
     pub dirty: bool,
     /// The git commit message
     pub commit_message: String,
+    /// The git commit date
+    pub commit_date: String,
+    /// The git tag hyprland was built on
+    pub tag: String,
+    /// The amount of commits to Hyprland at buildtime
+    pub commits: String,
+    /// Aquamarine version
+    #[serde(rename = "buildAquamarine")]
+    pub build_aquamarine: String,
     /// The flags that Hyprland was built with
     pub flags: Vec<String>,
 }
