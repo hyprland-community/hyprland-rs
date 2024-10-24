@@ -29,7 +29,7 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
 /// This pub(crate) enum holds every socket command that returns data
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DataCommands {
-    #[display(fmt = "monitors")]
+    #[display(fmt = "monitors all")]
     Monitors,
     #[display(fmt = "workspaces")]
     Workspaces,
@@ -122,6 +122,8 @@ pub struct Monitor {
     pub dpms_status: bool,
     /// VRR state
     pub vrr: bool,
+    /// Is the monitor disabled or not
+    pub disabled: bool,
 }
 
 impl HyprDataActive for Monitor {
@@ -430,6 +432,15 @@ pub struct Version {
     pub dirty: bool,
     /// The git commit message
     pub commit_message: String,
+    /// The git commit date
+    pub commit_date: String,
+    /// The git tag hyprland was built on
+    pub tag: String,
+    /// The amount of commits to Hyprland at buildtime
+    pub commits: String,
+    /// Aquamarine version
+    #[serde(rename = "buildAquamarine")]
+    pub build_aquamarine: String,
     /// The flags that Hyprland was built with
     pub flags: Vec<String>,
 }
