@@ -9,7 +9,10 @@
 #[macro_use]
 extern crate paste;
 
-pub use hyprland_macros::*;
+#[macro_use]
+extern crate hyprland_macros;
+
+pub use hyprland_macros::async_closure;
 
 /// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
 #[cfg(feature = "unsafe-impl")]

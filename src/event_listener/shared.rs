@@ -1,19 +1,5 @@
 use crate::shared::*;
-use once_cell::sync::Lazy;
-use regex::{Error as RegexError, Regex};
 use std::{fmt::Debug, pin::Pin};
-
-/// This trait provides shared behaviour for listener types
-pub(crate) trait Listener: HasExecutor {
-    /// This method starts the event listener
-    fn start_listener() -> crate::Result<()>;
-}
-
-/// This trait provides shared behaviour for listener types
-pub(crate) trait AsyncListener: HasAsyncExecutor {
-    /// This method starts the event listener (async)
-    async fn start_listener_async() -> crate::Result<()>;
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ActiveWindowValue<T> {
@@ -86,10 +72,59 @@ pub(crate) trait HasExecutor {
     }
 }
 
+pub(crate) fn event_primer_noexec<'a>(
+    event: Event,
+    abuf: &mut Vec<ActiveWindowState>,
+) -> crate::Result<Vec<Event>> {
+    if abuf.is_empty() {
+        abuf.push(ActiveWindowState::new());
+    }
+    let mut events: Vec<Event> = vec![];
+    if let Event::ActiveWindowChangedV1(data) = event {
+        let mut to_remove = vec![];
+        let data = into(data);
+        for (index, awin) in abuf.iter_mut().enumerate() {
+            if awin.title.is_empty() && awin.class.is_empty() {
+                (awin.class, awin.title) = data.clone();
+            }
+            if awin.ready() {
+                if let Some(event) = awin.get_event() {
+                    events.push(event);
+                };
+                to_remove.push(index);
+                break;
+            }
+        }
+        for index in to_remove.into_iter().rev() {
+            abuf.swap_remove(index);
+        }
+    } else if let Event::ActiveWindowChangedV2(data) = event {
+        let mut to_remove = vec![];
+        for (index, awin) in abuf.iter_mut().enumerate() {
+            if awin.addr.is_empty() {
+                awin.addr = data.clone().into();
+            }
+            if awin.ready() {
+                if let Some(event) = awin.get_event() {
+                    events.push(event);
+                };
+                to_remove.push(index);
+                break;
+            }
+        }
+        for index in to_remove.into_iter().rev() {
+            abuf.swap_remove(index);
+        }
+    } else {
+        events.push(event);
+    }
+    Ok(events)
+}
+
 pub(crate) trait HasAsyncExecutor {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()>;
 
-    async fn event_primer_async(
+    async fn event_primer_exec_async(
         &mut self,
         event: Event,
         abuf: &mut Vec<ActiveWindowState>,
@@ -97,42 +132,8 @@ pub(crate) trait HasAsyncExecutor {
     where
         Self: std::marker::Sized,
     {
-        if abuf.is_empty() {
-            abuf.push(ActiveWindowState::new());
-        }
-        if let Event::ActiveWindowChangedV1(data) = event {
-            let mut to_remove = vec![];
-            let data = into(data);
-            for (index, awin) in abuf.iter_mut().enumerate() {
-                if awin.title.is_empty() && awin.class.is_empty() {
-                    (awin.class, awin.title) = data.clone();
-                }
-                if awin.ready() {
-                    awin.execute_async(self).await?;
-                    to_remove.push(index);
-                    break;
-                }
-            }
-            for index in to_remove.into_iter().rev() {
-                abuf.swap_remove(index);
-            }
-        } else if let Event::ActiveWindowChangedV2(data) = event {
-            let mut to_remove = vec![];
-            for (index, awin) in abuf.iter_mut().enumerate() {
-                if awin.addr.is_empty() {
-                    awin.addr = data.clone().into();
-                }
-                if awin.ready() {
-                    awin.execute_async(self).await?;
-                    to_remove.push(index);
-                    break;
-                }
-            }
-            for index in to_remove.into_iter().rev() {
-                abuf.swap_remove(index);
-            }
-        } else {
-            self.event_executor_async(event).await?;
+        for x in event_primer_noexec(event, abuf)? {
+            self.event_executor_async(x).await?;
         }
         Ok(())
     }
@@ -143,38 +144,32 @@ impl ActiveWindowState {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
         if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
-            listener.event_executor(Event::ActiveWindowChangedMerged(Some(WindowEventData {
-                window_class: class.to_string(),
-                window_title: title.to_string(),
-                window_address: addr.clone(),
+            listener.event_executor(Event::ActiveWindowChanged(Some(WindowEventData {
+                class: class.to_string(),
+                title: title.to_string(),
+                address: addr.clone(),
             })))?;
             self.reset();
         } else if let (None, None, None) = data {
-            listener.event_executor(Event::ActiveWindowChangedMerged(Option::None))?;
+            listener.event_executor(Event::ActiveWindowChanged(Option::None))?;
         }
         Ok(())
     }
-    pub async fn execute_async<T: HasAsyncExecutor>(
-        &mut self,
-        listener: &mut T,
-    ) -> crate::Result<()> {
+    pub fn get_event(&mut self) -> Option<Event> {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
+        let mut event = Option::None;
         if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
-            listener
-                .event_executor_async(Event::ActiveWindowChangedMerged(Some(WindowEventData {
-                    window_class: class.to_string(),
-                    window_title: title.to_string(),
-                    window_address: addr.clone(),
-                })))
-                .await?;
+            event = Some(Event::ActiveWindowChanged(Some(WindowEventData {
+                class: class.to_string(),
+                title: title.to_string(),
+                address: addr.clone(),
+            })));
             self.reset();
         } else if let (None, None, None) = data {
-            listener
-                .event_executor_async(Event::ActiveWindowChangedMerged(Option::None))
-                .await?;
+            event = Some(Event::ActiveWindowChanged(Option::None));
         }
-        Ok(())
+        event
     }
 
     pub fn ready(&self) -> bool {
@@ -219,96 +214,20 @@ pub(crate) type AsyncEventType<T> = Pin<Box<T>>;
 
 pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
 
+pub(crate) type EmptyClosure = EventType<dyn Fn()>;
 pub(crate) type Closure<T> = EventType<dyn Fn(T)>;
 pub(crate) type AsyncClosure<T> = AsyncEventType<dyn Sync + Send + Fn(T) -> VoidFuture>;
+pub(crate) type EmptyAsyncClosure = AsyncEventType<dyn Sync + Send + Fn() -> VoidFuture>;
 pub(crate) type Closures<T> = Vec<Closure<T>>;
 pub(crate) type AsyncClosures<T> = Vec<AsyncClosure<T>>;
-
-pub(crate) struct Events {
-    pub(crate) workspace_changed_events: Closures<WorkspaceType>,
-    pub(crate) workspace_added_events: Closures<WorkspaceType>,
-    pub(crate) workspace_destroyed_events: Closures<WorkspaceDestroyedEventData>,
-    pub(crate) workspace_moved_events: Closures<MonitorEventData>,
-    pub(crate) workspace_rename_events: Closures<WorkspaceRenameEventData>,
-    pub(crate) active_monitor_changed_events: Closures<MonitorEventData>,
-    pub(crate) active_window_changed_events: Closures<Option<WindowEventData>>,
-    pub(crate) fullscreen_state_changed_events: Closures<bool>,
-    pub(crate) monitor_removed_events: Closures<String>,
-    pub(crate) monitor_added_events: Closures<String>,
-    pub(crate) keyboard_layout_change_events: Closures<LayoutEvent>,
-    pub(crate) sub_map_changed_events: Closures<String>,
-    pub(crate) window_open_events: Closures<WindowOpenEvent>,
-    pub(crate) window_close_events: Closures<Address>,
-    pub(crate) window_moved_events: Closures<WindowMoveEvent>,
-    pub(crate) layer_open_events: Closures<String>,
-    pub(crate) layer_closed_events: Closures<String>,
-    pub(crate) float_state_events: Closures<WindowFloatEventData>,
-    pub(crate) urgent_state_events: Closures<Address>,
-    pub(crate) minimize_events: Closures<MinimizeEventData>,
-    pub(crate) window_title_changed_events: Closures<Address>,
-    pub(crate) screencast_events: Closures<ScreencastEventData>,
-}
-
-#[allow(clippy::type_complexity)]
-pub(crate) struct AsyncEvents {
-    pub(crate) workspace_changed_events: AsyncClosures<WorkspaceType>,
-    pub(crate) workspace_added_events: AsyncClosures<WorkspaceType>,
-    pub(crate) workspace_destroyed_events: AsyncClosures<WorkspaceDestroyedEventData>,
-    pub(crate) workspace_moved_events: AsyncClosures<MonitorEventData>,
-    pub(crate) workspace_rename_events: AsyncClosures<WorkspaceRenameEventData>,
-    pub(crate) active_monitor_changed_events: AsyncClosures<MonitorEventData>,
-    pub(crate) active_window_changed_events: AsyncClosures<Option<WindowEventData>>,
-    pub(crate) fullscreen_state_changed_events: AsyncClosures<bool>,
-    pub(crate) monitor_removed_events: AsyncClosures<String>,
-    pub(crate) monitor_added_events: AsyncClosures<String>,
-    pub(crate) keyboard_layout_change_events: AsyncClosures<LayoutEvent>,
-    pub(crate) sub_map_changed_events: AsyncClosures<String>,
-    pub(crate) window_open_events: AsyncClosures<WindowOpenEvent>,
-    pub(crate) window_close_events: AsyncClosures<Address>,
-    pub(crate) window_moved_events: AsyncClosures<WindowMoveEvent>,
-    pub(crate) layer_open_events: AsyncClosures<String>,
-    pub(crate) layer_closed_events: AsyncClosures<String>,
-    pub(crate) float_state_events: AsyncClosures<WindowFloatEventData>,
-    pub(crate) urgent_state_events: AsyncClosures<Address>,
-    pub(crate) minimize_events: AsyncClosures<MinimizeEventData>,
-    pub(crate) window_title_changed_events: AsyncClosures<Address>,
-    pub(crate) screencast_events: AsyncClosures<ScreencastEventData>,
-}
-
-/// Event data for destroyworkspacev2 event
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WorkspaceDestroyedEventData {
-    /// Workspace Id
-    pub workspace_id: WorkspaceId,
-    /// Workspace name
-    pub workspace_name: String,
-}
-
-/// Event data for renameworkspace event
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct WorkspaceRenameEventData {
-    /// Workspace id
-    pub workspace_id: WorkspaceId,
-    /// Workspace name content
-    pub workspace_name: String,
-}
-
-/// Event data for a minimize event
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MinimizeEventData {
-    /// Window address
-    pub window_address: Address,
-    /// whether it's minimized or not
-    pub is_minimized: bool,
-}
 
 /// Event data for screencast event
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScreencastEventData {
     /// State/Is it turning on?
-    pub is_turning_on: bool,
+    pub turning_on: bool,
     /// Owner type, is it a monitor?
-    pub is_monitor: bool,
+    pub monitor: bool,
 }
 
 /// The data for the event executed when moving a window to a new workspace
@@ -316,12 +235,14 @@ pub struct ScreencastEventData {
 pub struct WindowMoveEvent {
     /// Window address
     pub window_address: Address,
+    /// the workspace id
+    pub workspace_id: WorkspaceId,
     /// The workspace name
-    pub workspace_name: String,
+    pub workspace_name: WorkspaceType,
 }
 
 /// The data for the event executed when opening a new window
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WindowOpenEvent {
     /// Window address
     pub window_address: Address,
@@ -419,70 +340,249 @@ impl State {
     }
 }
 
+pub(crate) fn execute_empty_closure(f: &EmptyClosure) {
+    f();
+}
+
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     f(val);
+}
+pub(crate) async fn execute_empty_closure_async(f: &EmptyAsyncClosure) {
+    f().await;
 }
 
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     f(val).await;
 }
 
-/// This tuple struct holds window event data
+/// This struct holds workspace event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceEventData {
+    /// The workspace name
+    pub name: WorkspaceType,
+    /// The window id
+    pub id: WorkspaceId,
+}
+
+/// This struct holds workspace event data
+/// when the workspace cannot be special
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NonSpecialWorkspaceEventData {
+    /// The workspace name
+    pub name: String,
+    /// The window id
+    pub id: WorkspaceId,
+}
+
+/// This struct holds workspace moved event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WorkspaceMovedEventData {
+    /// The workspace name
+    pub name: WorkspaceType,
+    /// The window id
+    pub id: WorkspaceId,
+    /// The monitor name
+    pub monitor: String,
+}
+
+/// This struct holds window event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowEventData {
     /// The window class
-    pub window_class: String,
+    pub class: String,
     /// The window title
-    pub window_title: String,
+    pub title: String,
     /// The window address
-    pub window_address: Address,
+    pub address: Address,
 }
 
-/// This tuple struct holds monitor event data
+/// This struct holds monitor event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonitorEventData {
     /// The monitor name
     pub monitor_name: String,
-    /// The workspace
-    pub workspace: WorkspaceType,
+    /// The workspace name
+    pub workspace_name: Option<WorkspaceType>,
 }
 
-/// This tuple struct holds monitor event data
+/// This struct holds changed special event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ChangedSpecialEventData {
+    /// The monitor name
+    pub monitor_name: String,
+    /// The workspace name
+    pub workspace_name: String,
+}
+
+/// This struct holds monitor event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MonitorAddedEventData {
+    /// The monitor's id
+    pub id: u8,
+    /// The monitor's name
+    pub name: String,
+    /// the monitor's description
+    pub description: String,
+}
+
+/// This struct holds window float event data
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WindowFloatEventData {
     /// The window address
-    pub window_address: Address,
+    pub address: Address,
     /// The float state
-    pub is_floating: bool,
+    pub floating: bool,
+}
+
+/// This struct holds window pin event data
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowPinEventData {
+    /// The window address
+    pub address: Address,
+    /// The pin state
+    pub pinned: bool,
+}
+
+/// This struct holds the event data for the windowtitle changed event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WindowTitleEventData {
+    /// The window address
+    pub address: Address,
+    /// The window title
+    pub title: String,
+}
+
+/// This struct represents an unknown event to hyprland-rs
+/// this allows you to use events that haven't been implemented in hyprland-rs.
+/// To use this use the [UnknownEventData::parse_args] method to properly get the args
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UnknownEventData {
+    /// The event's name
+    pub name: String,
+    /// The args as a string
+    pub args: String,
+}
+
+impl UnknownEventData {
+    /// Takes the amount of args, and splits the string correctly
+    pub fn parse_args(self, count: usize) -> Vec<String> {
+        self.args
+            .splitn(count, ",")
+            .map(|x| x.to_string())
+            .collect()
+    }
+}
+/// This struct holds the data for the [Event::GroupToggled] event
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroupToggledEventData {
+    /// The toggle status, `false` means the group was destroyed
+    pub toggled: bool,
+    /// The window addresses associated with the group
+    pub window_addresses: Vec<Address>,
 }
 
 /// This enum holds every event type
 #[derive(Debug, Clone)]
-pub(crate) enum Event {
-    WorkspaceChanged(WorkspaceType),
-    WorkspaceDeleted(WorkspaceDestroyedEventData),
-    WorkspaceAdded(WorkspaceType),
-    WorkspaceMoved(MonitorEventData),
-    WorkspaceRename(WorkspaceRenameEventData),
-    ActiveWindowChangedV1(Option<(String, String)>),
-    ActiveWindowChangedV2(Option<Address>),
-    ActiveWindowChangedMerged(Option<WindowEventData>),
+pub enum Event {
+    /// An unknown event
+    Unknown(UnknownEventData),
+    /// An event that emits when the current workspace is changed,
+    /// it is the equivelant of the `workspacev2` event
+    WorkspaceChanged(WorkspaceEventData),
+    /// An event that emits when a workspace is deleted,
+    /// it is the equivelant of the `destroyworkspacev2` event
+    WorkspaceDeleted(WorkspaceEventData),
+    /// An event that emits when a workspace is created,
+    /// it is the equivelant of the `createworkspacev2` event
+    WorkspaceAdded(WorkspaceEventData),
+    /// An event that emits when a workspace is moved to another monitor,
+    /// it is the equivelant of the `moveworkspacev2` event
+    WorkspaceMoved(WorkspaceMovedEventData),
+    /// An event that emits when a workspace is renamed,
+    /// it is the equivelant of the `renameworkspace` event
+    WorkspaceRenamed(NonSpecialWorkspaceEventData),
+    #[doc(hidden)]
+    ActiveWindowChangedV1(Option<(String, String)>), // internal intermediary event
+    #[doc(hidden)]
+    ActiveWindowChangedV2(Option<Address>), // internal intermediary event
+    /// An event that emits when the active window is changed
+    /// Unlike the other events, this is a combination of 2 events
+    /// Those being `activewindow` and `activewindowv2`,
+    /// it waits for both, and then sends one unified event :)
+    ActiveWindowChanged(Option<WindowEventData>),
+    /// An event that emits when the active monitor is changed,
+    /// it is the equivelant of the `focusedmon` event
     ActiveMonitorChanged(MonitorEventData),
+    /// An event that emits when the current fullscreen state is changed,
+    /// it is the equivelant of the `fullscreen` event
     FullscreenStateChanged(bool),
-    MonitorAdded(String),
+    /// An event that emits when a new monitor is added/connected,
+    /// it is the equivelant of the `monitoraddedv2` event
+    MonitorAdded(MonitorAddedEventData),
+    /// An event that emits when a monitor is removed/disconnected,
+    /// it is the equivelant of the `monitorremoved` event
     MonitorRemoved(String),
+    /// An event that emits when a window is opened,
+    /// it is the equivelant of the `openwindow` event
     WindowOpened(WindowOpenEvent),
+    /// An event that emits when a window is closed,
+    /// it is the equivelant of the `closewindow` event
     WindowClosed(Address),
+    /// An event that emits when a window is moved to a different workspace,
+    /// it is the equivelant of the `movewindowv2` event
     WindowMoved(WindowMoveEvent),
+    /// An event that emits when a special workspace is closed on the current monitor,
+    /// it is the equivelant of the `activespecial` event
+    SpecialRemoved(String),
+    /// An event that emits when the current special workspace is changed on a monitor,
+    /// it is the equivelant of the `activespecial` event
+    ChangedSpecial(ChangedSpecialEventData),
+    /// An event that emits when the layout of a keyboard changes,
+    /// it is the equivelant of the `activelayout` event
     LayoutChanged(LayoutEvent),
+    /// An event that emits when the current keybind submap changes,
+    /// it is the equivelant of the `submap` event
     SubMapChanged(String),
+    /// An event that emits when a layer shell surface is opened/mapped,
+    /// it is the equivelant of the `openlayer` event
     LayerOpened(String),
+    /// An event that emits when a layer shell surface is closed/unmapped,
+    /// it is the equivelant of the `closelayer` event
     LayerClosed(String),
+    /// An event that emits when the floating state of a window changes,
+    /// it is the equivelant of the `changefloatingmode` event
     FloatStateChanged(WindowFloatEventData),
+    /// An event that emits when the a window requests the urgent state,
+    /// it is the equivelant of the `urgent` event
     UrgentStateChanged(Address),
-    Minimize(MinimizeEventData),
-    WindowTitleChanged(Address),
+    /// An event that emits when the title of a window changes,
+    /// it is the equivelant of the `windowtitlev2` event
+    WindowTitleChanged(WindowTitleEventData),
+    /// An event that emits when the screencopy state of a client changes
+    /// AKA, a process wants to capture/record your screen,
+    /// it is the equivelant of the `screencast` event
     Screencast(ScreencastEventData),
+    /// An event that emits when hyprland is reloaded,
+    /// it is the equivelant of the `configreloaded` event
+    ConfigReloaded,
+    /// An event that emits when `ignoregrouplock` is toggled,
+    /// it is the equivelant of the `ignoregrouplock` event
+    IgnoreGroupLockStateChanged(bool),
+    /// An event that emits when `lockgroups` is toggled,
+    /// it is the equivelant of the `lockgroups` event
+    LockGroupsStateChanged(bool),
+    /// An event that emits when a window is pinned or unpinned,
+    /// it is the equivelant of the `pin` event
+    WindowPinned(WindowPinEventData),
+    /// And event that emits when a group is toggled,
+    /// it is the equivelant of the `togglegroup`
+    GroupToggled(GroupToggledEventData),
+    /// And event that emits when a window is moved into a group,
+    /// it is the equivelant of the `moveintogroup`
+    WindowMovedIntoGroup(Address),
+    /// And event that emits when a window is moved out of a group,
+    /// it is the equivelant of the `moveoutofgroup`
+    WindowMovedOutOfGroup(Address),
 }
 
 fn parse_string_as_work(str: String) -> WorkspaceType {
@@ -502,254 +602,189 @@ fn parse_string_as_work(str: String) -> WorkspaceType {
     }
 }
 
-macro_rules! report_unknown {
-    ($event:expr) => {
-        #[cfg(not(feature = "silent"))]
-        eprintln!(
-            "An unknown event was passed into Hyprland-rs
-            PLEASE MAKE AN ISSUE!!
-            The event was: {event}",
-            event = $event
-        );
-    };
-}
-
-#[cfg(feature = "ahash")]
-use ahash::{HashSet, HashSetExt};
-#[cfg(not(feature = "ahash"))]
-use std::collections::HashSet;
-
-#[cfg(feature = "parking_lot")]
-use parking_lot::Mutex;
-#[cfg(not(feature = "parking_lot"))]
-use std::sync::Mutex;
-
-static CHECK_TABLE: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
-
 #[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
-enum ParsedEventType {
-    WorkspaceChanged,
+pub(crate) enum ParsedEventType {
+    WorkspaceChangedV2,
     WorkspaceDeletedV2,
-    WorkspaceAdded,
-    WorkspaceMoved,
+    WorkspaceAddedV2,
+    WorkspaceMovedV2,
     WorkspaceRename,
     ActiveWindowChangedV1,
     ActiveWindowChangedV2,
     ActiveMonitorChanged,
     FullscreenStateChanged,
-    MonitorAdded,
+    MonitorAddedV2,
     MonitorRemoved,
     WindowOpened,
     WindowClosed,
-    WindowMoved,
+    WindowMovedV2,
+    ActiveSpecial,
     LayoutChanged,
     SubMapChanged,
     LayerOpened,
     LayerClosed,
     FloatStateChanged,
     UrgentStateChanged,
-    Minimize,
-    WindowTitleChanged,
+    WindowTitleChangedV2,
     Screencast,
-    Unknown,
+    ConfigReloaded,
+    IgnoreGroupLock,
+    LockGroups,
+    Pin,
+    ToggleGroup,
+    MoveIntoGroup,
+    MoveOutOfGroup,
 }
 
-/// All the recognized events
-static EVENT_SET: Lazy<Box<[(ParsedEventType, Regex)]>> = Lazy::new(|| {
-    [
-        (
-            ParsedEventType::WorkspaceChanged,
-            r"\bworkspace>>(?P<workspace>.*)",
-        ), 
-        (
-            ParsedEventType::WorkspaceDeletedV2,
-            r"destroyworkspacev2>>(?P<id>.*),(?P<name>.*)",
-        ),
-        (
-            ParsedEventType::WorkspaceAdded,
-            r"createworkspace>>(?P<workspace>.*)",
-        ),
-        (
-            ParsedEventType::WorkspaceMoved,
-            r"moveworkspace>>(?P<workspace>.*),(?P<monitor>.*)",
-        ),
-        (
-            ParsedEventType::WorkspaceRename,
-            r"renameworkspace>>(?P<id>.*),(?P<name>.*)",
-        ),
-        (
-            ParsedEventType::ActiveMonitorChanged,
-            r"focusedmon>>(?P<monitor>.*),(?P<workspace>.*)",
-        ),
-        (
-            ParsedEventType::ActiveWindowChangedV1,
-            r"activewindow>>(?P<class>.*?),(?P<title>.*)",
-        ),
-        (
-            ParsedEventType::ActiveWindowChangedV2,
-            r"activewindowv2>>(?P<address>.*)",
-        ),
-        (
-            ParsedEventType::FullscreenStateChanged,
-            r"fullscreen>>(?P<state>0|1)",
-        ),
-        (
-            ParsedEventType::MonitorRemoved,
-            r"monitorremoved>>(?P<monitor>.*)",
-        ),
-        (
-            ParsedEventType::MonitorAdded,
-            r"monitoradded>>(?P<monitor>.*)",
-        ),
-        (
-            ParsedEventType::WindowOpened,
-            r"openwindow>>(?P<address>.*),(?P<workspace>.*),(?P<class>.*),(?P<title>.*)",
-        ),
-        (
-            ParsedEventType::WindowClosed,
-            r"closewindow>>(?P<address>.*)",
-        ),
-        (
-            ParsedEventType::WindowMoved,
-            r"movewindow>>(?P<address>.*),(?P<workspace>.*)",
-        ),
-        (
-            ParsedEventType::LayoutChanged,
-            r"activelayout>>(?P<keyboard>.*)(?P<layout>.*)",
-        ),
-        (ParsedEventType::SubMapChanged, r"submap>>(?P<submap>.*)"),
-        (
-            ParsedEventType::LayerOpened,
-            r"openlayer>>(?P<namespace>.*)",
-        ),
-        (
-            ParsedEventType::LayerClosed,
-            r"closelayer>>(?P<namespace>.*)",
-        ),
-        (
-            ParsedEventType::FloatStateChanged,
-            r"changefloatingmode>>(?P<address>.*),(?P<floatstate>[0-1])",
-        ),
-        (
-            ParsedEventType::Minimize,
-            r"minimize>>(?P<address>.*),(?P<state>[0-1])",
-        ),
-        (
-            ParsedEventType::Screencast,
-            r"screencast>>(?P<state>[0-1]),(?P<owner>[0-1])",
-        ),
-        (
-            ParsedEventType::UrgentStateChanged,
-            r"urgent>>(?P<address>.*)",
-        ),
-        (
-            ParsedEventType::WindowTitleChanged,
-            r"windowtitle>>(?P<address>.*)",
-        ),
-        (ParsedEventType::Unknown, r"(?P<Event>^[^>]*)"),
-    ].into_iter()
-    .map(|(e, r)| (
-        e,
-        match Regex::new(r) {
-            Ok(value) => value,
-            Err(e) => {
-                // I believe that panics here are fine because the chances of the library user finding them are extremely high
-                // This check does occur at runtime though...
-                eprintln!("An internal error occured in hyprland-rs while parsing regex! Please open an issue!");
-                match e {
-                    RegexError::Syntax(str) => panic!("Regex syntax error: {str}"),
-                    RegexError::CompiledTooBig(size) => {
-                        panic!("The compiled regex size is too big! ({size})")
-                    }
-                    _ => panic!("Error compiling regex: {e}"),
-                }
+/// All Hyprland events's arg count and enum variant.
+/// The first item of the tuple is a usize of the argument count
+/// This allows for easy parsing because the last arg in a Hyprland event
+/// has the ability to have extra `,`s
+pub(crate) static EVENTS: phf::Map<&'static str, (usize, ParsedEventType)> = phf::phf_map! {
+    "workspacev2" => ((2),ParsedEventType::WorkspaceChangedV2),
+    "destroyworkspacev2" => ((2),ParsedEventType::WorkspaceDeletedV2),
+    "createworkspacev2" => ((2),ParsedEventType::WorkspaceAddedV2),
+    "moveworkspacev2" => ((3),ParsedEventType::WorkspaceMovedV2),
+    "renameworkspace" => ((2),ParsedEventType::WorkspaceRename),
+    "focusedmon" => ((2),ParsedEventType::ActiveMonitorChanged),
+    "activewindow" => ((2),ParsedEventType::ActiveWindowChangedV1),
+    "activewindowv2" => ((1),ParsedEventType::ActiveWindowChangedV2),
+    "fullscreen" => ((1),ParsedEventType::FullscreenStateChanged),
+    "monitorremoved" => ((1),ParsedEventType::MonitorRemoved),
+    "monitoraddedv2" => ((3),ParsedEventType::MonitorAddedV2),
+    "openwindow" => ((4),ParsedEventType::WindowOpened),
+    "closewindow" => ((1),ParsedEventType::WindowClosed),
+    "movewindowv2" => ((3),ParsedEventType::WindowMovedV2),
+    "activelayout" => ((2),ParsedEventType::LayoutChanged),
+    "activespecial" => ((2),ParsedEventType::ActiveSpecial),
+    "submap" => ((1), ParsedEventType::SubMapChanged),
+    "openlayer" => ((1),ParsedEventType::LayerOpened),
+    "closelayer" => ((1),ParsedEventType::LayerClosed),
+    "changefloatingmode" => ((2),ParsedEventType::FloatStateChanged),
+    "screencast" => ((2),ParsedEventType::Screencast),
+    "urgent" => ((1),ParsedEventType::UrgentStateChanged),
+    "windowtitlev2" => ((2),ParsedEventType::WindowTitleChangedV2),
+    "configreloaded" => ((0),ParsedEventType::ConfigReloaded),
+    "ignoregrouplock" => ((1),ParsedEventType::IgnoreGroupLock),
+    "lockgroups" => ((1),ParsedEventType::LockGroups),
+    "pin" => ((2),ParsedEventType::Pin),
+    "togglegroup" => (2,ParsedEventType::ToggleGroup),
+    "moveintogroup" => (1,ParsedEventType::MoveIntoGroup),
+    "moveoutofgroup" => (1,ParsedEventType::MoveOutOfGroup)
+};
+
+use either::Either;
+
+fn new_event_parser(
+    input: &str,
+) -> crate::Result<Either<(ParsedEventType, Vec<String>), (String, String)>> {
+    input
+        .to_string()
+        .split_once(">>")
+        .ok_or(HyprError::Other(
+            "could not get event name from Hyprland IPC data (not hyprland-rs)".to_string(),
+        ))
+        .map(|(name, x)| {
+            if let Some(event) = EVENTS.get(name) {
+                Either::Left((
+                    event.1,
+                    x.splitn(event.0 as usize, ",")
+                        .map(|y| y.to_string())
+                        .collect(),
+                ))
+            } else {
+                Either::Right((name.to_string(), x.to_string()))
             }
         })
-    ).collect()
-});
+}
+
+macro_rules! parse_int {
+    ($int:expr, event: $event:literal) => {
+        parse_int!($int, event: $event => WorkspaceId)
+    };
+    ($int:expr, event: $event:literal => $int_type:ty) => {
+        ($int
+            .parse::<$int_type>()
+            .map_err(|e|
+                HyprError::Internal(format!(concat!($event, ": invalid integer error: {}"), e))
+             )?
+        )
+    };
+
+}
+
+macro_rules! get {
+    ($args:expr ; $id:literal) => {
+        get![ref $args;$id].clone()
+    };
+    (ref $args:expr ; $id:literal) => {
+        $args
+            .get($id)
+            .ok_or(HyprError::Internal(
+                concat!("could not get the event arg of index ", stringify!($id)).to_string(),
+            ))?
+    };
+}
 
 /// This internal function parses event strings
 pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
     // TODO: Optimize nested looped regex capturing. Maybe pull in rayon if possible.
-    let event_iter = event
-        .trim()
-        .lines()
-        .map(|event_line| {
-            let type_matches = EVENT_SET
-                .iter()
-                .filter_map(|(event_type, regex)| Some((event_type, regex.captures(event_line)?)))
-                .collect::<Vec<_>>();
-
-            (event_line, type_matches)
-        })
-        .filter(|(_, b)| !b.is_empty());
-
-    let mut temp_event_holder = Vec::new();
-
-    for (event_str, matches) in event_iter {
-        match matches.len() {
-            0 => hypr_err!(
-                "A Hyprland event that has no regex matches was passed! Please file a bug report!"
-            ),
-            1 => {
-                report_unknown!((event_str.split('>').next().unwrap_or("unknown")));
-                continue;
-            }
-            2 => {
-                let (event_type, captures) = match matches
-                .into_iter()
-                .find(|(e, _)| **e != ParsedEventType::Unknown) {
-                    Some(t) => t,
-                    None => hypr_err!("The only events captured were unknown Hyprland events! Please file a bug report!"),
-                };
-
-                temp_event_holder.push((event_str, event_type, captures));
-            }
-            _ => {
-                hypr_err!("Event matched more than one regex (not an unknown event issue!)");
-            }
+    let event_iter = event.trim().lines().filter_map(|event_line| {
+        if event_line.is_empty() {
+            None
+        } else {
+            Some(new_event_parser(event_line))
         }
-    }
+    });
 
-    let parsed_events = temp_event_holder
-        .into_iter()
-        .map(|(event_str, event_type, captures)| match event_type {
-            ParsedEventType::WorkspaceChanged => {
-                let captured = &captures["workspace"];
-                let workspace = if !captured.is_empty() {
-                    parse_string_as_work(captured.to_string())
-                } else {
-                    WorkspaceType::Regular("1".to_string())
-                };
-                Ok(Event::WorkspaceChanged(workspace))
+    let parsed_events = event_iter.map(|event| match event {
+        Err(x) => Err(x),
+        Ok(Either::Right((name, args))) => Ok(Event::Unknown(UnknownEventData { name, args })),
+        Ok(Either::Left((event_type, args))) => match event_type {
+            ParsedEventType::WorkspaceChangedV2 => {
+                Ok(Event::WorkspaceChanged(WorkspaceEventData {
+                    id: parse_int!(get![ref args;0], event: "WorkspaceChangedV2"),
+                    name: parse_string_as_work(get![args;1]),
+                }))
             }
-            ParsedEventType::WorkspaceDeletedV2 => Ok(Event::WorkspaceDeleted(WorkspaceDestroyedEventData { workspace_id: captures["id"].parse::<WorkspaceId>().map_err(|e| HyprError::Internal(format!("Workspace delete v2: invalid integer error: {e}")))?, workspace_name: captures["name"].to_string() })),
-            ParsedEventType::WorkspaceAdded => Ok(Event::WorkspaceAdded(parse_string_as_work(
-                captures["workspace"].to_string(),
-            ))),
-            ParsedEventType::WorkspaceMoved => Ok(Event::WorkspaceMoved(MonitorEventData {
-                monitor_name: captures["monitor"].to_string(),
-                workspace: parse_string_as_work(captures["workspace"].to_string()),
+            ParsedEventType::WorkspaceDeletedV2 => {
+                Ok(Event::WorkspaceDeleted(WorkspaceEventData {
+                    id: parse_int!(get![ref args;0], event: "WorkspaceDeletedV2"),
+                    name: parse_string_as_work(get![args;1]),
+                }))
+            }
+            ParsedEventType::WorkspaceAddedV2 => Ok(Event::WorkspaceAdded(WorkspaceEventData {
+                id: parse_int!(get![ref args;0], event: "WorkspaceAddedV2"),
+                name: parse_string_as_work(get![args;1]),
             })),
+            ParsedEventType::WorkspaceMovedV2 => {
+                Ok(Event::WorkspaceMoved(WorkspaceMovedEventData {
+                    id: parse_int!(get![ref args;0], event: "WorkspaceMovedV2"),
+                    name: parse_string_as_work(get![args;1]),
+                    monitor: get![args;2],
+                }))
+            }
             ParsedEventType::WorkspaceRename => {
-                Ok(Event::WorkspaceRename(WorkspaceRenameEventData {
-                    workspace_id: captures["id"]
-                        .parse::<WorkspaceId>()
-                        .map_err(|e| HyprError::Internal(format!("Workspace rename: invalid integer error: {e}")))?,
-                    workspace_name: captures["name"].to_string(),
+                Ok(Event::WorkspaceRenamed(NonSpecialWorkspaceEventData {
+                    id: parse_int!(get![args;0], event: "WorkspaceRenamed"),
+                    name: get![args;1],
                 }))
             }
             ParsedEventType::ActiveMonitorChanged => {
                 Ok(Event::ActiveMonitorChanged(MonitorEventData {
-                    monitor_name: captures["monitor"].to_string(),
-                    workspace: WorkspaceType::Regular(captures["workspace"].to_string()),
+                    monitor_name: get![args;0],
+                    workspace_name: if get![args;1] == "?" {
+                        None
+                    } else {
+                        Some(parse_string_as_work(get![args;1]))
+                    },
                 }))
             }
             ParsedEventType::ActiveWindowChangedV1 => {
-                let class = &captures["class"];
-                let title = &captures["title"];
+                let class = get![args;0];
+                let title = get![args;1];
                 let event = if !class.is_empty() && !title.is_empty() {
-                    Event::ActiveWindowChangedV1(Some((class.to_string(), title.to_string())))
+                    Event::ActiveWindowChangedV1(Some((class, title)))
                 } else {
                     Event::ActiveWindowChangedV1(None)
                 };
@@ -757,109 +792,110 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 Ok(event)
             }
             ParsedEventType::ActiveWindowChangedV2 => {
-                let addr = &captures["address"];
+                let addr = get![ref args;0];
                 let event = if addr != "," {
-                    Event::ActiveWindowChangedV2(Some(Address::fmt_new(addr)))
+                    Event::ActiveWindowChangedV2(Some(Address::new(addr)))
                 } else {
                     Event::ActiveWindowChangedV2(None)
                 };
                 Ok(event)
             }
             ParsedEventType::FullscreenStateChanged => {
-                let state = &captures["state"] != "0";
-                Ok(Event::FullscreenStateChanged(state))
+                Ok(Event::FullscreenStateChanged(get![ref args;0] != "0"))
             }
-            ParsedEventType::MonitorRemoved => {
-                Ok(Event::MonitorRemoved(captures["monitor"].to_string()))
-            }
-            ParsedEventType::MonitorAdded => {
-                Ok(Event::MonitorAdded(captures["monitor"].to_string()))
-            }
+            ParsedEventType::MonitorRemoved => Ok(Event::MonitorRemoved(get![args;0])),
+            ParsedEventType::MonitorAddedV2 => Ok(Event::MonitorAdded(MonitorAddedEventData {
+                id: parse_int!(get![ref args;0], event: "MonitorAddedV2" => u8),
+                name: get![args;1],
+                description: get![args;2],
+            })),
             ParsedEventType::WindowOpened => Ok(Event::WindowOpened(WindowOpenEvent {
-                window_address: Address::fmt_new(&captures["address"]),
-                workspace_name: captures["workspace"].to_string(),
-                window_class: captures["class"].to_string(),
-                window_title: captures["title"].to_string(),
+                window_address: Address::new(get![ref args;0]),
+                workspace_name: get![args;1],
+                window_class: get![args;2],
+                window_title: get![args;3],
             })),
-            ParsedEventType::WindowClosed => Ok(Event::WindowClosed(Address::fmt_new(&captures["address"]))),
-            ParsedEventType::WindowMoved => Ok(Event::WindowMoved(WindowMoveEvent {
-                window_address: Address::fmt_new(&captures["address"]),
-                workspace_name: captures["workspace"].to_string(),
+            ParsedEventType::WindowClosed => Ok(Event::WindowClosed(Address::new(get![args;0]))),
+            ParsedEventType::WindowMovedV2 => Ok(Event::WindowMoved(WindowMoveEvent {
+                window_address: Address::fmt_new(get![ref args;0]),
+                workspace_id: parse_int!(get![ref args;1], event: "WindowMoved"),
+                workspace_name: parse_string_as_work(get![args;2]),
             })),
+            ParsedEventType::ActiveSpecial => {
+                let workspace_name = get![args;0];
+                let monitor_name = get![args;1];
+                if workspace_name.is_empty() {
+                    Ok(Event::SpecialRemoved(monitor_name))
+                } else {
+                    Ok(Event::ChangedSpecial(ChangedSpecialEventData {
+                        monitor_name,
+                        workspace_name,
+                    }))
+                }
+            }
             ParsedEventType::LayoutChanged => Ok(Event::LayoutChanged(LayoutEvent {
-                keyboard_name: captures["keyboard"].to_string(),
-                layout_name: captures["layout"].to_string(),
+                keyboard_name: get![args;0],
+                layout_name: get![args;1],
             })),
-            ParsedEventType::SubMapChanged => {
-                Ok(Event::SubMapChanged(captures["submap"].to_string()))
-            }
-            ParsedEventType::LayerOpened => {
-                Ok(Event::LayerOpened(captures["namespace"].to_string()))
-            }
-            ParsedEventType::LayerClosed => {
-                Ok(Event::LayerClosed(captures["namespace"].to_string()))
-            }
+            ParsedEventType::SubMapChanged => Ok(Event::SubMapChanged(get![args;0])),
+            ParsedEventType::LayerOpened => Ok(Event::LayerOpened(get![args;0])),
+            ParsedEventType::LayerClosed => Ok(Event::LayerClosed(get![args;0])),
             ParsedEventType::FloatStateChanged => {
-                let state = &captures["floatstate"] == "0"; // FIXME: does 0 mean it's floating?
+                let state = get![ref args;1] == "0"; // FIXME: does 0 mean it's floating?
                 Ok(Event::FloatStateChanged(WindowFloatEventData {
-                    window_address: Address::fmt_new(&captures["address"]),
-                    is_floating: state,
-                }))
-            }
-            ParsedEventType::Minimize => {
-                let state = &captures["state"] == "1";
-                Ok(Event::Minimize(MinimizeEventData {
-                    window_address: Address::fmt_new(&captures["address"]),
-                    is_minimized: state,
+                    address: Address::new(get![ref args;0]),
+                    floating: state,
                 }))
             }
             ParsedEventType::Screencast => {
-                let state = &captures["state"] == "1";
-                let owner = &captures["owner"] == "1";
+                let state = get![ref args;0] == "1";
+                let owner = get![ref args;1] == "1";
                 Ok(Event::Screencast(ScreencastEventData {
-                    is_turning_on: state,
-                    is_monitor: owner,
+                    turning_on: state,
+                    monitor: owner,
                 }))
             }
-            ParsedEventType::UrgentStateChanged => Ok(Event::UrgentStateChanged(Address::fmt_new(&captures["address"]))),
-            ParsedEventType::WindowTitleChanged => Ok(Event::WindowTitleChanged(Address::fmt_new(&captures["address"]))),
-            ParsedEventType::Unknown => {
-                #[cfg(not(feature = "silent"))]
-                {
-                    let table = CHECK_TABLE.lock();
-                    // The std mutex returns a Result, the parking_lot mutex does not. This is a hack that allows us to
-                    // keep the table code how it is, without duplicating or `return`ing.
-                    #[cfg(feature = "parking_lot")]
-                    let table = Ok::<_, std::convert::Infallible>(table);
-
-                    if let Ok(mut tbl) = table {
-                        let (event_string, print_str) =
-                            match captures.name("event").map(|s| s.as_str()) {
-                                Some(s) => (s.to_string(), s),
-                                None => ("Unknown".to_owned(), event_str),
-                            };
-
-                        let should_run = tbl.insert(event_string);
-                        if should_run {
-                            eprintln!(
-                                "An unknown event was passed into Hyprland-rs\nPLEASE MAKE AN ISSUE!!\nThe event was: {print_str}"
-                            );
-                        }
-                    }
-                }
-                hypr_err!("Unknown event: {event_str}");
+            ParsedEventType::UrgentStateChanged => {
+                Ok(Event::UrgentStateChanged(Address::new(get![ref args;0])))
             }
-        });
+            ParsedEventType::WindowTitleChangedV2 => {
+                Ok(Event::WindowTitleChanged(WindowTitleEventData {
+                    address: Address::new(get![ref args;0]),
+                    title: get![args;1],
+                }))
+            }
+            ParsedEventType::ConfigReloaded => Ok(Event::ConfigReloaded),
+            ParsedEventType::IgnoreGroupLock => {
+                Ok(Event::IgnoreGroupLockStateChanged(get![ref args;0] == "1"))
+            }
+            ParsedEventType::LockGroups => {
+                Ok(Event::LockGroupsStateChanged(get![ref args;0] == "1"))
+            }
+            ParsedEventType::Pin => Ok(Event::WindowPinned(WindowPinEventData {
+                address: Address::new(get![ref args;0]),
+                pinned: get![ref args;1] == "1",
+            })),
+            ParsedEventType::ToggleGroup => Ok(Event::GroupToggled(GroupToggledEventData {
+                toggled: get![ref args;0] == "1",
+                window_addresses: get![ref args;1]
+                    .split(",")
+                    .map(|x| Address::new(x))
+                    .collect(),
+            })),
+            ParsedEventType::MoveIntoGroup => {
+                Ok(Event::WindowMovedIntoGroup(Address::new(get![ref args;0])))
+            }
+            ParsedEventType::MoveOutOfGroup => {
+                Ok(Event::WindowMovedOutOfGroup(Address::new(get![ref args;0])))
+            }
+        },
+    });
 
     let mut events: Vec<Event> = Vec::new();
 
     for event in parsed_events {
         events.push(event?);
     }
-
-    // if events.is_empty() {
-    //     hypr_err!("No events!");
-    // }
 
     Ok(events)
 }

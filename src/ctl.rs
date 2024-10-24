@@ -200,6 +200,49 @@ pub mod notify {
         Ok(())
     }
 }
+/// Dismisses all or up to a specified amount of notifications with Hyprland
+pub mod dismissnotify {
+    use std::num::NonZeroU8;
+
+    use super::*;
+    /// Dismisses notifications with Hyprland
+    ///
+    /// If `amount` is [None] then will dismiss ALL notifications
+    pub fn call(amount: Option<NonZeroU8>) -> crate::Result<()> {
+        write_to_socket_sync(
+            SocketType::Command,
+            command!(
+                Empty,
+                "dismissnotify {}",
+                if let Some(amount) = amount {
+                    amount.to_string()
+                } else {
+                    (-1).to_string()
+                }
+            ),
+        )?;
+        Ok(())
+    }
+    /// Dismisses notifications with Hyprland (async)
+    ///
+    /// If `amount` is [None] then will dismiss ALL notifications
+    pub async fn call_async(amount: Option<NonZeroU8>) -> crate::Result<()> {
+        write_to_socket(
+            SocketType::Command,
+            command!(
+                Empty,
+                "dismissnotify {}",
+                if let Some(amount) = amount {
+                    amount.to_string()
+                } else {
+                    (-1).to_string()
+                }
+            ),
+        )
+        .await?;
+        Ok(())
+    }
+}
 
 /// A 8-bit color with a alpha channel
 #[derive(Debug, Copy, Clone, MDisplay, Constructor, PartialEq, Eq)]

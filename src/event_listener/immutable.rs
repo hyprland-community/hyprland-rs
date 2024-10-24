@@ -25,39 +25,6 @@ impl Default for EventListener {
     }
 }
 
-impl HasExecutor for EventListener {
-    fn event_executor(&mut self, event: Event) -> crate::Result<()> {
-        use Event::*;
-        match event {
-            WorkspaceChanged(id) => arm!(id, workspace_changed_events, self),
-            WorkspaceAdded(id) => arm!(id, workspace_added_events, self),
-            WorkspaceDeleted(data) => arm!(data, workspace_destroyed_events, self),
-            WorkspaceMoved(evend) => arm!(evend, workspace_moved_events, self),
-            WorkspaceRename(even) => arm!(even, workspace_rename_events, self),
-            ActiveMonitorChanged(evend) => arm!(evend, active_monitor_changed_events, self),
-            ActiveWindowChangedMerged(opt) => arm!(opt, active_window_changed_events, self),
-            ActiveWindowChangedV1(_) => (),
-            ActiveWindowChangedV2(_) => (),
-            FullscreenStateChanged(bool) => arm!(bool, fullscreen_state_changed_events, self),
-            MonitorAdded(monitor) => arm!(monitor, monitor_added_events, self),
-            MonitorRemoved(monitor) => arm!(monitor, monitor_removed_events, self),
-            WindowClosed(addr) => arm!(addr, window_close_events, self),
-            WindowMoved(even) => arm!(even, window_moved_events, self),
-            WindowOpened(even) => arm!(even, window_open_events, self),
-            LayoutChanged(even) => arm!(even, keyboard_layout_change_events, self),
-            SubMapChanged(map) => arm!(map, sub_map_changed_events, self),
-            LayerOpened(namespace) => arm!(namespace, layer_open_events, self),
-            LayerClosed(namespace) => arm!(namespace, layer_closed_events, self),
-            FloatStateChanged(even) => arm!(even, float_state_events, self),
-            UrgentStateChanged(even) => arm!(even, urgent_state_events, self),
-            Minimize(data) => arm!(data, minimize_events, self),
-            WindowTitleChanged(addr) => arm!(addr, window_title_changed_events, self),
-            Screencast(data) => arm!(data, screencast_events, self),
-        }
-        Ok(())
-    }
-}
-
 impl EventListener {
     /// This method creates a new EventListener instance
     ///
@@ -67,7 +34,7 @@ impl EventListener {
     /// ```
     pub fn new() -> EventListener {
         EventListener {
-            events: init_events!(Events),
+            events: create_events(),
         }
     }
 
