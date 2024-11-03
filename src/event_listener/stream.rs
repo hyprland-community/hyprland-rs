@@ -28,7 +28,7 @@ use futures_lite::{Stream, StreamExt};
 /// ```
 #[must_use = "streams nothing unless polled"]
 pub struct EventStream {
-    stream: Pin<Box<dyn Stream<Item = crate::Result<Event>>>>,
+    stream: Pin<Box<dyn Stream<Item = crate::Result<Event>> + Send>>,
 }
 impl EventStream {
     /// Creates a new [EventListener]
