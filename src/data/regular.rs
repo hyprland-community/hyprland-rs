@@ -428,6 +428,8 @@ pub struct Version {
     pub branch: String,
     /// The git commit Hyprland was built on
     pub commit: String,
+    /// The Hyprland version
+    pub version: String,
     /// This is true if there were unstaged changed when Hyprland was built
     pub dirty: bool,
     /// The git commit message
