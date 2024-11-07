@@ -109,6 +109,9 @@ pub struct Monitor {
     /// A basic identifier for the active workspace
     #[serde(rename = "activeWorkspace")]
     pub active_workspace: WorkspaceBasic,
+    /// A basic identifier for the special workspace
+    #[serde(rename = "specialWorkspace")]
+    pub special_workspace: WorkspaceBasic,
     /// Reserved is the amount of space (in pre-scale pixels) that a layer surface has claimed
     pub reserved: (u16, u16, u16, u16),
     /// The display's scale
