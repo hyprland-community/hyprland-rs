@@ -430,7 +430,7 @@ pub struct Version {
     pub commit: String,
     #[serde(default)]
     /// The Hyprland version
-    pub version: String,
+    pub version: Option<String>,
     /// This is true if there were unstaged changed when Hyprland was built
     pub dirty: bool,
     /// The git commit message
