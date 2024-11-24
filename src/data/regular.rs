@@ -29,29 +29,29 @@ fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
 /// This pub(crate) enum holds every socket command that returns data
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum DataCommands {
-    #[display(fmt = "monitors all")]
+    #[display("monitors all")]
     Monitors,
-    #[display(fmt = "workspaces")]
+    #[display("workspaces")]
     Workspaces,
-    #[display(fmt = "activeworkspace")]
+    #[display("activeworkspace")]
     ActiveWorkspace,
-    #[display(fmt = "clients")]
+    #[display("clients")]
     Clients,
-    #[display(fmt = "activewindow")]
+    #[display("activewindow")]
     ActiveWindow,
-    #[display(fmt = "layers")]
+    #[display("layers")]
     Layers,
-    #[display(fmt = "devices")]
+    #[display("devices")]
     Devices,
-    #[display(fmt = "version")]
+    #[display("version")]
     Version,
-    #[display(fmt = "cursorpos")]
+    #[display("cursorpos")]
     CursorPosition,
-    #[display(fmt = "binds")]
+    #[display("binds")]
     Binds,
-    #[display(fmt = "animations")]
+    #[display("animations")]
     Animations,
-    #[display(fmt = "workspacerules")]
+    #[display("workspacerules")]
     WorkspaceRules,
 }
 

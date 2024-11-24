@@ -13,21 +13,17 @@ use std::{error, fmt, io};
 /// Error that unifies different error types used by Hyprland-rs
 pub enum HyprError {
     /// Error coming from serde
-    #[display(format = "{_0}")]
     SerdeError(serde_json::Error),
     /// Error coming from std::io
-    #[display(format = "{_0}")]
     IoError(io::Error),
     /// Error that occurs when parsing UTF-8 string
-    #[display(format = "{_0}")]
     FromUtf8Error(std::string::FromUtf8Error),
     /// Dispatcher returned non `ok` value
-    #[display(format = "A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
+    #[display("A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
     /// Internal Hyprland error
     Internal(String),
     /// Error that occurs for other reasons. Avoid using this.
-    #[display(format = "{_0}")]
     Other(String),
 }
 impl HyprError {
@@ -182,7 +178,7 @@ pub enum WorkspaceType {
         String,
     ),
     /// The special workspace
-    #[display(fmt = "{}", "ser_spec_opt(_0)")]
+    #[display("{}", ser_spec_opt(_0))]
     Special(
         /// The name, if exists
         Option<String>,

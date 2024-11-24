@@ -22,16 +22,16 @@ use std::string::ToString;
 #[derive(Debug, Clone, Display)]
 pub enum WindowIdentifier<'a> {
     /// The address of a window
-    #[display(fmt = "address:{_0}")]
+    #[display("address:{_0}")]
     Address(Address),
     /// A Regular Expression to match the window class (handled by Hyprland)
-    #[display(fmt = "{_0}")]
+    #[display("{_0}")]
     ClassRegularExpression(&'a str),
     /// The window title
-    #[display(fmt = "title:{_0}")]
+    #[display("title:{_0}")]
     Title(&'a str),
     /// The window's process Id
-    #[display(fmt = "pid:{_0}")]
+    #[display("pid:{_0}")]
     ProcessId(u32),
 }
 
@@ -39,13 +39,13 @@ pub enum WindowIdentifier<'a> {
 #[derive(Debug, Clone, Display)]
 pub enum FullscreenType {
     /// Fills the whole screen
-    #[display(fmt = "0")]
+    #[display("0")]
     Real,
     /// Maximizes the window
-    #[display(fmt = "1")]
+    #[display("1")]
     Maximize,
     /// Passes no param
-    #[display(fmt = "")]
+    #[display("")]
     NoParam,
 }
 
@@ -53,13 +53,13 @@ pub enum FullscreenType {
 #[derive(Debug, Clone, Display)]
 #[allow(missing_docs)]
 pub enum Direction {
-    #[display(fmt = "u")]
+    #[display("u")]
     Up,
-    #[display(fmt = "d")]
+    #[display("d")]
     Down,
-    #[display(fmt = "r")]
+    #[display("r")]
     Right,
-    #[display(fmt = "l")]
+    #[display("l")]
     Left,
 }
 
@@ -86,9 +86,9 @@ impl std::fmt::Display for Position {
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Display)]
 pub enum CycleDirection {
-    #[display(fmt = "")]
+    #[display("")]
     Next,
-    #[display(fmt = "prev")]
+    #[display("prev")]
     Previous,
 }
 
@@ -96,9 +96,9 @@ pub enum CycleDirection {
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Display)]
 pub enum WindowSwitchDirection {
-    #[display(fmt = "b")]
+    #[display("b")]
     Back,
-    #[display(fmt = "f")]
+    #[display("f")]
     Forward,
 }
 
@@ -144,10 +144,10 @@ pub enum Corner {
 #[derive(Debug, Clone, Display)]
 pub enum WorkspaceOptions {
     /// Makes all windows pseudo tiled
-    #[display(fmt = "allfloat")]
+    #[display("allfloat")]
     AllPseudo,
     /// Makes all windows float
-    #[display(fmt = "allpseudo")]
+    #[display("allpseudo")]
     AllFloat,
 }
 
@@ -157,28 +157,28 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The workspace Id
     Id(WorkspaceId),
     /// The workspace relative to the current workspace
-    #[display(fmt = "{}", "format_relative(*_0, \"\")")]
+    #[display("{}", format_relative(*_0, ""))]
     Relative(i32),
     /// The workspace on the monitor relative to the current workspace
-    #[display(fmt = "{}", "format_relative(*_0, \"m\")")]
+    #[display("{}", format_relative(*_0, "m"))]
     RelativeMonitor(i32),
     /// The workspace on the monitor relative to the current workspace, including empty workspaces
-    #[display(fmt = "{}", "format_relative(*_0, \"r\")")]
+    #[display("{}", format_relative(*_0, "r"))]
     RelativeMonitorIncludingEmpty(i32),
     /// The open workspace relative to the current workspace
-    #[display(fmt = "{}", "format_relative(*_0, \"e\")")]
+    #[display("{}", format_relative(*_0, "e"))]
     RelativeOpen(i32),
     /// The previous Workspace
-    #[display(fmt = "previous")]
+    #[display("previous")]
     Previous,
     /// The first available empty workspace
-    #[display(fmt = "empty")]
+    #[display("empty")]
     Empty,
     /// The name of the workspace
-    #[display(fmt = "name:{_0}")]
+    #[display("name:{_0}")]
     Name(&'a str),
     /// The special workspace
-    #[display(fmt = "special{}", "format_special_workspace_ident(_0)")]
+    #[display("special{}", format_special_workspace_ident(_0))]
     Special(Option<&'a str>),
 }
 
@@ -404,13 +404,13 @@ pub enum DispatchType<'a> {
 #[derive(Debug, Clone, Copy, Display, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LockType {
     /// Lock Group
-    #[display(fmt = "lock")]
+    #[display("lock")]
     Lock,
     /// Unlock Group
-    #[display(fmt = "unlock")]
+    #[display("unlock")]
     Unlock,
     /// Toggle lock state of Group
-    #[display(fmt = "toggle")]
+    #[display("toggle")]
     ToggleLock,
 }
 
@@ -418,13 +418,13 @@ pub enum LockType {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum SwapWithMasterParam {
     /// New focus is the new master window
-    #[display(fmt = "master")]
+    #[display("master")]
     Master,
     /// New focus is the new child
-    #[display(fmt = "child")]
+    #[display("child")]
     Child,
     /// Keep the focus of the previously focused window
-    #[display(fmt = "auto")]
+    #[display("auto")]
     Auto,
 }
 
@@ -432,10 +432,10 @@ pub enum SwapWithMasterParam {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum FocusMasterParam {
     /// Focus stays at master, (even if it was selected before)
-    #[display(fmt = "master")]
+    #[display("master")]
     Master,
     /// If the current window is the master, focuses the first child
-    #[display(fmt = "auto")]
+    #[display("auto")]
     Auto,
 }
 

@@ -33,13 +33,13 @@ pub(crate) struct OptionRaw {
 #[derive(Serialize, Deserialize, Debug, Clone, Display)]
 pub enum OptionValue {
     /// A integer (64-bit)
-    #[display(fmt = "{}", "_0")]
+    #[display("{_0}")]
     Int(i64),
     /// A floating point (64-point)
-    #[display(fmt = "{}", "_0")]
+    #[display("{_0}")]
     Float(f64),
     /// A string
-    #[display(fmt = "{}", "_0")]
+    #[display("{_0}")]
     String(String),
 }
 

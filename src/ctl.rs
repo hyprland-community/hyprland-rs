@@ -61,16 +61,16 @@ pub mod output {
     #[derive(Debug, MDisplay, Clone, Copy, PartialEq, Eq)]
     pub enum OutputBackends {
         /// The wayland output backend
-        #[display(fmt = "wayland")]
+        #[display("wayland")]
         Wayland,
         /// The x11 output backend
-        #[display(fmt = "x11")]
+        #[display("x11")]
         X11,
         /// The headless output backend
-        #[display(fmt = "headless")]
+        #[display("headless")]
         Headless,
         /// Let Hyprland decide the backend type
-        #[display(fmt = "auto")]
+        #[display("auto")]
         Auto,
     }
 
@@ -96,13 +96,13 @@ pub mod switch_xkb_layout {
     #[derive(Debug, MDisplay, Clone, Copy, PartialEq, Eq)]
     pub enum SwitchXKBLayoutCmdTypes {
         /// Next input
-        #[display(fmt = "next")]
+        #[display("next")]
         Next,
         /// Previous inout
-        #[display(fmt = "prev")]
+        #[display("prev")]
         Previous,
         /// Set to a specific input id
-        #[display(fmt = "{}", "_0")]
+        #[display("{_0}")]
         Id(u8),
     }
 
@@ -246,7 +246,7 @@ pub mod dismissnotify {
 
 /// A 8-bit color with a alpha channel
 #[derive(Debug, Copy, Clone, MDisplay, Constructor, PartialEq, Eq)]
-#[display(fmt = "rgba({:02x}{:02x}{:02x}{:02x})", "_0", "_1", "_2", "_3")]
+#[display("rgba({_0:02x}{_1:02x}{_2:02x}{_3:02x})")]
 pub struct Color(u8, u8, u8, u8);
 
 /// Provides things to setting props
@@ -265,122 +265,122 @@ pub mod set_prop {
     #[derive(MDisplay, Clone, PartialEq)]
     pub enum PropType {
         /// The animation style
-        #[display(fmt = "animationstyle {}", "_0")]
+        #[display("animationstyle {_0}")]
         AnimationStyle(String),
         /// The roundness
-        #[display(fmt = "rounding {} {}", "_0", "l(*_1)")]
+        #[display("rounding {_0} {}", l(*_1))]
         Rounding(
             i64,
             /// locked
             bool,
         ),
         /// Force no blur
-        #[display(fmt = "forcenoblur {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forcenoblur {} {}", *_0 as u8, l(*_1))]
         ForceNoBlur(
             bool,
             /// locked
             bool,
         ),
         /// Force opaque
-        #[display(fmt = "forceopaque {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forceopaque {} {}", *_0 as u8, l(*_1))]
         ForceOpaque(
             bool,
             /// locked
             bool,
         ),
         /// Force opaque overriden
-        #[display(fmt = "forceopaqueoverriden {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forceopaqueoverriden {} {}", *_0 as u8, l(*_1))]
         ForceOpaqueOverriden(
             bool,
             /// locked
             bool,
         ),
         /// Force allow input
-        #[display(fmt = "forceallowsinput {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forceallowsinput {} {}", *_0 as u8, l(*_1))]
         ForceAllowsInput(
             bool,
             /// locked
             bool,
         ),
         /// Force no animations
-        #[display(fmt = "forcenoanims {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forcenoanims {} {}", *_0 as u8, l(*_1))]
         ForceNoAnims(
             bool,
             /// locked
             bool,
         ),
         /// Force no border
-        #[display(fmt = "forcenoborder {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forcenoborder {} {}", *_0 as u8, l(*_1))]
         ForceNoBorder(
             bool,
             /// locked
             bool,
         ),
         /// Force no shadow
-        #[display(fmt = "forcenoshadow {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("forcenoshadow {} {}", *_0 as u8, l(*_1))]
         ForceNoShadow(
             bool,
             /// locked
             bool,
         ),
         /// Allow for windoe dancing?
-        #[display(fmt = "windowdancecompat {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("windowdancecompat {} {}", *_0 as u8, l(*_1))]
         WindowDanceCompat(
             bool,
             /// locked
             bool,
         ),
         /// Allow for overstepping max size
-        #[display(fmt = "nomaxsize {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("nomaxsize {} {}", *_0 as u8, l(*_1))]
         NoMaxSize(
             bool,
             /// locked
             bool,
         ),
         /// Dim around?
-        #[display(fmt = "dimaround {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("dimaround {} {}", *_0 as u8, l(*_1))]
         DimAround(
             bool,
             /// locked
             bool,
         ),
         /// Makes the next setting be override instead of multiply
-        #[display(fmt = "alphaoverride {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("alphaoverride {} {}", *_0 as u8, l(*_1))]
         AlphaOverride(
             bool,
             /// locked
             bool,
         ),
         /// The alpha
-        #[display(fmt = "alpha {} {}", "_0", "l(*_1)")]
+        #[display("alpha {_0} {}", l(*_1))]
         Alpha(
             f32,
             /// locked
             bool,
         ),
         /// Makes the next setting be override instead of multiply
-        #[display(fmt = "alphainactiveoverride {} {}", "*_0 as u8", "l(*_1)")]
+        #[display("alphainactiveoverride {} {}", *_0 as u8, l(*_1))]
         AlphaInactiveOverride(
             bool,
             /// locked
             bool,
         ),
         /// The alpha for inactive
-        #[display(fmt = "alphainactive {} {}", "_0", "l(*_1)")]
+        #[display("alphainactive {_0} {}", l(*_1))]
         AlphaInactive(
             f32,
             /// locked
             bool,
         ),
         /// The active border color
-        #[display(fmt = "alphabordercolor {} {}", "_0", "l(*_1)")]
+        #[display("alphabordercolor {_0} {}", l(*_1))]
         ActiveBorderColor(
             Color,
             /// locked
             bool,
         ),
         /// The inactive border color
-        #[display(fmt = "inalphabordercolor {} {}", "_0", "l(*_1)")]
+        #[display("inalphabordercolor {_0} {}", l(*_1))]
         InactiveBorderColor(
             Color,
             /// locked
