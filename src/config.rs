@@ -1,6 +1,6 @@
 //! # Hyprland Configuration in Rust
 //!
-use crate::dispatch::{DispatchType, gen_dispatch_str};
+use crate::dispatch::{gen_dispatch_str, DispatchType};
 use crate::keyword::Keyword;
 
 /// Module providing stuff for adding an removing keybinds
@@ -42,15 +42,15 @@ pub mod binds {
     #[allow(missing_docs)]
     /// Enum for mod keys used in bind combinations
     pub enum Mod {
-        #[display(fmt = "SUPER")]
+        #[display("SUPER")]
         SUPER,
-        #[display(fmt = "SHIFT")]
+        #[display("SHIFT")]
         SHIFT,
-        #[display(fmt = "ALT")]
+        #[display("ALT")]
         ALT,
-        #[display(fmt = "CTRL")]
+        #[display("CTRL")]
         CTRL,
-        #[display(fmt = "")]
+        #[display("")]
         NONE,
     }
 
@@ -69,34 +69,34 @@ pub mod binds {
     /// Enum for bind flags
     pub enum Flag {
         /// Works when screen is locked
-        #[display(fmt = "l")]
+        #[display("l")]
         l,
         /// Activates on release
-        #[display(fmt = "r")]
+        #[display("r")]
         r,
         /// Repeats when held
-        #[display(fmt = "e")]
+        #[display("e")]
         e,
         /// Non-consuming, key/mouse events will be passed to the active window in addition to triggering the dispatcher.
-        #[display(fmt = "n")]
+        #[display("n")]
         n,
         /// Used for mouse binds
-        #[display(fmt = "m")]
+        #[display("m")]
         m,
         /// Transparent, cannot be shadowed by other binds.
-        #[display(fmt = "t")]
+        #[display("t")]
         t,
         /// Ignore mods, will ignore modifiers.
-        #[display(fmt = "i")]
+        #[display("i")]
         i,
         /// Separate, will arbitrarily combine keys between each mod/key
-        #[display(fmt = "s")]
+        #[display("s")]
         s,
         /// Has description, will allow you to write a description for your bind.
-        #[display(fmt = "d")]
+        #[display("d")]
         d,
         /// Bypasses the app's requests to inhibit keybinds.
-        #[display(fmt = "p")]
+        #[display("p")]
         p,
     }
 
@@ -149,7 +149,7 @@ pub mod binds {
                 format!("bind{}", binding.flags.join()),
                 Self::gen_str(binding)?,
             )
-                .await?;
+            .await?;
             Ok(())
         }
     }
