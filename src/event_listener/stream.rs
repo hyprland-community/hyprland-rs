@@ -31,7 +31,7 @@ pub struct EventStream {
     stream: Pin<Box<dyn Stream<Item = crate::Result<Event>>>>,
 }
 impl EventStream {
-    /// Creates a new [EventListener]
+    /// Creates a new [EventStream]
     pub fn new() -> Self {
         use crate::unix_async::*;
         let stream = try_stream! {
