@@ -72,7 +72,7 @@ pub(crate) trait HasExecutor {
     }
 }
 
-pub(crate) fn event_primer_noexec<'a>(
+pub(crate) fn event_primer_noexec(
     event: Event,
     abuf: &mut Vec<ActiveWindowState>,
 ) -> crate::Result<Vec<Event>> {
@@ -688,7 +688,7 @@ fn new_event_parser(
             if let Some(event) = EVENTS.get(name) {
                 Either::Left((
                     event.1,
-                    x.splitn(event.0 as usize, ",")
+                    x.splitn(event.0, ",")
                         .map(|y| y.to_string())
                         .collect(),
                 ))
@@ -879,7 +879,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                 toggled: get![ref args;0] == "1",
                 window_addresses: get![ref args;1]
                     .split(",")
-                    .map(|x| Address::new(x))
+                    .map(Address::new)
                     .collect(),
             })),
             ParsedEventType::MoveIntoGroup => {
