@@ -420,7 +420,7 @@ checksum = "d231dfb89cfffdbc30e7fc41579ed6066ad03abda9e567ccafae602b97ec5024"
 
 [[package]]
 name = "hyprland"
-version = "0.4.0-beta.1"
+version = "0.4.0-beta.2"
 dependencies = [
  "ahash",
  "async-net",
@@ -444,7 +444,7 @@ dependencies = [
 
 [[package]]
 name = "hyprland-macros"
-version = "0.4.0-beta.1"
+version = "0.4.0-beta.2"
 dependencies = [
  "proc-macro2",
  "quote",
