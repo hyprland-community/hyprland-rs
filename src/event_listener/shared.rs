@@ -418,7 +418,7 @@ pub struct ChangedSpecialEventData {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MonitorAddedEventData {
     /// The monitor's id
-    pub id: i8,
+    pub id: MonitorId,
     /// The monitor's name
     pub name: String,
     /// the monitor's description
@@ -805,7 +805,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             }
             ParsedEventType::MonitorRemoved => Ok(Event::MonitorRemoved(get![args;0])),
             ParsedEventType::MonitorAddedV2 => Ok(Event::MonitorAdded(MonitorAddedEventData {
-                id: parse_int!(get![ref args;0], event: "MonitorAddedV2" => i8),
+                id: parse_int!(get![ref args;0], event: "MonitorAddedV2" => MonitorId),
                 name: get![args;1],
                 description: get![args;2],
             })),
