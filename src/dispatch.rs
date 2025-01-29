@@ -25,7 +25,7 @@ pub enum WindowIdentifier<'a> {
     #[display("address:{_0}")]
     Address(Address),
     /// A Regular Expression to match the window class (handled by Hyprland)
-    #[display("{_0}")]
+    #[display("class:{_0}")]
     ClassRegularExpression(&'a str),
     /// The window title
     #[display("title:{_0}")]
