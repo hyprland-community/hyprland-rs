@@ -11,7 +11,7 @@ use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 async fn main() -> hyprland::Result<()>{
     let args: Vec<_> = std::env::args().skip(1).collect();
     
-    if args.len() == 0 {
+    if args.is_empty(){
         panic!("You have to specify client, workspace or monitor")
     }
 
