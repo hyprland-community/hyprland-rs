@@ -877,10 +877,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             })),
             ParsedEventType::ToggleGroup => Ok(Event::GroupToggled(GroupToggledEventData {
                 toggled: get![ref args;0] == "1",
-                window_addresses: get![ref args;1]
-                    .split(",")
-                    .map(|x| Address::new(x))
-                    .collect(),
+                window_addresses: get![ref args;1].split(",").map(Address::new).collect(),
             })),
             ParsedEventType::MoveIntoGroup => {
                 Ok(Event::WindowMovedIntoGroup(Address::new(get![ref args;0])))
