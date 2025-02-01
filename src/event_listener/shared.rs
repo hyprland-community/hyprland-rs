@@ -675,9 +675,10 @@ pub(crate) static EVENTS: phf::Map<&'static str, (usize, ParsedEventType)> = phf
 
 use either::Either;
 
-fn new_event_parser(
-    input: &str,
-) -> crate::Result<Either<(ParsedEventType, Vec<String>), (String, String)>> {
+type KnownEvent = (ParsedEventType, Vec<String>);
+type UnknownEvent = (String, String);
+
+fn new_event_parser(input: &str) -> crate::Result<Either<KnownEvent, UnknownEvent>> {
     input
         .to_string()
         .split_once(">>")
