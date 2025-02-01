@@ -688,9 +688,7 @@ fn new_event_parser(
             if let Some(event) = EVENTS.get(name) {
                 Either::Left((
                     event.1,
-                    x.splitn(event.0 as usize, ",")
-                        .map(|y| y.to_string())
-                        .collect(),
+                    x.splitn(event.0, ",").map(|y| y.to_string()).collect(),
                 ))
             } else {
                 Either::Right((name.to_string(), x.to_string()))
