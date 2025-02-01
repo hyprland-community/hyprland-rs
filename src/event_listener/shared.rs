@@ -72,7 +72,7 @@ pub(crate) trait HasExecutor {
     }
 }
 
-pub(crate) fn event_primer_noexec<'a>(
+pub(crate) fn event_primer_noexec(
     event: Event,
     abuf: &mut Vec<ActiveWindowState>,
 ) -> crate::Result<Vec<Event>> {
