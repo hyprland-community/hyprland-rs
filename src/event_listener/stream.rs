@@ -32,6 +32,7 @@ pub struct EventStream {
 }
 impl EventStream {
     /// Creates a new [EventStream]
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         use crate::unix_async::*;
         let stream = try_stream! {
