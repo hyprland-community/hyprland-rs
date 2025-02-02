@@ -17,7 +17,7 @@ use futures_lite::{Stream, StreamExt};
 /// use hyprland::event_listener::EventStream;
 /// use futures_lite::StreamExt;
 ///
-/// #[tokio::main]
+/// #[tokio::main(flavor = "current_thread")]
 /// async fn main() {
 ///     let mut stream = EventStream::new();
 ///     while let Some(Ok(event)) = stream.next().await {
