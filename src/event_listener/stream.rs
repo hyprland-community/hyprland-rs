@@ -15,11 +15,10 @@ use futures_lite::{Stream, StreamExt};
 /// ```rust
 /// use hyprland::prelude::*;
 /// use hyprland::event_listener::EventStream;
-/// use hyprland::Result as HResult;
 /// use futures_lite::StreamExt;
 ///
 /// #[tokio::main]
-/// async fn main() -> HResult<()> {
+/// async fn main() {
 ///     let mut stream = EventStream::new();
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
