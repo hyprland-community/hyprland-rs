@@ -229,7 +229,7 @@ pub(crate) async fn write_to_socket(
     let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path).await?;
 
-    stream.write_all(&content.as_bytes()).await?;
+    stream.write_all(&content.into_bytes()).await?;
 
     let mut response = vec![];
 
@@ -258,7 +258,7 @@ pub(crate) fn write_to_socket_sync(
     let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path)?;
 
-    stream.write_all(&content.as_bytes())?;
+    stream.write_all(&content.into_bytes())?;
 
     let mut response = Vec::new();
 
@@ -411,10 +411,10 @@ impl CommandContent {
     /// use hyprland::shared::*;
     ///
     /// let content = CommandContent { flag: CommandFlag::JSON, data: "foo".to_string() };
-    /// let bytes = content.as_bytes();
+    /// let bytes = content.into_bytes();
     /// assert_eq!(bytes, b"j/foo");
     /// ```
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn into_bytes(&self) -> Vec<u8> {
         self.to_string().into_bytes()
     }
 }
