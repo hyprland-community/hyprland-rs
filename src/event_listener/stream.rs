@@ -12,14 +12,13 @@ use futures_lite::{Stream, StreamExt};
 /// as its more idiomatic, and allows for more efficient memory management
 ///
 /// # Examples
-/// ```rust
+/// ```rust, no_run
 /// use hyprland::prelude::*;
 /// use hyprland::event_listener::EventStream;
-/// use hyprland::Result as HResult;
 /// use futures_lite::StreamExt;
 ///
-/// #[tokio::main]
-/// async fn main() -> HResult<()> {
+/// #[tokio::main(flavor = "current_thread")]
+/// async fn main() {
 ///     let mut stream = EventStream::new();
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
@@ -32,6 +31,7 @@ pub struct EventStream {
 }
 impl EventStream {
     /// Creates a new [EventStream]
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         use crate::unix_async::*;
         let stream = try_stream! {
