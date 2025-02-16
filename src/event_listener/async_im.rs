@@ -11,7 +11,7 @@ use super::*;
 /// use hyprland::event_listener::EventListener;
 /// let mut listener = EventListener::new(); // creates a new listener
 /// // add a event handler which will be ran when this event happens
-/// listener.add_workspace_change_handler(|data| println!("{:#?}", data));
+/// listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
 /// listener.start_listener(); // or `.start_listener_async().await` if async
 /// ```
 pub struct AsyncEventListener {
@@ -45,7 +45,7 @@ impl AsyncEventListener {
     /// # async fn function() -> std::io::Result<()> {
     /// use hyprland::event_listener::EventListener;
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));
+    /// listener.add_workspace_changed_handler(|id| println!("changed workspace to {id:?}"));
     /// listener.start_listener_async().await;
     /// # Ok(())
     /// # }

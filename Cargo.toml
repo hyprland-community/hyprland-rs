@@ -6,7 +6,7 @@ description = "A unoffical rust wrapper for hyprland's IPC"
 homepage = "https://github.com/hyprland-community/hyprland-rs"
 version.workspace = true
 license.workspace = true
-author.workspace = true
+authors.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
@@ -30,7 +30,7 @@ members = [
 version = "0.4.0-beta.2"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
-keywords = ["hyprland", "ipc", "hypr", "wayland", "linux"]
+keywords = ["hyprland", "ipc", "hypr", "wayland", "linux", "hyprpaper"]
 categories = ["api-bindings"]
 authors = ["yavko <yavornkolev@gmail.com>"]
 
@@ -78,6 +78,7 @@ default = [
     "ctl",
     "tokio",
     "ahash",
+    "hyprpaper",
 ]
 async-lite = ["dep:async-net"]
 async-std = ["dep:async-std"]
@@ -90,4 +91,5 @@ config = ["dispatch", "keyword"]
 listener = ["data", "dispatch"]
 parking_lot = ["dep:parking_lot", "once_cell/parking_lot", "tokio?/parking_lot"]
 ahash = ["dep:ahash"]
+hyprpaper = []
 unsafe-impl = []

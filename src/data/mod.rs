@@ -8,9 +8,8 @@
 //! ```rust
 //! use hyprland::data::*;
 //! use hyprland::prelude::*;
-//! use hyprland::shared::HResult;
 //!
-//! fn main() -> HResult<()> {
+//! fn main() -> hyprland::Result<()> {
 //!     let monitors = Monitors::get()?.to_vec();
 //!     println!("{monitors:#?}");
 //!

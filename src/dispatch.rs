@@ -5,9 +5,8 @@
 //! ## Usage
 //!
 //! ```rust
-//! use hyprland::shared::HResult;
 //! use hyprland::dispatch::{Dispatch, DispatchType};
-//! fn main() -> HResult<()> {
+//! fn main() -> hyprland::Result<()> {
 //!    Dispatch::call(DispatchType::Exec("kitty"))?;
 //!
 //!    Ok(())
@@ -556,8 +555,7 @@ impl Dispatch {
     /// This function calls a specified dispatcher (blocking)
     ///
     /// ```rust
-    /// # use hyprland::shared::HResult;
-    /// # fn main() -> HResult<()> {
+    /// # fn main() -> hyprland::Result<()> {
     /// use hyprland::dispatch::{DispatchType,Dispatch};
     /// // This is an example of just one dispatcher, there are many more!
     /// Dispatch::call(DispatchType::Exec("kitty"))
@@ -579,8 +577,7 @@ impl Dispatch {
     /// This function calls a specified dispatcher (async)
     ///
     /// ```rust
-    /// # use hyprland::shared::HResult;
-    /// # async fn function() -> HResult<()> {
+    /// # async fn function() -> hyprland::Result<()> {
     /// use hyprland::dispatch::{DispatchType,Dispatch};
     /// // This is an example of just one dispatcher, there are many more!
     /// Dispatch::call_async(DispatchType::Exec("kitty")).await?;
