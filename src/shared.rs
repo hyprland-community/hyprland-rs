@@ -21,6 +21,9 @@ pub enum HyprError {
     /// Dispatcher returned non `ok` value
     #[display("A dispatcher returned a non-`ok`, value which is probably an error: {_0}")]
     NotOkDispatch(String),
+    /// Error when interacting with Hyprpaper.
+    #[cfg(feature = "hyprpaper")]
+    Hyprpaper(crate::hyprpaper::Error),
     /// Internal Hyprland error
     Internal(String),
     /// Error that occurs for other reasons. Avoid using this.
@@ -38,6 +41,8 @@ impl HyprError {
             Self::IoError(_) => Err(self),
             Self::FromUtf8Error(e) => Ok(Self::FromUtf8Error(e.clone())),
             Self::NotOkDispatch(s) => Ok(Self::NotOkDispatch(s.clone())),
+            #[cfg(feature = "hyprpaper")]
+            Self::Hyprpaper(_) => Err(self),
             Self::Internal(s) => Ok(Self::Internal(s.clone())),
             Self::Other(s) => Ok(Self::Other(s.clone())),
         }
@@ -229,7 +234,15 @@ pub(crate) async fn write_to_socket(
     let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path).await?;
 
-    stream.write_all(&content.to_bytes()).await?;
+    match ty {
+        #[cfg(feature = "hyprpaper")]
+        SocketType::Hyprpaper => {
+            stream.write_all(content.data.as_bytes()).await?;
+        }
+        SocketType::Command | SocketType::Listener => {
+            stream.write_all(&content.to_bytes()).await?;
+        }
+    }
 
     let mut response = vec![];
 
@@ -258,7 +271,15 @@ pub(crate) fn write_to_socket_sync(
     let path = get_socket_path(ty)?;
     let mut stream = UnixStream::connect(path)?;
 
-    stream.write_all(&content.to_bytes())?;
+    match ty {
+        #[cfg(feature = "hyprpaper")]
+        SocketType::Hyprpaper => {
+            stream.write_all(content.data.as_bytes())?;
+        }
+        SocketType::Command | SocketType::Listener => {
+            stream.write_all(&content.to_bytes())?;
+        }
+    }
 
     let mut response = Vec::new();
 
@@ -283,12 +304,17 @@ pub(crate) enum SocketType {
     Command,
     /// The socket used to listen for events (AKA `.socket2.sock`)
     Listener,
+    /// The socket used to send commands to hyprpaper (AKA `.hyprpaper.sock`)
+    #[cfg(feature = "hyprpaper")]
+    Hyprpaper,
 }
 impl SocketType {
     pub(crate) const fn socket_name(&self) -> &'static str {
         match self {
             Self::Command => ".socket.sock",
             Self::Listener => ".socket2.sock",
+            #[cfg(feature = "hyprpaper")]
+            Self::Hyprpaper => ".hyprpaper.sock",
         }
     }
 }
@@ -297,6 +323,9 @@ pub(crate) static COMMAND_SOCK: Lazy<crate::Result<PathBuf>> =
     Lazy::new(|| init_socket_path(SocketType::Command));
 pub(crate) static LISTENER_SOCK: Lazy<crate::Result<PathBuf>> =
     Lazy::new(|| init_socket_path(SocketType::Listener));
+#[cfg(feature = "hyprpaper")]
+pub(crate) static HYPRPAPER_SOCK: Lazy<crate::Result<PathBuf>> =
+    Lazy::new(|| init_socket_path(SocketType::Hyprpaper));
 
 /// Get the socket path. According to benchmarks, this is faster than an atomic OnceCell.
 pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
@@ -314,6 +343,8 @@ pub(crate) fn get_socket_path(socket_type: SocketType) -> crate::Result<PathBuf>
     match socket_type {
         SocketType::Command => me!(COMMAND_SOCK.as_ref()),
         SocketType::Listener => me!(LISTENER_SOCK.as_ref()),
+        #[cfg(feature = "hyprpaper")]
+        SocketType::Hyprpaper => me!(HYPRPAPER_SOCK.as_ref()),
     }
 }
 
