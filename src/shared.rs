@@ -375,6 +375,7 @@ fn init_socket_path(socket_type: SocketType) -> crate::Result<PathBuf> {
 #[macro_export]
 macro_rules! command {
     ($flag:ident, $($k:tt)*) => {{
+        use $crate::shared::{CommandContent, CommandFlag};
         CommandContent {
             flag: CommandFlag::$flag,
             data: format!($($k)*),
