@@ -401,8 +401,8 @@ pub struct WindowEventData {
 pub struct MonitorEventData {
     /// The monitor name
     pub monitor_name: String,
-    /// The workspace name
-    pub workspace_name: Option<WorkspaceType>,
+    /// The workspace id
+    pub workspace_id: Option<WorkspaceId>,
 }
 
 /// This struct holds changed special event data
@@ -511,7 +511,7 @@ pub enum Event {
     /// it waits for both, and then sends one unified event :)
     ActiveWindowChanged(Option<WindowEventData>),
     /// An event that emits when the active monitor is changed,
-    /// it is the equivelant of the `focusedmon` event
+    /// it is the equivelant of the `focusedmonv2` event
     ActiveMonitorChanged(MonitorEventData),
     /// An event that emits when the current fullscreen state is changed,
     /// it is the equivelant of the `fullscreen` event
@@ -611,7 +611,7 @@ pub(crate) enum ParsedEventType {
     WorkspaceRename,
     ActiveWindowChangedV1,
     ActiveWindowChangedV2,
-    ActiveMonitorChanged,
+    ActiveMonitorChangedV2,
     FullscreenStateChanged,
     MonitorAddedV2,
     MonitorRemoved,
@@ -646,7 +646,7 @@ pub(crate) static EVENTS: phf::Map<&'static str, (usize, ParsedEventType)> = phf
     "createworkspacev2" => ((2),ParsedEventType::WorkspaceAddedV2),
     "moveworkspacev2" => ((3),ParsedEventType::WorkspaceMovedV2),
     "renameworkspace" => ((2),ParsedEventType::WorkspaceRename),
-    "focusedmon" => ((2),ParsedEventType::ActiveMonitorChanged),
+    "focusedmonv2" => ((2),ParsedEventType::ActiveMonitorChangedV2),
     "activewindow" => ((2),ParsedEventType::ActiveWindowChangedV1),
     "activewindowv2" => ((1),ParsedEventType::ActiveWindowChangedV2),
     "fullscreen" => ((1),ParsedEventType::FullscreenStateChanged),
@@ -770,14 +770,14 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
                     name: get![args;1],
                 }))
             }
-            ParsedEventType::ActiveMonitorChanged => {
+            ParsedEventType::ActiveMonitorChangedV2 => {
                 Ok(Event::ActiveMonitorChanged(MonitorEventData {
                     monitor_name: get![args;0],
-                    workspace_name: if get![args;1] == "?" {
+                    workspace_id: if get![args;1] == "-1" {
                         None
                     } else {
-                        Some(parse_string_as_work(get![args;1]))
-                    },
+                        Some(parse_int!(get![ref args;1], event: "ActiveMonitorChangedV2")))
+                    }
                 }))
             }
             ParsedEventType::ActiveWindowChangedV1 => {
