@@ -419,8 +419,16 @@ pub mod set_prop {
 pub mod plugin {
     use super::*;
     use std::path::Path;
+    /// Returns a list of all plugins
+    pub fn list() -> crate::Result<String> {
+        write_to_socket_sync(SocketType::Command, command!(Empty, "plugin list"))
+    }
+    /// Returns a list of all plugins (async)
+    pub async fn list_async() -> crate::Result<String> {
+        write_to_socket(SocketType::Command, command!(Empty, "plugin list")).await
+    }
 
-    /// Loads a plugin, by path
+    /// Loads a plugin, by absolute path
     pub fn load(path: &Path) -> crate::Result<()> {
         write_to_socket_sync(
             SocketType::Command,
@@ -428,7 +436,7 @@ pub mod plugin {
         )?;
         Ok(())
     }
-    /// Loads a plugin, by path (async)
+    /// Loads a plugin, by absolute path (async)
     pub async fn load_async(path: &Path) -> crate::Result<()> {
         write_to_socket(
             SocketType::Command,
@@ -437,12 +445,22 @@ pub mod plugin {
         .await?;
         Ok(())
     }
-    /// Returns a list of all plugins
-    pub fn list() -> crate::Result<String> {
-        write_to_socket_sync(SocketType::Command, command!(Empty, "plugin list"))
+
+    /// Unloads a plugin, by absolute path
+    pub fn unload(path: &Path) -> crate::Result<()> {
+        write_to_socket_sync(
+            SocketType::Command,
+            command!(Empty, "plugin unload {}", path.display()),
+        )?;
+        Ok(())
     }
-    /// Returns a list of all plugins (async)
-    pub async fn list_async() -> crate::Result<String> {
-        write_to_socket(SocketType::Command, command!(Empty, "plugin list")).await
+    /// Unloads a plugin, by absolute path (async)
+    pub async fn unload_async(path: &Path) -> crate::Result<()> {
+        write_to_socket(
+            SocketType::Command,
+            command!(Empty, "plugin unload {}", path.display()),
+        )
+        .await?;
+        Ok(())
     }
 }
