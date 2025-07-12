@@ -8,12 +8,12 @@ fn main() -> hyprland::Result<()> {
     // Create a event listener
     let mut event_listener = EventListener::new();
 
-    event_listener.add_active_window_change_handler(|data| println!("{data:#?}"));
-    event_listener.add_fullscreen_state_change_handler(
+    event_listener.add_active_window_changed_handler(|data| println!("{data:#?}"));
+    event_listener.add_fullscreen_state_changed_handler(
         |fstate| println!("Window {} fullscreen", if fstate { "is" } else { "is not" })
     );
-    event_listener.add_active_monitor_change_handler(|state| println!("Monitor state: {state:#?}"));    
-    event_listener.add_workspace_change_handler(|id| println!("workspace changed to {id:?}"));
+    event_listener.add_active_monitor_changed_handler(|state| println!("Monitor state: {state:#?}"));    
+    event_listener.add_workspace_changed_handler(|id| println!("workspace changed to {id:?}"));
 
     // and execute the function
     // here we are using the blocking variant
