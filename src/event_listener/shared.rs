@@ -72,7 +72,7 @@ pub(crate) trait HasExecutor {
     }
 }
 
-pub(crate) fn event_primer_noexec<'a>(
+pub(crate) fn event_primer_noexec(
     event: Event,
     abuf: &mut Vec<ActiveWindowState>,
 ) -> crate::Result<Vec<Event>> {
@@ -675,9 +675,10 @@ pub(crate) static EVENTS: phf::Map<&'static str, (usize, ParsedEventType)> = phf
 
 use either::Either;
 
-fn new_event_parser(
-    input: &str,
-) -> crate::Result<Either<(ParsedEventType, Vec<String>), (String, String)>> {
+type KnownEvent = (ParsedEventType, Vec<String>);
+type UnknownEvent = (String, String);
+
+fn new_event_parser(input: &str) -> crate::Result<Either<KnownEvent, UnknownEvent>> {
     input
         .to_string()
         .split_once(">>")
@@ -688,9 +689,7 @@ fn new_event_parser(
             if let Some(event) = EVENTS.get(name) {
                 Either::Left((
                     event.1,
-                    x.splitn(event.0 as usize, ",")
-                        .map(|y| y.to_string())
-                        .collect(),
+                    x.splitn(event.0, ",").map(|y| y.to_string()).collect(),
                 ))
             } else {
                 Either::Right((name.to_string(), x.to_string()))
@@ -877,10 +876,7 @@ pub(crate) fn event_parser(event: String) -> crate::Result<Vec<Event>> {
             })),
             ParsedEventType::ToggleGroup => Ok(Event::GroupToggled(GroupToggledEventData {
                 toggled: get![ref args;0] == "1",
-                window_addresses: get![ref args;1]
-                    .split(",")
-                    .map(|x| Address::new(x))
-                    .collect(),
+                window_addresses: get![ref args;1].split(",").map(Address::new).collect(),
             })),
             ParsedEventType::MoveIntoGroup => {
                 Ok(Event::WindowMovedIntoGroup(Address::new(get![ref args;0])))

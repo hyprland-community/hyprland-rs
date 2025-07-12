@@ -5,9 +5,8 @@
 //! ## Usage
 //!
 //! ```rust, no_run
-//! use hyprland::shared::HResult;
 //! use hyprland::keyword::Keyword;
-//! fn main() -> HResult<()> {
+//! fn main() -> hyprland::Result<()> {
 //!    Keyword::get("some_keyword")?;
 //!    Keyword::set("another_keyword", "the value to set it to")?;
 //!
