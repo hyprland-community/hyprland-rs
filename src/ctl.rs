@@ -420,48 +420,86 @@ pub mod set_prop {
 pub mod plugin {
     use super::*;
     use std::path::Path;
+
+    /// This struct represents a loaded plugin
+    #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+    pub struct Plugin {
+        /// plugin name
+        pub name: String,
+        /// plugin author
+        pub author: String,
+        /// handle to plugin
+        pub handle: String,
+        /// plugin version
+        pub version: String,
+        /// plugin description
+        pub description: String,
+    }
+
     /// Returns a list of all plugins
-    pub fn list() -> crate::Result<String> {
-        write_to_socket_sync(SocketType::Command, command!(Empty, "plugin list"))
+    pub fn list() -> crate::Result<Vec<Plugin>> {
+        let data = write_to_socket_sync(SocketType::Command, command!(JSON, "plugin list"))?;
+        let deserialized: Vec<Plugin> = serde_json::from_str(&data)?;
+        Ok(deserialized)
     }
     /// Returns a list of all plugins (async)
-    pub async fn list_async() -> crate::Result<String> {
-        write_to_socket(SocketType::Command, command!(Empty, "plugin list")).await
+    pub async fn list_async() -> crate::Result<Vec<Plugin>> {
+        let data = write_to_socket(SocketType::Command, command!(JSON, "plugin list")).await?;
+        let deserialized: Vec<Plugin> = serde_json::from_str(&data)?;
+        Ok(deserialized)
     }
 
     /// Loads a plugin, by absolute path
     pub fn load(path: &Path) -> crate::Result<()> {
-        write_to_socket_sync(
+        let str = write_to_socket_sync(
             SocketType::Command,
             command!(Empty, "plugin load {}", path.display()),
         )?;
-        Ok(())
+        if str.contains("could not be loaded") {
+            Err(HyprError::Internal(str))
+        } else {
+            Ok(())
+        }
     }
     /// Loads a plugin, by absolute path (async)
     pub async fn load_async(path: &Path) -> crate::Result<()> {
-        write_to_socket(
+        let str = write_to_socket(
             SocketType::Command,
             command!(Empty, "plugin load {}", path.display()),
         )
         .await?;
-        Ok(())
+        if str.contains("could not be loaded") {
+            Err(HyprError::Internal(str))
+        } else {
+            Ok(())
+        }
     }
 
-    /// Unloads a plugin, by absolute path
+    /// Unloads a plugin, by absolute path.
+    ///
+    /// Returns true if plugin was unloaded, false if it wasnt unloaded
     pub fn unload(path: &Path) -> crate::Result<()> {
-        write_to_socket_sync(
+        let str = write_to_socket_sync(
             SocketType::Command,
             command!(Empty, "plugin unload {}", path.display()),
         )?;
-        Ok(())
+        if str.contains("plugin not loaded") {
+            Err(HyprError::Internal(str))
+        } else {
+            Ok(())
+        }
     }
     /// Unloads a plugin, by absolute path (async)
     pub async fn unload_async(path: &Path) -> crate::Result<()> {
-        write_to_socket(
+        let str = write_to_socket(
             SocketType::Command,
             command!(Empty, "plugin unload {}", path.display()),
         )
         .await?;
-        Ok(())
+        if str.contains("plugin not loaded") {
+            Err(HyprError::Internal(str))
+        } else {
+            Ok(())
+        }
     }
 }
