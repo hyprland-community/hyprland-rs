@@ -75,10 +75,11 @@ pub mod output {
     }
 
     /// Create virtual displays
-    pub fn create(backend: OutputBackends) -> crate::Result<()> {
+    pub fn create(backend: OutputBackends, name: Option<&str>) -> crate::Result<()> {
+        let name = name.unwrap_or_default();
         write_to_socket_sync(
             SocketType::Command,
-            command!(Empty, "output create {backend}"),
+            command!(Empty, "output create {backend} {name}"),
         )?;
         Ok(())
     }
