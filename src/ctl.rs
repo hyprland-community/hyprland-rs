@@ -455,7 +455,7 @@ pub mod plugin {
             command!(Empty, "plugin load {}", path.display()),
         )?;
         if str.contains("could not be loaded") {
-            Err(HyprError::Other(str))
+            Err(HyprError::Internal(str))
         } else {
             Ok(())
         }
@@ -468,7 +468,7 @@ pub mod plugin {
         )
         .await?;
         if str.contains("could not be loaded") {
-            Err(HyprError::Other(str))
+            Err(HyprError::Internal(str))
         } else {
             Ok(())
         }
@@ -483,7 +483,7 @@ pub mod plugin {
             command!(Empty, "plugin unload {}", path.display()),
         )?;
         if str.contains("plugin not loaded") {
-            Err(HyprError::Other(str))
+            Err(HyprError::Internal(str))
         } else {
             Ok(())
         }
@@ -496,7 +496,7 @@ pub mod plugin {
         )
         .await?;
         if str.contains("plugin not loaded") {
-            Err(HyprError::Other(str))
+            Err(HyprError::Internal(str))
         } else {
             Ok(())
         }
