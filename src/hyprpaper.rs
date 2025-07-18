@@ -8,6 +8,8 @@ mod wallpaper;
 mod wallpaper_listing;
 mod wallpaper_mode;
 
+use crate::instance::{AsyncInstance, Instance};
+use crate::shared::CommandContent;
 pub use error::Error;
 pub use keyword::Keyword;
 pub use monitor::Monitor;
@@ -17,8 +19,6 @@ pub use unload::Unload;
 pub use wallpaper::Wallpaper;
 pub use wallpaper_listing::WallpaperListing;
 pub use wallpaper_mode::WallpaperMode;
-
-use crate::shared::{write_to_socket, write_to_socket_sync, CommandContent, SocketType};
 
 /// Response from hyprpaper.
 pub enum Response {
@@ -31,29 +31,28 @@ pub enum Response {
 }
 
 /// Send a keyword to hyprpaper using IPC.
-pub fn hyprpaper(keyword: Keyword) -> crate::Result<Response> {
+pub fn hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Result<Response> {
     let expected_response = keyword.expected_response();
 
     let content = CommandContent {
         flag: crate::shared::CommandFlag::Empty,
         data: keyword.to_string(),
     };
-
-    let response = write_to_socket_sync(SocketType::Command, content)?;
-
+    let response = instance.write_to_hyprpaper_socket(content)?;
     expected_response.is_expected(response)
 }
 
 /// Send a keyword to hyprpaper using IPC.
-pub async fn hyprpaper_async(keyword: Keyword) -> crate::Result<Response> {
+pub async fn hyprpaper_async(
+    instance: &mut AsyncInstance,
+    keyword: Keyword,
+) -> crate::Result<Response> {
     let expected_response = keyword.expected_response();
 
     let content = CommandContent {
         flag: crate::shared::CommandFlag::Empty,
         data: keyword.to_string(),
     };
-
-    let response = write_to_socket(SocketType::Hyprpaper, content).await?;
-
+    let response = instance.write_to_hyprpaper_socket(content).await?;
     expected_response.is_expected(response)
 }

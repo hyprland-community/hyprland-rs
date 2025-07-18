@@ -1,5 +1,4 @@
-use crate::shared::HyprError;
-
+use crate::error::HyprError;
 use super::{Error, Preload, Reload, Response, Unload, Wallpaper, WallpaperListing};
 
 /// The hyprpaper keyword, used to interact with hyprpaper.

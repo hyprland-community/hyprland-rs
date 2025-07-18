@@ -111,6 +111,21 @@ mod sync {
             };
             Ok(stream)
         }
+
+        pub(crate) fn write_to_hyprpaper_socket(
+            &self,
+            content: CommandContent,
+        ) -> crate::Result<String> {
+            use std::io::{Read, Write};
+            let Some(mut stream) = self.hyprpaper_socket.get() else {
+                hypr_err!("Hyprpaper socket not initialized!");
+            };
+            stream.write_all(content.data.as_bytes())?;
+            // stream.flush()?;
+            let mut response = Vec::new();
+            stream.read_to_end(&mut response)?;
+            Ok(String::from_utf8(response)?)
+        }
     }
 }
 mod r#async {
@@ -227,6 +242,20 @@ mod r#async {
                 hypr_err!("Socket not initialized!");
             };
             Ok(stream)
+        }
+
+        pub(crate) async fn write_to_hyprpaper_socket(
+            &mut self,
+            content: CommandContent,
+        ) -> crate::Result<String> {
+            let Some(stream) = self.hyprpaper_socket.get_mut() else {
+                hypr_err!("Hyprpaper socket not initialized!");
+            };
+            stream.write_all(content.data.as_bytes()).await?;
+            // stream.flush()?;
+            let mut response = Vec::new();
+            stream.read_to_end(&mut response).await?;
+            Ok(String::from_utf8(response)?)
         }
     }
 }

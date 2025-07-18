@@ -1,5 +1,4 @@
-use crate::shared::HyprError;
-
+use crate::error::HyprError;
 use super::Error;
 
 /// A listing of an active wallpaper.

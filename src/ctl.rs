@@ -75,7 +75,12 @@ pub mod output {
     }
 
     /// Create virtual displays
-    pub fn create(instance: &Instance, backend: OutputBackends, name: Option<&str>) -> crate::Result<()> {
+    pub fn create(
+        instance: &Instance,
+        backend: OutputBackends,
+        name: Option<&str>,
+    ) -> crate::Result<()> {
+        let name = name.unwrap_or_default();
         instance.write_to_socket(command!(Empty, "output create {backend} {name}"))?;
         Ok(())
     }
@@ -89,9 +94,11 @@ pub mod output {
     pub async fn create_async(
         instance: &mut AsyncInstance,
         backend: OutputBackends,
+        name: Option<&str>,
     ) -> crate::Result<()> {
+        let name = name.unwrap_or_default();
         instance
-            .write_to_socket(command!(Empty, "output create {backend}"))
+            .write_to_socket(command!(Empty, "output create {backend} {name}"))
             .await?;
         Ok(())
     }
