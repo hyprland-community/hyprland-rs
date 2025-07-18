@@ -30,7 +30,7 @@ members = [
 version = "0.4.0-beta.2"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
-keywords = ["hyprland", "ipc", "hypr", "wayland", "linux"]
+keywords = ["hyprland", "ipc", "hypr", "wayland", "linux", "hyprpaper"]
 categories = ["api-bindings"]
 authors = ["yavko <yavornkolev@gmail.com>"]
 
@@ -72,6 +72,7 @@ default = [
     "ctl",
     "tokio",
     "ahash",
+    "hyprpaper",
 ]
 listener = ["data", "dispatch"]
 dispatch = []
@@ -84,4 +85,5 @@ ahash = ["dep:ahash"]
 
 async-lite = ["dep:async-net"]
 parking_lot = ["tokio?/parking_lot"]
+hyprpaper = []
 unsafe-impl = []

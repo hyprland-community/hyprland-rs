@@ -75,8 +75,8 @@ pub mod output {
     }
 
     /// Create virtual displays
-    pub fn create(instance: &Instance, backend: OutputBackends) -> crate::Result<()> {
-        instance.write_to_socket(command!(Empty, "output create {backend}"))?;
+    pub fn create(instance: &Instance, backend: OutputBackends, name: Option<&str>) -> crate::Result<()> {
+        instance.write_to_socket(command!(Empty, "output create {backend} {name}"))?;
         Ok(())
     }
     /// Remove virtual displays

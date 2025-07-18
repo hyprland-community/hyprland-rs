@@ -704,10 +704,10 @@ use crate::error::HyprError;
 use crate::instance::{AsyncInstance, Instance};
 use either::Either;
 
-#[allow(clippy::type_complexity)]
-fn new_event_parser(
-    input: &str,
-) -> crate::Result<Either<(ParsedEventType, Vec<String>), (String, String)>> {
+type KnownEvent = (ParsedEventType, Vec<String>);
+type UnknownEvent = (String, String);
+
+fn new_event_parser(input: &str) -> crate::Result<Either<KnownEvent, UnknownEvent>> {
     input
         .to_string()
         .split_once(">>")

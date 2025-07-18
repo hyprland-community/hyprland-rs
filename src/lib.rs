@@ -47,6 +47,12 @@ pub mod error;
 /// Used to generate the Instances to interface with Hyprland
 pub mod instance;
 
+/// This module is for interacting with [hyprpaper] using its IPC feature
+///
+/// [hyprpaper]: https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/
+#[cfg(feature = "hyprpaper")]
+pub mod hyprpaper;
+
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};

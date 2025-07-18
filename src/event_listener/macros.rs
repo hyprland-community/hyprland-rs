@@ -111,7 +111,7 @@ macro_rules! add_listener_reg_raw {
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
-listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.add_"#, stringify!($name), r#"_handler("#, handler_example_closure! { $f, $c2, $id }, r#");
 listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: $f) {
                     self.events.[<$list_name _events>].push(Box::new(f));
@@ -128,7 +128,7 @@ macro_rules! add_async_listener_raw {
 ```rust, no_run
 use hyprland::event_listener::EventListener;
 let mut listener = EventListener::new();
-listener.add_"#, stringify!($name), r#"_handler(|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}"));
+listener.add_"#, stringify!($name), r#"_handler("#, handler_example_async_closure! { $f, $c2, $id }, r#");
 listener.start_listener();"#)]
                 pub fn [<add_ $name _handler>](&mut self, f: $f) {
                     self.events.[<$list_name _events>].push(Box::pin(f));
@@ -136,6 +136,36 @@ listener.start_listener();"#)]
             }
         }
     };
+}
+/// Expands to an example closure for documenting event listeners.
+macro_rules! handler_example_closure {
+    ($f:ty, $c2:expr, $id:ident) => {
+        type_if! {
+            impl Fn() + 'static ,
+            $f,
+            concat!(
+                r#"|| println!(""#, $c2, r#"")"#,
+            ),
+            concat!(
+                r#"|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}")"#,
+            )
+        }
+    }
+}
+/// Expands to an example closure for documenting async event listeners.
+macro_rules! handler_example_async_closure {
+    ($f:ty, $c2:expr, $id:ident) => {
+        type_if! {
+            impl Fn() -> VoidFuture + Send + Sync + 'static ,
+            $f,
+            concat!(
+                r#"|| println!(""#, $c2, r#"")"#,
+            ),
+            concat!(
+                r#"|"#, stringify!($id), r#"| println!(""#, $c2, ": {", stringify!($id), r#":#?}")"#,
+            )
+        }
+    }
 }
 
 macro_rules! arm {

@@ -17,6 +17,12 @@ fn main() -> hyprland::Result<()> {
     hyprland::bind!(instance, e | SUPER, Key, "C" => KillActiveWindow)?; // Kill all your windows
     Keyword::set(instance, "submap", "reset")?;
 
+    Keyword::set(instance, "submap", "example")?;
+    hyprland::bind!(instance, SUPER, Key, "I" => ToggleFloating, None)?;
+    hyprland::bind!(instance, l | CTRL ALT, Key, "Delete" => Exec, "sudo reboot")?; // Reboot including from lock screen
+    hyprland::bind!(instance, e | SUPER, Key, "C" => KillActiveWindow)?; // Kill all your windows
+    Keyword::set(instance, "submap", "reset")?;
+
     dispatch!(instance, Custom, "submap", "example")?;
     println!("Press enter to revert to default keymap");
     let _ = std::io::stdin()

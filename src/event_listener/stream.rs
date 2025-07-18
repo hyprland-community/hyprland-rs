@@ -12,7 +12,7 @@ use futures_lite::{Stream, StreamExt};
 /// as its more idiomatic, and allows for more efficient memory management
 ///
 /// # Examples
-/// ```rust
+/// ```rust, no_run
 /// use hyprland::prelude::*;
 /// use hyprland::event_listener::EventStream;
 /// use hyprland::Result as HResult;

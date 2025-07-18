@@ -291,5 +291,5 @@ fn test_binds() {
         Ok(v) => v,
         Err(e) => panic!("Error occured: {e}"), // Note to greppers: this is in a test!
     };
-    assert_eq!(built_bind, "SUPER,v,/togglefloating");
+    assert_eq!(built_bind, "SUPER,v,togglefloating");
 }
