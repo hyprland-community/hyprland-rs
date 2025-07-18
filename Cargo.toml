@@ -6,7 +6,7 @@ description = "A unoffical rust wrapper for hyprland's IPC"
 homepage = "https://github.com/hyprland-community/hyprland-rs"
 version.workspace = true
 license.workspace = true
-author.workspace = true
+authors.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
@@ -47,26 +47,20 @@ tokio = { version = "1", features = [
     "sync",
     "rt"
 ], optional = true }
-tokio-stream = { version = "0.1", features = ["sync"], optional = true }
 async-net = { version = "2.0", optional = true }
-async-std = { version = "1.13", optional = true }
 futures-lite = { version = "2.3", default-features = false }
-num-traits = "0.2.19"
 paste = "1.0.14"
 derive_more = { version = "1.0.0", features = [
     "display",
     "constructor",
 ] }
-once_cell = "1.19"
-parking_lot = { version = "0.12", optional = true }
 ahash = { version = "0.8", features = [
     "std",
     "no-rng",
     "serde",
 ], optional = true, default-features = false }
-phf = {version="0.11.2", features = ["macros"] }
 either = "1.13.0"
-async-stream = "0.3.5"
+async-stream = "0.3.6"
 
 [features]
 default = [
@@ -79,15 +73,15 @@ default = [
     "tokio",
     "ahash",
 ]
-async-lite = ["dep:async-net"]
-async-std = ["dep:async-std"]
-tokio = ["dep:tokio"]
+listener = ["data", "dispatch"]
 dispatch = []
 data = []
-ctl = []
 keyword = []
 config = ["dispatch", "keyword"]
-listener = ["data", "dispatch"]
-parking_lot = ["dep:parking_lot", "once_cell/parking_lot", "tokio?/parking_lot"]
+ctl = []
+tokio = ["dep:tokio"]
 ahash = ["dep:ahash"]
+
+async-lite = ["dep:async-net"]
+parking_lot = ["tokio?/parking_lot"]
 unsafe-impl = []

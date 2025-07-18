@@ -1,13 +1,11 @@
 //! # Event Listener Module
 //! for documentation go to:
-//! * [crate::event_listener::EventStream] for the event listener implementation based on the [futures_lite::Stream] api
-//! * [crate::event_listener::EventListener] for the normal [Fn] based event listener
-//! * [crate::event_listener::AsyncEventListener] for the [Fn] based event listener which uses closures that return [std::future::Future]s
+//! * [EventStream] for the event listener implementation based on the [futures_lite::Stream] api
+//! * [EventListener] for the normal [Fn] based event listener
+//! * [AsyncEventListener] for the [Fn] based event listener which uses closures that return [std::future::Future]s
 
 #[macro_use]
 mod macros;
-
-use crate::shared::*;
 
 mod shared;
 pub use crate::event_listener::shared::*;
@@ -20,6 +18,7 @@ pub use crate::event_listener::async_im::AsyncEventListener;
 
 mod stream;
 pub use crate::event_listener::stream::EventStream;
+use crate::shared::Address;
 
 // generates code for the closure based event listeners
 events! {

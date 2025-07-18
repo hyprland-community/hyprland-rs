@@ -4,7 +4,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use async_stream::try_stream;
+use crate::instance::AsyncInstance;
 use futures_lite::{Stream, StreamExt};
 
 /// Event listener, but [Stream]
@@ -16,11 +16,13 @@ use futures_lite::{Stream, StreamExt};
 /// use hyprland::prelude::*;
 /// use hyprland::event_listener::EventStream;
 /// use hyprland::Result as HResult;
-/// use futures_lite::StreamExt;
 ///
 /// #[tokio::main]
 /// async fn main() -> HResult<()> {
-///     let mut stream = EventStream::new();
+///     use futures_lite::StreamExt;
+///     use hyprland::instance::AsyncInstance;
+///     let instance = AsyncInstance::from_current_env()?;
+///     let mut stream = EventStream::new(instance);
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
 ///     }
@@ -32,13 +34,10 @@ pub struct EventStream {
 }
 impl EventStream {
     /// Creates a new [EventStream]
-    pub fn new() -> Self {
-        use crate::unix_async::*;
-        let stream = try_stream! {
-
-        let socket_path = get_socket_path(SocketType::Listener)?;
-        let mut stream = UnixStream::connect(socket_path).await?;
-
+    pub fn new(mut instance: AsyncInstance) -> Self {
+        use crate::async_import::*;
+        let stream = async_stream::try_stream! {
+        let stream: &mut UnixStream = instance.get_event_stream()?;
         let mut active_windows = vec![];
         loop {
             let mut buf = [0; 4096];
@@ -65,9 +64,9 @@ impl EventStream {
 }
 
 impl Stream for EventStream {
+    type Item = crate::Result<Event>;
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         self.as_mut().stream.poll_next(cx)
     }
-
-    type Item = crate::Result<Event>;
 }

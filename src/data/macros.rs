@@ -1,13 +1,15 @@
 macro_rules! impl_on {
     ($name:ident) => {
         impl HyprData for $name {
-            fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd(DataCommands::$name)?;
+            fn get(instance: &Instance) -> $crate::Result<Self> {
+                let data = instance.write_to_socket(command!(JSON, "{}", DataCommands::$name))?;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
-            async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async(DataCommands::$name).await?;
+            async fn get_async(instance: &mut AsyncInstance) -> $crate::Result<Self> {
+                let data = instance
+                    .write_to_socket(command!(JSON, "{}", DataCommands::$name))
+                    .await?;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
@@ -145,13 +147,13 @@ macro_rules! create_data_struct {
         );
 
         impl HyprData for $name {
-            fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd($cmd_kind)?;
+            fn get(instance: &Instance) -> $crate::Result<Self> {
+                let data = instance.write_to_socket(command!(JSON, "{}", $cmd_kind))?;
                 let deserialized: Vec<$holding_type> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
-            async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async($cmd_kind).await?;
+            async fn get_async(instance: &mut AsyncInstance) -> $crate::Result<Self> {
+                let data = instance.write_to_socket(command!(JSON, "{}", $cmd_kind)).await?;
                 let deserialized: Vec<$holding_type> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
@@ -185,14 +187,14 @@ macro_rules! create_data_struct {
         );
 
         impl HyprData for $name {
-            fn get() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd($cmd_kind)?;
+            fn get(instance: &Instance) -> $crate::Result<Self> {
+                let data = instance.write_to_socket(command!(JSON, "{}", $cmd_kind))?;
                 let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
 
-            async fn get_async() -> $crate::Result<Self> {
-                let data = call_hyprctl_data_cmd_async($cmd_kind).await?;
+            async fn get_async(instance: &mut AsyncInstance) -> $crate::Result<Self> {
+                let data = instance.write_to_socket(command!(JSON, "{}", $cmd_kind)).await?;
                 let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }

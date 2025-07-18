@@ -7,12 +7,9 @@
 #![cfg_attr(not(feature = "unsafe-impl"), forbid(unsafe_code))]
 
 #[macro_use]
-extern crate paste;
-
-#[macro_use]
 extern crate hyprland_macros;
-
-pub use hyprland_macros::async_closure;
+#[macro_use]
+extern crate paste;
 
 /// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
 #[cfg(feature = "unsafe-impl")]
@@ -45,34 +42,25 @@ pub mod keyword;
 #[cfg(feature = "config")]
 pub mod config;
 
+/// Holds the error type used throughout the crate
+pub mod error;
+/// Used to generate the Instances to interface with Hyprland
+pub mod instance;
+
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};
     pub use hyprland_macros::async_closure;
 }
 
-pub(crate) mod unix_async {
+mod async_import {
     #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use async_net::unix::UnixStream;
     #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use futures_lite::io::{AsyncReadExt, AsyncWriteExt};
-
-    #[cfg(all(
-        feature = "async-std",
-        not(feature = "tokio"),
-        not(feature = "async-lite")
-    ))]
-    pub use async_std::{
-        io::{ReadExt, WriteExt},
-        os::unix::net::UnixStream,
-    };
-
     #[cfg(feature = "tokio")]
-    pub use tokio::{
-        io::{AsyncReadExt, AsyncWriteExt},
-        net::UnixStream,
-    };
+    pub use tokio::{io::AsyncReadExt, io::AsyncWriteExt, net::UnixStream};
 }
 
 /// This type provides the result type used everywhere in Hyprland-rs
-pub type Result<T> = std::result::Result<T, shared::HyprError>;
+pub type Result<T> = std::result::Result<T, error::HyprError>;

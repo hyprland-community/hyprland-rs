@@ -1,30 +1,9 @@
 use super::*;
+use crate::error::hypr_err;
+use crate::instance::{AsyncInstance, Instance};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-
-/// This private function is to call socket commands
-async fn call_hyprctl_data_cmd_async(cmd: DataCommands) -> crate::Result<String> {
-    let socket_path = SocketType::Command;
-
-    let command = CommandContent {
-        flag: CommandFlag::JSON,
-        data: cmd.to_string(),
-    };
-
-    write_to_socket(socket_path, command).await
-}
-
-fn call_hyprctl_data_cmd(cmd: DataCommands) -> crate::Result<String> {
-    let socket_path = SocketType::Command;
-
-    let command = CommandContent {
-        flag: CommandFlag::JSON,
-        data: cmd.to_string(),
-    };
-
-    write_to_socket_sync(socket_path, command)
-}
 
 /// This pub(crate) enum holds every socket command that returns data
 #[derive(Debug, Display, Clone, Copy, PartialEq, Eq)]
@@ -130,16 +109,16 @@ pub struct Monitor {
 }
 
 impl HyprDataActive for Monitor {
-    fn get_active() -> crate::Result<Self> {
-        let all = Monitors::get()?;
+    fn get_active(instance: &Instance) -> crate::Result<Self> {
+        let all = Monitors::get(instance)?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
             hypr_err!("No active Hyprland monitor detected!")
         }
     }
-    async fn get_active_async() -> crate::Result<Self> {
-        let all = Monitors::get_async().await?;
+    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Self> {
+        let all = Monitors::get_async(instance).await?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
@@ -182,13 +161,15 @@ pub struct Workspace {
 }
 
 impl HyprDataActive for Workspace {
-    fn get_active() -> crate::Result<Self> {
-        let data = call_hyprctl_data_cmd(DataCommands::ActiveWorkspace)?;
+    fn get_active(instance: &Instance) -> crate::Result<Self> {
+        let data = instance
+            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace))?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
-    async fn get_active_async() -> crate::Result<Self> {
-        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWorkspace).await?;
+    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Self> {
+        let data = instance
+            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace)).await?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
@@ -268,8 +249,9 @@ pub struct Client {
 struct Empty {}
 
 impl HyprDataActiveOptional for Client {
-    fn get_active() -> crate::Result<Option<Self>> {
-        let data = call_hyprctl_data_cmd(DataCommands::ActiveWindow)?;
+    fn get_active(instance: &Instance) -> crate::Result<Option<Self>> {
+        let data = instance
+            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWindow))?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -278,8 +260,9 @@ impl HyprDataActiveOptional for Client {
             Ok(None)
         }
     }
-    async fn get_active_async() -> crate::Result<Option<Self>> {
-        let data = call_hyprctl_data_cmd_async(DataCommands::ActiveWindow).await?;
+    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Option<Self>> {
+        let data = instance
+            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWindow)).await?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -632,11 +615,11 @@ struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
 impl HyprData for Animations {
-    fn get() -> crate::Result<Self>
+    fn get(instance: &Instance) -> crate::Result<Self>
     where
         Self: Sized,
     {
-        let out = call_hyprctl_data_cmd(DataCommands::Animations)?;
+        let out = instance.write_to_socket(command!(JSON, "{}", DataCommands::Animations))?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims
@@ -653,11 +636,11 @@ impl HyprData for Animations {
         let new_bezs: Vec<BezierIdent> = beziers.into_iter().map(|item| item.name.into()).collect();
         Ok(Animations(new_anims, new_bezs))
     }
-    async fn get_async() -> crate::Result<Self>
+    async fn get_async(instance: &mut AsyncInstance) -> crate::Result<Self>
     where
         Self: Sized,
     {
-        let out = call_hyprctl_data_cmd_async(DataCommands::Animations).await?;
+        let out = instance.write_to_socket(command!(JSON, "{}", DataCommands::Animations)).await?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims

@@ -1,15 +1,15 @@
 macro_rules! events {
-    ($($name:ty => $f:ty,$c:literal,$c2:literal => $id:ident);*) => {
+    ($($name:ty => $data:ty,$descr1:literal,$descr2:literal => $id:ident);*) => {
         paste! {
             pub(crate) struct Events {
                 $(
-                    pub(crate) [<$name:snake _events>]: type_if! {(),$f,Vec<EmptyClosure>, Closures<$f>}
+                    pub(crate) [<$name:snake _events>]: type_if! {(),$data,Vec<EmptyClosure>, Closures<$data>}
                 ),*
             }
             #[allow(clippy::type_complexity)]
             pub(crate) struct AsyncEvents {
                 $(
-                    pub(crate) [<$name:snake _events>]: type_if! {(),$f,Vec<EmptyAsyncClosure>, AsyncClosures<$f>}
+                    pub(crate) [<$name:snake _events>]: type_if! {(),$data,Vec<EmptyAsyncClosure>, AsyncClosures<$data>}
                 ),*
             }
             pub(crate) fn create_events() -> Events {
@@ -28,9 +28,9 @@ macro_rules! events {
                     use Event::*;
                     match event {
                         $(
-                            expr_if! {(),$f, $name, $name($id)} => expr_if! {
+                            expr_if! {(),$data, $name, $name($id)} => expr_if! {
                                 (),
-                                $f,
+                                $data,
                                 arm_async!([<$name:snake _events>], self),
                                 arm_async!($id, [<$name:snake _events>], self)
                             },
@@ -45,9 +45,9 @@ macro_rules! events {
                     use Event::*;
                     match event {
                         $(
-                            expr_if! {(),$f, $name, $name($id)} => expr_if! {
+                            expr_if! {(),$data, $name, $name($id)} => expr_if! {
                                 (),
-                                $f,
+                                $data,
                                 arm!([<$name:snake _events>], self),
                                 arm!($id, [<$name:snake _events>], self)
                             },
@@ -62,12 +62,12 @@ macro_rules! events {
             paste!{
                 block_if!{
                     (),
-                    $f,
+                    $data,
                     {
-                        add_listener!{[<$name:snake>],$c,$c2 => $id}
+                        add_listener!{[<$name:snake>],$descr1,$descr2 => $id}
                     },
                     {
-                        add_listener!{[<$name:snake>],$f,$c,$c2 => $id}
+                        add_listener!{[<$name:snake>],$data,$descr1,$descr2 => $id}
                     }
                 }
             }

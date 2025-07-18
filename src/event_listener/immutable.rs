@@ -1,4 +1,5 @@
 use super::*;
+use crate::instance::{AsyncInstance, Instance};
 use std::io;
 
 /// This struct is used for adding event handlers and executing them on events
@@ -10,10 +11,11 @@ use std::io;
 ///
 /// ```rust, no_run
 /// use hyprland::event_listener::EventListener;
+/// let instance = hyprland::instance::Instance::from_current_env().unwrap();
 /// let mut listener = EventListener::new(); // creates a new listener
 /// // add a event handler which will be ran when this event happens
-/// listener.add_workspace_change_handler(|data| println!("{:#?}", data));
-/// listener.start_listener(); // or `.start_listener_async().await` if async
+/// listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
+/// listener.start_listener(instance); // or `.start_listener_async().await` if async
 /// ```
 pub struct EventListener {
     pub(crate) events: Events,
@@ -44,17 +46,16 @@ impl EventListener {
     /// ```rust, no_run
     /// # async fn function() -> std::io::Result<()> {
     /// use hyprland::event_listener::EventListener;
+    /// let instance = hyprland::instance::AsyncInstance::from_current_env().unwrap();
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(|id| println!("changed workspace to {id:?}"));
-    /// listener.start_listener_async().await;
+    /// listener.add_workspace_changed_handler(|id| println!("changed workspace to {id:?}"));
+    /// listener.start_listener_async(instance).await;
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn start_listener_async(&mut self) -> crate::Result<()> {
-        use crate::unix_async::*;
-
-        let socket_path = get_socket_path(SocketType::Listener)?;
-        let mut stream = UnixStream::connect(socket_path).await?;
+    pub async fn start_listener_async(&mut self, mut instance: AsyncInstance) -> crate::Result<()> {
+        use crate::async_import::*;
+        let stream = instance.get_event_stream()?;
 
         let mut active_windows = vec![];
         loop {
@@ -81,16 +82,14 @@ impl EventListener {
     /// This should be ran after all of your handlers are defined
     /// ```rust, no_run
     /// use hyprland::event_listener::EventListener;
+    /// let instance = hyprland::instance::Instance::from_current_env().unwrap();
     /// let mut listener = EventListener::new();
-    /// listener.add_workspace_change_handler(&|id| println!("changed workspace to {id:?}"));
-    /// listener.start_listener();
+    /// listener.add_workspace_changed_handler(&|id| println!("changed workspace to {id:?}"));
+    /// listener.start_listener(instance);
     /// ```
-    pub fn start_listener(&mut self) -> crate::Result<()> {
+    pub fn start_listener(&mut self, mut instance: Instance) -> crate::Result<()> {
         use io::prelude::*;
-        use std::os::unix::net::UnixStream;
-
-        let socket_path = get_socket_path(SocketType::Listener)?;
-        let mut stream = UnixStream::connect(socket_path)?;
+        let stream = instance.get_event_stream()?;
 
         let mut active_windows = vec![];
         loop {
