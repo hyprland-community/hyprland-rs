@@ -30,7 +30,7 @@ members = [
 version = "0.4.0-beta.2"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/hyprland-community/hyprland-rs"
-keywords = ["hyprland", "ipc", "hypr", "wayland", "linux", "hyprpaper"]
+keywords = ["hyprland", "ipc", "hypr", "wayland", "hyprpaper"]
 categories = ["api-bindings"]
 authors = ["yavko <yavornkolev@gmail.com>"]
 
@@ -54,7 +54,7 @@ derive_more = { version = "1.0.0", features = [
     "display",
     "constructor",
 ] }
-ahash = { version = "0.8", features = [
+ahash = { version = "0.8.12", features = [
     "std",
     "no-rng",
     "serde",
@@ -71,7 +71,6 @@ default = [
     "config",
     "ctl",
     "tokio",
-    "ahash",
     "hyprpaper",
 ]
 listener = ["data", "dispatch"]
@@ -80,10 +79,12 @@ data = []
 keyword = []
 config = ["dispatch", "keyword"]
 ctl = []
-tokio = ["dep:tokio"]
-ahash = ["dep:ahash"]
-
-async-lite = ["dep:async-net"]
-parking_lot = ["tokio?/parking_lot"]
 hyprpaper = []
+
+ahash = ["dep:ahash"]
+parking_lot = ["tokio?/parking_lot"]
 unsafe-impl = []
+
+tokio = ["dep:tokio"]
+async-lite = ["dep:async-net"]
+

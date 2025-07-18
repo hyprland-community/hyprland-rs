@@ -4,7 +4,6 @@ use std::{
     task::{Context, Poll},
 };
 
-use crate::instance::AsyncInstance;
 use futures_lite::{Stream, StreamExt};
 
 /// Event listener, but [Stream]
@@ -20,8 +19,8 @@ use futures_lite::{Stream, StreamExt};
 /// #[tokio::main]
 /// async fn main() -> HResult<()> {
 ///     use futures_lite::StreamExt;
-///     use hyprland::instance::AsyncInstance;
-///     let instance = AsyncInstance::from_current_env()?;
+///     use hyprland::instance::Instance;
+///     let instance = Instance::from_current_env()?;
 ///     let mut stream = EventStream::new(instance);
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
@@ -34,28 +33,27 @@ pub struct EventStream {
 }
 impl EventStream {
     /// Creates a new [EventStream]
-    pub fn new(mut instance: AsyncInstance) -> Self {
+    pub fn new(instance: crate::instance::Instance) -> Self {
         use crate::async_import::*;
         let stream = async_stream::try_stream! {
-        let stream: &mut UnixStream = instance.get_event_stream()?;
-        let mut active_windows = vec![];
-        loop {
-            let mut buf = [0; 4096];
-
-            let num_read = stream.read(&mut buf).await?;
-            if num_read == 0 {
-                break;
-            }
-            let buf = &buf[..num_read];
-            let string = String::from_utf8(buf.to_vec())?;
-            let parsed: Vec<Event> = event_parser(string)?;
-
-            for event in parsed {
-                for primed_event in event_primer_noexec(event, &mut active_windows)? {
-                    yield primed_event;
+        let mut stream: UnixStream = instance.get_event_stream_async().await?;
+            let mut active_windows = vec![];
+            loop {
+                let mut buffer = [0; 4096];
+                let bytes_read = stream.read(&mut buffer).await?;
+                if bytes_read == 0 {
+                    // If no bytes were read, we can assume the stream is closed
+                    break;
+                }
+                let buf = &buffer[..bytes_read];
+                let string = String::from_utf8(buf.to_vec())?;
+                let parsed: Vec<Event> = event_parser(string)?;
+                for event in parsed {
+                    for primed_event in event_primer_noexec(event, &mut active_windows)? {
+                        yield primed_event;
+                    }
                 }
             }
-        }
         };
         Self {
             stream: Box::pin(stream),

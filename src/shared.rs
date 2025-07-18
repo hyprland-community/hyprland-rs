@@ -19,7 +19,7 @@ impl Address {
         // this way is faster than std::fmt
         Self("0x".to_owned() + address)
     }
-    /// This creates a new address from a value that implements [std::string::ToString]
+    /// This creates a new address from a value that implements [ToString]
     pub fn new<T: ToString>(string: T) -> Self {
         let str = string.to_string();
         if str.starts_with("0x") {
@@ -33,11 +33,12 @@ impl Address {
 /// This trait provides a standardized way to get data
 pub trait HyprData {
     /// This method gets the data
-    fn get(instance: &Instance) -> crate::Result<Self>
+    fn get(instance: &crate::instance::Instance) -> crate::Result<Self>
     where
         Self: Sized;
     /// This method gets the data (async)
-    async fn get_async(instance: &mut AsyncInstance) -> crate::Result<Self>
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_async(instance: &crate::instance::Instance) -> crate::Result<Self>
     where
         Self: Sized;
 }
@@ -51,11 +52,12 @@ pub trait HyprDataVec<T>: HyprData {
 /// Trait for helper functions to get the active of the implementor
 pub trait HyprDataActive {
     /// This method gets the active data
-    fn get_active(instance: &Instance) -> crate::Result<Self>
+    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Self>
     where
         Self: Sized;
     /// This method gets the active data (async)
-    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Self>
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Self>
     where
         Self: Sized;
 }
@@ -63,11 +65,12 @@ pub trait HyprDataActive {
 /// Trait for helper functions to get the active of the implementor, but for optional ones
 pub trait HyprDataActiveOptional {
     /// This method gets the active data
-    fn get_active(instance: &Instance) -> crate::Result<Option<Self>>
+    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Option<Self>>
     where
         Self: Sized;
     /// This method gets the active data (async)
-    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Option<Self>>
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Option<Self>>
     where
         Self: Sized;
 }
@@ -216,12 +219,11 @@ impl fmt::Display for CommandContent {
 #[macro_export]
 macro_rules! command {
     ($flag:ident, $($k:tt)*) => {{
-        CommandContent {
-            flag: CommandFlag::$flag,
+        $crate::shared::CommandContent {
+            flag: $crate::shared::CommandFlag::$flag,
             data: format!($($k)*),
         }
     }};
 }
 use crate::error::hypr_err;
-use crate::instance::{AsyncInstance, Instance};
 pub use command;

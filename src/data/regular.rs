@@ -1,6 +1,5 @@
 use super::*;
 use crate::error::hypr_err;
-use crate::instance::{AsyncInstance, Instance};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -109,7 +108,7 @@ pub struct Monitor {
 }
 
 impl HyprDataActive for Monitor {
-    fn get_active(instance: &Instance) -> crate::Result<Self> {
+    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Self> {
         let all = Monitors::get(instance)?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
@@ -117,7 +116,8 @@ impl HyprDataActive for Monitor {
             hypr_err!("No active Hyprland monitor detected!")
         }
     }
-    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Self> {
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
         let all = Monitors::get_async(instance).await?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
@@ -161,15 +161,16 @@ pub struct Workspace {
 }
 
 impl HyprDataActive for Workspace {
-    fn get_active(instance: &Instance) -> crate::Result<Self> {
+    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Self> {
         let data = instance
             .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace))?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
-    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Self> {
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
         let data = instance
-            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace)).await?;
+            .write_to_socket_async(command!(JSON, "{}", DataCommands::ActiveWorkspace)).await?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
@@ -249,7 +250,7 @@ pub struct Client {
 struct Empty {}
 
 impl HyprDataActiveOptional for Client {
-    fn get_active(instance: &Instance) -> crate::Result<Option<Self>> {
+    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Option<Self>> {
         let data = instance
             .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWindow))?;
         let res = serde_json::from_str::<Empty>(&data);
@@ -260,9 +261,10 @@ impl HyprDataActiveOptional for Client {
             Ok(None)
         }
     }
-    async fn get_active_async(instance: &mut AsyncInstance) -> crate::Result<Option<Self>> {
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Option<Self>> {
         let data = instance
-            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWindow)).await?;
+            .write_to_socket_async(command!(JSON, "{}", DataCommands::ActiveWindow)).await?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -615,7 +617,7 @@ struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
 impl HyprData for Animations {
-    fn get(instance: &Instance) -> crate::Result<Self>
+    fn get(instance: &crate::instance::Instance) -> crate::Result<Self>
     where
         Self: Sized,
     {
@@ -636,11 +638,12 @@ impl HyprData for Animations {
         let new_bezs: Vec<BezierIdent> = beziers.into_iter().map(|item| item.name.into()).collect();
         Ok(Animations(new_anims, new_bezs))
     }
-    async fn get_async(instance: &mut AsyncInstance) -> crate::Result<Self>
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_async(instance: &crate::instance::Instance) -> crate::Result<Self>
     where
         Self: Sized,
     {
-        let out = instance.write_to_socket(command!(JSON, "{}", DataCommands::Animations)).await?;
+        let out = instance.write_to_socket_async(command!(JSON, "{}", DataCommands::Animations)).await?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims

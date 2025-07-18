@@ -1,5 +1,4 @@
 use super::*;
-use crate::instance::{AsyncInstance, Instance};
 
 /// A helper struct that provides the current fullscreen state
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
@@ -9,10 +8,11 @@ pub struct FullscreenState(
 );
 
 impl HyprData for FullscreenState {
-    fn get(instance: &Instance) -> crate::Result<Self> {
+    fn get(instance: &crate::instance::Instance) -> crate::Result<Self> {
         Ok(Self(Workspace::get_active(instance)?.fullscreen))
     }
-    async fn get_async(instance: &mut AsyncInstance) -> crate::Result<Self> {
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
         Ok(Self(
             Workspace::get_active_async(instance).await?.fullscreen,
         ))

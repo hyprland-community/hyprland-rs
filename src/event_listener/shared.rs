@@ -72,6 +72,7 @@ pub(crate) trait HasExecutor {
     }
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) fn event_primer_noexec(
     event: Event,
     abuf: &mut Vec<ActiveWindowState>,
@@ -121,6 +122,7 @@ pub(crate) fn event_primer_noexec(
     Ok(events)
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) trait HasAsyncExecutor {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()>;
 
@@ -276,9 +278,10 @@ pub struct State {
 
 impl State {
     /// Execute changes in state
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn execute_state(
         self,
-        instance: &mut AsyncInstance,
+        instance: &crate::instance::Instance,
         old: State,
     ) -> crate::Result<Self> {
         let state = self.clone();
@@ -320,7 +323,11 @@ impl State {
         Ok(state)
     }
     /// Execute changes in state
-    pub fn execute_state_sync(self, instance: &Instance, old: State) -> crate::Result<Self> {
+    pub fn execute_state_sync(
+        self,
+        instance: &crate::instance::Instance,
+        old: State,
+    ) -> crate::Result<Self> {
         let state = self.clone();
         if self != old {
             use crate::dispatch::{Dispatch, DispatchType};
@@ -365,10 +372,13 @@ pub(crate) fn execute_empty_closure(f: &EmptyClosure) {
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     f(val);
 }
+
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) async fn execute_empty_closure_async(f: &EmptyAsyncClosure) {
     f().await;
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     f(val).await;
 }
@@ -701,7 +711,6 @@ pub(crate) static EVENTS: &[(&str, (usize, ParsedEventType))] = &[
 ];
 
 use crate::error::HyprError;
-use crate::instance::{AsyncInstance, Instance};
 use either::Either;
 
 type KnownEvent = (ParsedEventType, Vec<String>);

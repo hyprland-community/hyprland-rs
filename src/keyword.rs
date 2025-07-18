@@ -16,7 +16,6 @@
 //! ```
 
 use crate::error::hypr_err;
-use crate::instance::{AsyncInstance, Instance};
 use crate::shared::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
@@ -130,7 +129,7 @@ impl Keyword {
 
     /// This function sets a keyword's value
     pub fn set<Str: ToString, Opt: Into<OptionValue>>(
-        instance: &Instance,
+        instance: &crate::instance::Instance,
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
@@ -143,13 +142,14 @@ impl Keyword {
         Ok(())
     }
     /// This function sets a keyword's value (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn set_async<Str: ToString, Opt: Into<OptionValue>>(
-        instance: &mut AsyncInstance,
+        instance: &crate::instance::Instance,
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
         instance
-            .write_to_socket(command!(
+            .write_to_socket_async(command!(
                 Empty,
                 "keyword {} {}",
                 key.to_string(),
@@ -159,19 +159,23 @@ impl Keyword {
         Ok(())
     }
     /// This function returns the value of a keyword
-    pub fn get<Str: ToString>(instance: &Instance, key: Str) -> crate::Result<Self> {
+    pub fn get<Str: ToString>(
+        instance: &crate::instance::Instance,
+        key: Str,
+    ) -> crate::Result<Self> {
         let data = instance.write_to_socket(command!(JSON, "getoption {}", key.to_string()))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword::parse_opts(deserialized)?;
         Ok(keyword)
     }
     /// This function returns the value of a keyword (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn get_async<Str: ToString>(
-        instance: &mut AsyncInstance,
+        instance: &crate::instance::Instance,
         key: Str,
     ) -> crate::Result<Self> {
         let data = instance
-            .write_to_socket(command!(JSON, "getoption {}", key.to_string()))
+            .write_to_socket_async(command!(JSON, "getoption {}", key.to_string()))
             .await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword::parse_opts(deserialized)?;

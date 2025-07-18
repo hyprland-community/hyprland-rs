@@ -8,7 +8,7 @@ mod wallpaper;
 mod wallpaper_listing;
 mod wallpaper_mode;
 
-use crate::instance::{AsyncInstance, Instance};
+use crate::instance::Instance;
 use crate::shared::CommandContent;
 pub use error::Error;
 pub use keyword::Keyword;
@@ -43,16 +43,13 @@ pub fn hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Result<Respons
 }
 
 /// Send a keyword to hyprpaper using IPC.
-pub async fn hyprpaper_async(
-    instance: &mut AsyncInstance,
-    keyword: Keyword,
-) -> crate::Result<Response> {
+pub async fn hyprpaper_async(instance: &Instance, keyword: Keyword) -> crate::Result<Response> {
     let expected_response = keyword.expected_response();
 
     let content = CommandContent {
         flag: crate::shared::CommandFlag::Empty,
         data: keyword.to_string(),
     };
-    let response = instance.write_to_hyprpaper_socket(content).await?;
+    let response = instance.write_to_hyprpaper_socket_async(content).await?;
     expected_response.is_expected(response)
 }

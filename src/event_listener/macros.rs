@@ -6,6 +6,8 @@ macro_rules! events {
                     pub(crate) [<$name:snake _events>]: type_if! {(),$data,Vec<EmptyClosure>, Closures<$data>}
                 ),*
             }
+
+            #[cfg(any(feature = "async-lite", feature = "tokio"))]
             #[allow(clippy::type_complexity)]
             pub(crate) struct AsyncEvents {
                 $(
@@ -17,12 +19,15 @@ macro_rules! events {
                     $([<$name:snake _events>]: vec![]),*
                 }
             }
+
+            #[cfg(any(feature = "async-lite", feature = "tokio"))]
             pub(crate) fn create_events_async() -> AsyncEvents {
                 AsyncEvents {
                     $([<$name:snake _events>]: vec![]),*
                 }
             }
 
+            #[cfg(any(feature = "async-lite", feature = "tokio"))]
             impl HasAsyncExecutor for AsyncEventListener {
                 async fn event_executor_async(&mut self, event: Event) -> crate::Result<()> {
                     use Event::*;
@@ -78,14 +83,17 @@ macro_rules! events {
 macro_rules! add_listener {
     ($name:ident,$f:ty,$c:literal,$c2:literal => $id:ident) => {
         add_listener_reg!($name,$f,$c,$c2 => $id);
+        #[cfg(any(feature = "async-lite", feature = "tokio"))]
         add_async_listener!($name,$f,$c,$c2 => $id);
     };
     ($name:ident,$c:literal,$c2:literal => $id:ident) => {
         add_listener_reg!($name,$c,$c2 => $id);
+        #[cfg(any(feature = "async-lite", feature = "tokio"))]
         add_async_listener!($name,$c,$c2 => $id);
     };
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 macro_rules! add_async_listener {
     ($name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         add_async_listener_raw!($name,$name,impl Fn($f) -> VoidFuture + Send + Sync + 'static,$c,$c2 => $id);
@@ -120,6 +128,9 @@ listener.start_listener();"#)]
         }
     };
 }
+
+
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 macro_rules! add_async_listener_raw {
     ($name:ident,$list_name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {
         paste! {
@@ -153,6 +164,7 @@ macro_rules! handler_example_closure {
     }
 }
 /// Expands to an example closure for documenting async event listeners.
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 macro_rules! handler_example_async_closure {
     ($f:ty, $c2:expr, $id:ident) => {
         type_if! {
@@ -183,6 +195,7 @@ macro_rules! arm {
     }};
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 macro_rules! arm_async {
     ($val:expr,$nam:ident,$se:ident) => {{
         let events = &$se.events.$nam;

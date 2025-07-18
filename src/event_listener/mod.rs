@@ -13,10 +13,14 @@ pub use crate::event_listener::shared::*;
 mod immutable;
 pub use crate::event_listener::immutable::EventListener;
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 mod async_im;
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub use crate::event_listener::async_im::AsyncEventListener;
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 mod stream;
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub use crate::event_listener::stream::EventStream;
 use crate::shared::Address;
 

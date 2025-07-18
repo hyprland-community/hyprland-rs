@@ -18,7 +18,6 @@
 
 use crate::dispatch::fmt::*;
 use crate::error::HyprError;
-use crate::instance::{AsyncInstance, Instance};
 use crate::shared::*;
 use derive_more::Display;
 use std::string::ToString;
@@ -222,10 +221,7 @@ pub(super) mod fmt {
     }
 
     #[inline(always)]
-    pub(super) fn format_relative(
-        int: i32,
-        extra: &'_ str,
-    ) -> String {
+    pub(super) fn format_relative(int: i32, extra: &'_ str) -> String {
         if int.is_positive() {
             format!("{extra}+{int}")
         } else if int.is_negative() {
@@ -596,7 +592,10 @@ impl Dispatch {
     /// Dispatch::call(&instance, DispatchType::Exec("kitty"))
     /// # }
     /// ```
-    pub fn call(instance: &Instance, dispatch_type: DispatchType) -> crate::Result<()> {
+    pub fn call(
+        instance: &crate::instance::Instance,
+        dispatch_type: DispatchType,
+    ) -> crate::Result<()> {
         let output = instance.write_to_socket(gen_dispatch_str(dispatch_type, true)?);
         match output {
             Ok(msg) => match msg.as_str() {
@@ -613,17 +612,18 @@ impl Dispatch {
     /// # use hyprland::Result;
     /// # async fn main() -> Result<()> {
     /// use hyprland::dispatch::{Dispatch,DispatchType};
-    /// let instance = hyprland::instance::AsyncInstance::from_current_env()?;
+    /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
     /// Dispatch::call_async(&instance, DispatchType::Exec("kitty")).await
     /// # }
     /// ```
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn call_async(
-        instance: &mut AsyncInstance,
+        instance: &crate::instance::Instance,
         dispatch_type: DispatchType<'_>,
     ) -> crate::Result<()> {
         let output = instance
-            .write_to_socket(gen_dispatch_str(dispatch_type, true)?)
+            .write_to_socket_async(gen_dispatch_str(dispatch_type, true)?)
             .await;
         match output {
             Ok(msg) => match msg.as_str() {
@@ -638,10 +638,10 @@ impl Dispatch {
 /// Macro abstraction over [Dispatch::call]
 #[macro_export]
 macro_rules! dispatch {
-    ($instance:ident, $dis:ident, $( $arg:expr ), *) => {
-        Dispatch::call($instance, DispatchType::$dis($($arg), *))
+    (async; $instance:expr, $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
-    (async; $instance:ident, $dis:ident, $( $arg:expr ), *) => {
-        Dispatch::call_async($instance, DispatchType::$dis($($arg), *))
+    ($instance:expr, $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
 }

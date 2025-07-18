@@ -20,7 +20,7 @@ fn main() -> hyprland::Result<()> {
     // here we are using the blocking variant
     // but there is a async version too
     let instance = Instance::from_current_env()?;
-    event_listener.start_listener(instance)?;
+    event_listener.start_listener(&instance)?;
 
     Ok(())
 }
