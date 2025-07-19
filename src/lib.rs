@@ -11,6 +11,10 @@ extern crate hyprland_macros;
 #[macro_use]
 extern crate paste;
 
+use crate::error::HyprError;
+use crate::instance::Instance;
+use std::sync::OnceLock;
+
 /// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
 #[cfg(feature = "unsafe-impl")]
 pub mod unsafe_impl;
@@ -69,4 +73,21 @@ mod async_import {
 }
 
 /// This type provides the result type used everywhere in Hyprland-rs
-pub type Result<T> = std::result::Result<T, error::HyprError>;
+pub type Result<T> = std::result::Result<T, HyprError>;
+
+static DEFAULT_INSTANCE: OnceLock<Result<Instance>> = OnceLock::new();
+
+/// Returns the result of the DEFAULT_INSTANCE OnceLock
+pub fn default_instance() -> std::result::Result<&'static Instance, &'static HyprError> {
+    DEFAULT_INSTANCE
+        .get_or_init(Instance::from_current_env)
+        .as_ref()
+}
+
+/// Returns the result of the DEFAULT_INSTANCE OnceLock
+pub fn default_instance_panic() -> &'static Instance {
+    #[allow(clippy::expect_used)]
+    default_instance().expect(
+        "Default instance could not get initialized, use `Instance::from_instance()` instead.",
+    )
+}

@@ -1,3 +1,4 @@
+use hyprland::default_instance_panic;
 use hyprland::event_listener::AsyncEventListener;
 use hyprland::instance::Instance;
 /// Demostrats using hyprland-rs to asynchronously listen for events
@@ -30,8 +31,8 @@ async fn main() -> hyprland::Result<()> {
     // and execute the function
     // here we are using the blocking variant
     // but there is a async version too
-    let instance = Instance::from_current_env()?;
-    event_listener.start_listener_async(&instance).await?;
+    let instance = default_instance_panic();
+    event_listener.start_listener_async(instance).await?;
 
     Ok(())
 }

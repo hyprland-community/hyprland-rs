@@ -1,14 +1,12 @@
+use hyprland::dispatch::DispatchType::*;
+use hyprland::dispatch::{
+    Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial,
+};
 /// Demonstrates usage of various dispatch calls
 ///
 /// Usage: cargo run --example dispatch <hyprland args>? <program_name>? <program_args>?
 /// Example: cargo run --example dispatch [workspace 2] kitty
-use hyprland::dispatch;
-use hyprland::dispatch::DispatchType::*;
-use hyprland::dispatch::{
-    Corner, Dispatch, DispatchType, FullscreenType, WorkspaceIdentifierWithSpecial,
-};
-use hyprland::instance::Instance;
-
+use hyprland::{default_instance_panic, dispatch};
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));
@@ -18,7 +16,7 @@ fn describe(desc: &str) {
 fn main() -> hyprland::Result<()> {
     let program = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
 
-    let instance = &Instance::from_current_env()?;
+    let instance = default_instance_panic();
 
     dispatch!(instance, Exec, &program)?;
 
