@@ -5,14 +5,19 @@
 //! ## Usage
 //!
 //! ```rust
+//! use hyprland::Result;
 //! use hyprland::dispatch::{Dispatch, DispatchType};
-//! fn main() -> hyprland::Result<()> {
-//!    Dispatch::call(DispatchType::Exec("kitty"))?;
+//! fn main() -> Result<()> {
+//!     let instance = hyprland::instance::Instance::from_current_env()?;
+//!
+//!     Dispatch::call(&instance, DispatchType::Exec("kitty"))?;
 //!
 //!    Ok(())
 //! }
 //! ````
 
+use crate::dispatch::fmt::*;
+use crate::error::HyprError;
 use crate::shared::*;
 use derive_more::Display;
 use std::string::ToString;
@@ -150,6 +155,28 @@ pub enum WorkspaceOptions {
     AllFloat,
 }
 
+/// This enum holds a direction for cycling
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FirstEmpty {
+    /// If the first empty workspace should be on the monitor
+    pub on_monitor: bool,
+    /// If the first empty workspace should be next
+    pub next: bool,
+}
+
+impl std::fmt::Display for FirstEmpty {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = String::new();
+        if self.on_monitor {
+            s.push('m');
+        }
+        if self.next {
+            s.push('n');
+        }
+        write!(f, "{s}")
+    }
+}
+
 /// This enum is for identifying workspaces that also includes the special workspace
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
 pub enum WorkspaceIdentifierWithSpecial<'a> {
@@ -170,9 +197,12 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
     /// The previous Workspace
     #[display("previous")]
     Previous,
+    /// The previous Workspace
+    #[display("previous_per_monitor")]
+    PreviousPerMonitor,
     /// The first available empty workspace
-    #[display("empty")]
-    Empty,
+    #[display("{}", format!("empty{}", _0))]
+    Empty(FirstEmpty),
     /// The name of the workspace
     #[display("name:{_0}")]
     Name(&'a str),
@@ -181,11 +211,24 @@ pub enum WorkspaceIdentifierWithSpecial<'a> {
     Special(Option<&'a str>),
 }
 
-#[inline(always)]
-fn format_special_workspace_ident<'a>(opt: &'a Option<&'a str>) -> String {
-    match opt {
-        Some(o) => ":".to_owned() + o,
-        None => String::new(),
+pub(super) mod fmt {
+    #[inline(always)]
+    pub(super) fn format_special_workspace_ident<'a>(opt: &'a Option<&'a str>) -> String {
+        match opt {
+            Some(o) => ":".to_owned() + o,
+            None => String::new(),
+        }
+    }
+
+    #[inline(always)]
+    pub(super) fn format_relative(int: i32, extra: &'_ str) -> String {
+        if int.is_positive() {
+            format!("{extra}+{int}")
+        } else if int.is_negative() {
+            format!("{extra}-{}", int.abs())
+        } else {
+            "+0".to_owned()
+        }
     }
 }
 
@@ -438,20 +481,6 @@ pub enum FocusMasterParam {
     Auto,
 }
 
-#[inline(always)]
-fn format_relative<T: Ord + std::fmt::Display + num_traits::Signed>(
-    int: T,
-    extra: &'_ str,
-) -> String {
-    if int.is_positive() {
-        format!("{extra}+{int}")
-    } else if int.is_negative() {
-        format!("{extra}-{}", int.abs())
-    } else {
-        "+0".to_owned()
-    }
-}
-
 pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Result<CommandContent> {
     use DispatchType::*;
     let sep = if dispatch { " " } else { "," };
@@ -555,16 +584,19 @@ impl Dispatch {
     /// This function calls a specified dispatcher (blocking)
     ///
     /// ```rust
-    /// # fn main() -> hyprland::Result<()> {
+    /// # use hyprland::Result;
+    /// # fn main() -> Result<()> {
     /// use hyprland::dispatch::{DispatchType,Dispatch};
+    /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::call(DispatchType::Exec("kitty"))
+    /// Dispatch::call(&instance, DispatchType::Exec("kitty"))
     /// # }
     /// ```
-    pub fn call(dispatch_type: DispatchType) -> crate::Result<()> {
-        let output =
-            write_to_socket_sync(SocketType::Command, gen_dispatch_str(dispatch_type, true)?);
-
+    pub fn call(
+        instance: &crate::instance::Instance,
+        dispatch_type: DispatchType,
+    ) -> crate::Result<()> {
+        let output = instance.write_to_socket(gen_dispatch_str(dispatch_type, true)?);
         match output {
             Ok(msg) => match msg.as_str() {
                 "ok" => Ok(()),
@@ -577,17 +609,22 @@ impl Dispatch {
     /// This function calls a specified dispatcher (async)
     ///
     /// ```rust
-    /// # async fn function() -> hyprland::Result<()> {
-    /// use hyprland::dispatch::{DispatchType,Dispatch};
+    /// # use hyprland::Result;
+    /// # async fn main() -> Result<()> {
+    /// use hyprland::dispatch::{Dispatch,DispatchType};
+    /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::call_async(DispatchType::Exec("kitty")).await?;
-    /// # Ok(())
+    /// Dispatch::call_async(&instance, DispatchType::Exec("kitty")).await
     /// # }
     /// ```
-    pub async fn call_async(dispatch_type: DispatchType<'_>) -> crate::Result<()> {
-        let output =
-            write_to_socket(SocketType::Command, gen_dispatch_str(dispatch_type, true)?).await;
-
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(
+        instance: &crate::instance::Instance,
+        dispatch_type: DispatchType<'_>,
+    ) -> crate::Result<()> {
+        let output = instance
+            .write_to_socket_async(gen_dispatch_str(dispatch_type, true)?)
+            .await;
         match output {
             Ok(msg) => match msg.as_str() {
                 "ok" => Ok(()),
@@ -601,10 +638,10 @@ impl Dispatch {
 /// Macro abstraction over [Dispatch::call]
 #[macro_export]
 macro_rules! dispatch {
-    ($dis:ident, $( $arg:expr ), *) => {
-        Dispatch::call(DispatchType::$dis($($arg), *))
+    (async; $instance:expr, $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
-    (async; $dis:ident, $( $arg:expr ), *) => {
-        Dispatch::call_async(DispatchType::$dis($($arg), *))
+    ($instance:expr, $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
 }

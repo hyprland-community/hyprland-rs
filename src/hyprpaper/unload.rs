@@ -10,7 +10,7 @@ impl std::fmt::Display for Unload {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "unload ")?;
         match self {
-            Self::Path(path) => write!(f, "{}", path),
+            Self::Path(path) => write!(f, "{path}"),
             Self::All => write!(f, "all"),
         }
     }

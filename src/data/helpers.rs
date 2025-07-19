@@ -8,11 +8,14 @@ pub struct FullscreenState(
 );
 
 impl HyprData for FullscreenState {
-    fn get() -> crate::Result<Self> {
-        Ok(Self(Workspace::get_active()?.fullscreen))
+    fn get(instance: &crate::instance::Instance) -> crate::Result<Self> {
+        Ok(Self(Workspace::get_active(instance)?.fullscreen))
     }
-    async fn get_async() -> crate::Result<Self> {
-        Ok(Self(Workspace::get_active_async().await?.fullscreen))
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
+        Ok(Self(
+            Workspace::get_active_async(instance).await?.fullscreen,
+        ))
     }
 }
 

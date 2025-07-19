@@ -7,13 +7,14 @@ use crate::shared::*;
 pub mod reload {
     use super::*;
     /// Reload hyprland config
-    pub fn call() -> crate::Result<()> {
-        write_to_socket_sync(SocketType::Command, command!(Empty, "reload"))?;
+    pub fn call(instance: &crate::instance::Instance) -> crate::Result<()> {
+        instance.write_to_socket(command!(Empty, "reload"))?;
         Ok(())
     }
     /// Reload hyprland config (async)
-    pub async fn call_async() -> crate::Result<()> {
-        write_to_socket(SocketType::Command, command!(Empty, "reload")).await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(instance: &crate::instance::Instance) -> crate::Result<()> {
+        instance.write_to_socket_async(command!(Empty, "reload")).await?;
         Ok(())
     }
 }
@@ -21,13 +22,14 @@ pub mod reload {
 pub mod kill {
     use super::*;
     /// Enter kill mode (similar to xkill)
-    pub fn call() -> crate::Result<()> {
-        write_to_socket_sync(SocketType::Command, command!(Empty, "kill"))?;
+    pub fn call(instance: &crate::instance::Instance) -> crate::Result<()> {
+        instance.write_to_socket(command!(Empty, "kill"))?;
         Ok(())
     }
     /// Enter kill mode (similar to xkill) (async)
-    pub async fn call_async() -> crate::Result<()> {
-        write_to_socket(SocketType::Command, command!(Empty, "kill")).await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(instance: &crate::instance::Instance) -> crate::Result<()> {
+        instance.write_to_socket_async(command!(Empty, "kill")).await?;
         Ok(())
     }
 }
@@ -36,20 +38,20 @@ pub mod kill {
 pub mod set_cursor {
     use super::*;
     /// Set the cursor theme
-    pub fn call<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(Empty, "setcursor {theme} {size}"),
-        )?;
+    pub fn call<Str: FDisplay>(instance: &crate::instance::Instance, theme: Str, size: u16) -> crate::Result<()> {
+        instance.write_to_socket(command!(Empty, "setcursor {theme} {size}"))?;
         Ok(())
     }
     /// Set the cursor theme (async)
-    pub async fn call_async<Str: FDisplay>(theme: Str, size: u16) -> crate::Result<()> {
-        write_to_socket(
-            SocketType::Command,
-            command!(Empty, "setcursor {theme} {size}"),
-        )
-        .await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async<Str: FDisplay>(
+        instance: &crate::instance::Instance,
+        theme: Str,
+        size: u16,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(Empty, "setcursor {theme} {size}"))
+            .await?;
         Ok(())
     }
 }
@@ -75,17 +77,43 @@ pub mod output {
     }
 
     /// Create virtual displays
-    pub fn create(backend: OutputBackends, name: Option<&str>) -> crate::Result<()> {
+    pub fn create(
+        instance: &crate::instance::Instance,
+        backend: OutputBackends,
+        name: Option<&str>,
+    ) -> crate::Result<()> {
         let name = name.unwrap_or_default();
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(Empty, "output create {backend} {name}"),
-        )?;
+        instance.write_to_socket(command!(Empty, "output create {backend} {name}"))?;
         Ok(())
     }
     /// Remove virtual displays
-    pub fn remove<Str: FDisplay>(name: Str) -> crate::Result<()> {
-        write_to_socket_sync(SocketType::Command, command!(Empty, "output remove {name}"))?;
+    pub fn remove<Str: FDisplay>(instance: &crate::instance::Instance, name: Str) -> crate::Result<()> {
+        instance.write_to_socket(command!(Empty, "output remove {name}"))?;
+        Ok(())
+    }
+
+    /// Create virtual displays
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn create_async(
+        instance: &crate::instance::Instance,
+        backend: OutputBackends,
+        name: Option<&str>,
+    ) -> crate::Result<()> {
+        let name = name.unwrap_or_default();
+        instance
+            .write_to_socket_async(command!(Empty, "output create {backend} {name}"))
+            .await?;
+        Ok(())
+    }
+    /// Remove virtual displays
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn remove_async<Str: FDisplay>(
+        instance: &crate::instance::Instance,
+        name: Str,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(Empty, "output remove {name}"))
+            .await?;
         Ok(())
     }
 }
@@ -108,23 +136,24 @@ pub mod switch_xkb_layout {
     }
 
     /// Switch the xkb layout index for a keyboard
-    pub fn call<Str: FDisplay>(device: Str, cmd: SwitchXKBLayoutCmdTypes) -> crate::Result<()> {
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(Empty, "switchxkblayout {device} {cmd}"),
-        )?;
-        Ok(())
-    }
-    /// Switch the xkb layout index for a keyboard
-    pub async fn call_async<Str: FDisplay>(
+    pub fn call<Str: FDisplay>(
+        instance: &crate::instance::Instance,
         device: Str,
         cmd: SwitchXKBLayoutCmdTypes,
     ) -> crate::Result<()> {
-        write_to_socket(
-            SocketType::Command,
-            command!(Empty, "switchxkblayout {device} {cmd}"),
-        )
-        .await?;
+        instance.write_to_socket(command!(Empty, "switchxkblayout {device} {cmd}"))?;
+        Ok(())
+    }
+    /// Switch the xkb layout index for a keyboard
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async<Str: FDisplay>(
+        instance: &crate::instance::Instance,
+        device: Str,
+        cmd: SwitchXKBLayoutCmdTypes,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(Empty, "switchxkblayout {device} {cmd}"))
+            .await?;
         Ok(())
     }
 }
@@ -133,20 +162,20 @@ pub mod switch_xkb_layout {
 pub mod set_error {
     use super::*;
     /// Creates a error that Hyprland will display
-    pub fn call(color: Color, msg: String) -> crate::Result<()> {
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(Empty, "seterror {color} {msg}"),
-        )?;
+    pub fn call(instance: &crate::instance::Instance, color: Color, msg: String) -> crate::Result<()> {
+        instance.write_to_socket(command!(Empty, "seterror {color} {msg}"))?;
         Ok(())
     }
     /// Creates a error that Hyprland will display (async)
-    pub async fn call_async(color: Color, msg: String) -> crate::Result<()> {
-        write_to_socket(
-            SocketType::Command,
-            command!(Empty, "seterror {color} {msg}"),
-        )
-        .await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(
+        instance: &crate::instance::Instance,
+        color: Color,
+        msg: String,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(Empty, "seterror {color} {msg}"))
+            .await?;
         Ok(())
     }
 }
@@ -169,35 +198,38 @@ pub mod notify {
         Ok = 5,
     }
     /// Creates a notification with Hyprland
-    pub fn call(icon: Icon, time: Duration, color: Color, msg: String) -> crate::Result<()> {
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(
-                Empty,
-                "notify {} {} {color} {msg}",
-                icon as i8,
-                time.as_millis()
-            ),
-        )?;
-        Ok(())
-    }
-    /// Creates a error that Hyprland will display (async)
-    pub async fn call_async(
+    pub fn call(
+        instance: &crate::instance::Instance,
         icon: Icon,
         time: Duration,
         color: Color,
         msg: String,
     ) -> crate::Result<()> {
-        write_to_socket(
-            SocketType::Command,
-            command!(
+        instance.write_to_socket(command!(
+            Empty,
+            "notify {} {} {color} {msg}",
+            icon as i8,
+            time.as_millis()
+        ))?;
+        Ok(())
+    }
+    /// Creates a error that Hyprland will display (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(
+        instance: &crate::instance::Instance,
+        icon: Icon,
+        time: Duration,
+        color: Color,
+        msg: String,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(
                 Empty,
                 "notify {} {} {color} {msg}",
                 icon as i8,
                 time.as_millis()
-            ),
-        )
-        .await?;
+            ))
+            .await?;
         Ok(())
     }
 }
@@ -209,28 +241,28 @@ pub mod dismissnotify {
     /// Dismisses notifications with Hyprland
     ///
     /// If `amount` is [None] then will dismiss ALL notifications
-    pub fn call(amount: Option<NonZeroU8>) -> crate::Result<()> {
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(
-                Empty,
-                "dismissnotify {}",
-                if let Some(amount) = amount {
-                    amount.to_string()
-                } else {
-                    (-1).to_string()
-                }
-            ),
-        )?;
+    pub fn call(instance: &crate::instance::Instance, amount: Option<NonZeroU8>) -> crate::Result<()> {
+        instance.write_to_socket(command!(
+            Empty,
+            "dismissnotify {}",
+            if let Some(amount) = amount {
+                amount.to_string()
+            } else {
+                (-1).to_string()
+            }
+        ))?;
         Ok(())
     }
     /// Dismisses notifications with Hyprland (async)
     ///
     /// If `amount` is [None] then will dismiss ALL notifications
-    pub async fn call_async(amount: Option<NonZeroU8>) -> crate::Result<()> {
-        write_to_socket(
-            SocketType::Command,
-            command!(
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(
+        instance: &crate::instance::Instance,
+        amount: Option<NonZeroU8>,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(
                 Empty,
                 "dismissnotify {}",
                 if let Some(amount) = amount {
@@ -238,9 +270,8 @@ pub mod dismissnotify {
                 } else {
                     (-1).to_string()
                 }
-            ),
-        )
-        .await?;
+            ))
+            .await?;
         Ok(())
     }
 }
@@ -390,28 +421,34 @@ pub mod set_prop {
     }
 
     /// Sets a window prob
-    pub fn call(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
-        write_to_socket_sync(
-            SocketType::Command,
-            command!(
-                Empty,
-                "setprop {ident} {prop} {}",
-                if lock { "lock" } else { "" }
-            ),
-        )?;
+    pub fn call(
+        instance: &crate::instance::Instance,
+        ident: String,
+        prop: PropType,
+        lock: bool,
+    ) -> crate::Result<()> {
+        instance.write_to_socket(command!(
+            Empty,
+            "setprop {ident} {prop} {}",
+            if lock { "lock" } else { "" }
+        ))?;
         Ok(())
     }
     /// Sets a window prob (async)
-    pub async fn call_async(ident: String, prop: PropType, lock: bool) -> crate::Result<()> {
-        write_to_socket(
-            SocketType::Command,
-            command!(
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn call_async(
+        instance: &crate::instance::Instance,
+        ident: String,
+        prop: PropType,
+        lock: bool,
+    ) -> crate::Result<()> {
+        instance
+            .write_to_socket_async(command!(
                 Empty,
                 "setprop {ident} {prop} {}",
                 if lock { "lock" } else { "" }
-            ),
-        )
-        .await?;
+            ))
+            .await?;
         Ok(())
     }
 }
@@ -419,6 +456,7 @@ pub mod set_prop {
 /// Provides functions for communication with plugin system
 pub mod plugin {
     use super::*;
+    use crate::error::HyprError;
     use std::path::Path;
 
     /// This struct represents a loaded plugin
@@ -437,24 +475,24 @@ pub mod plugin {
     }
 
     /// Returns a list of all plugins
-    pub fn list() -> crate::Result<Vec<Plugin>> {
-        let data = write_to_socket_sync(SocketType::Command, command!(JSON, "plugin list"))?;
+    pub fn list(instance: &crate::instance::Instance) -> crate::Result<Vec<Plugin>> {
+        let data = instance.write_to_socket(command!(JSON, "plugin list"))?;
         let deserialized: Vec<Plugin> = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
     /// Returns a list of all plugins (async)
-    pub async fn list_async() -> crate::Result<Vec<Plugin>> {
-        let data = write_to_socket(SocketType::Command, command!(JSON, "plugin list")).await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn list_async(instance: &crate::instance::Instance) -> crate::Result<Vec<Plugin>> {
+        let data = instance
+            .write_to_socket_async(command!(JSON, "plugin list"))
+            .await?;
         let deserialized: Vec<Plugin> = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
 
     /// Loads a plugin, by absolute path
-    pub fn load(path: &Path) -> crate::Result<()> {
-        let str = write_to_socket_sync(
-            SocketType::Command,
-            command!(Empty, "plugin load {}", path.display()),
-        )?;
+    pub fn load(instance: &crate::instance::Instance, path: &Path) -> crate::Result<()> {
+        let str = instance.write_to_socket(command!(Empty, "plugin load {}", path.display()))?;
         if str.contains("could not be loaded") {
             Err(HyprError::Internal(str))
         } else {
@@ -462,12 +500,11 @@ pub mod plugin {
         }
     }
     /// Loads a plugin, by absolute path (async)
-    pub async fn load_async(path: &Path) -> crate::Result<()> {
-        let str = write_to_socket(
-            SocketType::Command,
-            command!(Empty, "plugin load {}", path.display()),
-        )
-        .await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn load_async(instance: &crate::instance::Instance, path: &Path) -> crate::Result<()> {
+        let str = instance
+            .write_to_socket_async(command!(Empty, "plugin load {}", path.display()))
+            .await?;
         if str.contains("could not be loaded") {
             Err(HyprError::Internal(str))
         } else {
@@ -478,11 +515,8 @@ pub mod plugin {
     /// Unloads a plugin, by absolute path.
     ///
     /// Returns true if plugin was unloaded, false if it wasnt unloaded
-    pub fn unload(path: &Path) -> crate::Result<()> {
-        let str = write_to_socket_sync(
-            SocketType::Command,
-            command!(Empty, "plugin unload {}", path.display()),
-        )?;
+    pub fn unload(instance: &crate::instance::Instance, path: &Path) -> crate::Result<()> {
+        let str = instance.write_to_socket(command!(Empty, "plugin unload {}", path.display()))?;
         if str.contains("plugin not loaded") {
             Err(HyprError::Internal(str))
         } else {
@@ -490,16 +524,85 @@ pub mod plugin {
         }
     }
     /// Unloads a plugin, by absolute path (async)
-    pub async fn unload_async(path: &Path) -> crate::Result<()> {
-        let str = write_to_socket(
-            SocketType::Command,
-            command!(Empty, "plugin unload {}", path.display()),
-        )
-        .await?;
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn unload_async(instance: &crate::instance::Instance, path: &Path) -> crate::Result<()> {
+        let str = instance
+            .write_to_socket_async(command!(Empty, "plugin unload {}", path.display()))
+            .await?;
         if str.contains("plugin not loaded") {
             Err(HyprError::Internal(str))
         } else {
             Ok(())
         }
+    }
+}
+
+/// This module allows listing running hyprland instances
+pub mod instance {
+    use crate::shared::get_hypr_path;
+    use std::fs::{DirEntry, File};
+    use std::io::Read;
+    use std::path::Path;
+
+    /// This struct represents a running Hyprland instance
+    #[derive(serde::Serialize, serde::Deserialize, Debug, Clone, PartialEq)]
+    pub struct Instance {
+        /// instance name (9958d29...) in /run/user/$UID/hypr/$instance
+        pub instance: String,
+        /// ???
+        pub time: u64,
+        /// pid of hyprland process
+        pub pid: u32,
+        /// name of wayland socket in /run/user/$UID/$wl_socket
+        pub wl_socket: String,
+    }
+
+    /// Returns a list of running instances
+    pub fn list() -> crate::Result<Vec<Instance>> {
+        let buf = get_hypr_path()?;
+        let entries = std::fs::read_dir(buf)?;
+        let mut instances = Vec::new();
+        for entry in entries.flatten() {
+            if let Some(instance) = parse_instance_entry(entry) {
+                instances.push(instance);
+            }
+        }
+        instances.retain(|el| Path::new(&format!("/proc/{}", el.pid)).exists());
+        Ok(instances)
+    }
+
+    fn parse_instance_entry(entry: DirEntry) -> Option<Instance> {
+        let file_name = entry.file_name().to_string_lossy().to_string();
+        let first = file_name.find('_')?;
+        let last = file_name.rfind('_')?;
+        if last <= first {
+            return None;
+        }
+        let time = file_name[first + 1..last].parse::<u64>().ok()?;
+
+        let lock_path = entry.path().join("hyprland.lock");
+        let mut file = File::open(&lock_path).ok()?;
+        if file.metadata().ok()?.len() == 0 {
+            return None; // Empty lock file, skip this instance
+        }
+        let mut content = String::new();
+        file.read_to_string(&mut content).ok()?;
+        let data = content
+            .lines()
+            .map(|line| line.trim().to_string())
+            .collect::<Vec<_>>();
+        if data.len() != 2 {
+            return None;
+        }
+
+        let pid = data.first().and_then(|s| s.parse::<u32>().ok())?;
+        let wl_socket = data.get(1).cloned().unwrap_or_default();
+
+        Some(Instance {
+            instance: file_name,
+            time,
+            pid,
+            wl_socket,
+        })
     }
 }

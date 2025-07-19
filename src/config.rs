@@ -6,6 +6,7 @@ use crate::keyword::Keyword;
 /// Module providing stuff for adding an removing keybinds
 pub mod binds {
     use super::*;
+    use crate::instance::Instance;
 
     trait Join: IntoIterator {
         fn join(&self) -> String;
@@ -136,16 +137,19 @@ pub mod binds {
             ))
         }
         /// Binds a keybinding
-        pub fn bind(binding: Binding) -> crate::Result<()> {
+        pub fn bind(instance: &Instance, binding: Binding) -> crate::Result<()> {
             Keyword::set(
+                instance,
                 format!("bind{}", binding.flags.join()),
                 Self::gen_str(binding)?,
             )?;
             Ok(())
         }
         /// Binds a keybinding (async)
-        pub async fn bind_async(binding: Binding<'_>) -> crate::Result<()> {
+        #[cfg(any(feature = "async-lite", feature = "tokio"))]
+        pub async fn bind_async(instance: &Instance, binding: Binding<'_>) -> crate::Result<()> {
             Keyword::set_async(
+                instance,
                 format!("bind{}", binding.flags.join()),
                 Self::gen_str(binding)?,
             )
@@ -157,7 +161,7 @@ pub mod binds {
     #[macro_export]
     #[doc(hidden)]
     macro_rules! bind_raw {
-        (sync $mods:expr,$key:expr,$flags:expr,$dis:expr ) => {{
+        (sync $instance:expr,$mods:expr,$key:expr,$flags:expr,$dis:expr ) => {{
             use $crate::config::binds::*;
             let binding = Binding {
                 mods: $mods,
@@ -165,9 +169,9 @@ pub mod binds {
                 flags: $flags,
                 dispatcher: $dis,
             };
-            Binder::bind(binding)
+            Binder::bind($instance, binding)
         }};
-        ($mods:expr,$key:expr,$flags:expr,$dis:expr ) => {{
+        ($instance:expr,$mods:expr,$key:expr,$flags:expr,$dis:expr ) => {{
             use $crate::config::binds::*;
             let binding = Binding {
                 mods: $mods,
@@ -175,75 +179,94 @@ pub mod binds {
                 flags: $flags,
                 dispatcher: $dis,
             };
-            Binder::bind_async(binding)
+            Binder::bind_async($instance, binding)
         }};
     }
 
     /// Macro abstraction over [Binder]
+    ///
+    /// ```rust
+    /// use hyprland::bind;
+    /// use hyprland::instance::{Instance, Instance};
+    ///
+    /// async fn test() {
+    ///   let instance = &Instance::from_current_env().unwrap();
+    ///   bind!(instance, l r m | SHIFT, Key, "m" => Exit);
+    ///   bind!(instance, SHIFT ALT, Key, "b" => CenterWindow);
+    ///   let instance = &Instance::from_current_env().await.unwrap();
+    ///   bind!(async ; instance, l r m | SHIFT, Key, "m" => Exit);
+    ///   bind!(async ; instance, SUPER, Mod, vec![Mod::SUPER], "l" => CenterWindow);
+    ///   bind!(async ; instance, SHIFT ALT, Key, "b" => CenterWindow);
+    /// }
+    /// ```
     #[macro_export]
     macro_rules! bind {
-        ($( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
+        (async ; $instance:expr,$( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
-                sync
+                $instance,
                 vec![$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
                 vec![$(Flag::$flag), *],
                 DispatchType::$dis( $($arg),* )
             )
         };
-        ($( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
+        (async ; $instance:expr,$( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
-                sync
-                vec![$(Mod::$mod), *],
-                Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
-                DispatchType::$dis
-            )
-        };
-        ($( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
-            $crate::bind_raw!(
-                sync
-                vec![$(Mod::$mod), *],
-                Key::$keyt( $( $key ), * ),
-                vec![],
-                DispatchType::$dis( $($arg),* )
-            )
-        };
-        ($( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
-            $crate::bind_raw!(
-                sync
-                vec![$(Mod::$mod), *],
-                Key::$keyt( $( $key ), * ),
-                vec![],
-                DispatchType::$dis
-            )
-        };
-        (async ; $( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
-            $crate::bind_raw!(
-                vec![$(Mod::$mod), *],
-                Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
-                DispatchType::$dis( $($arg),* )
-            )
-        };
-        (async ; $( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
-            $crate::bind_raw!(
+                $instance,
                 vec![$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
                 vec![$(Flag::$flag), *],
                 DispatchType::$dis
             )
         };
-        (async ; $( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
+        (async ; $instance:expr,$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
+                $instance,
                 vec![$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
                 vec![],
                 DispatchType::$dis( $($arg),* )
             )
         };
-        (async ; $( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
+        (async ; $instance:expr,$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
+                $instance,
+                vec![$(Mod::$mod), *],
+                Key::$keyt( $( $key ), * ),
+                vec![],
+                DispatchType::$dis
+            )
+        };
+        ($instance:expr,$( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
+            $crate::bind_raw!(
+                sync $instance,
+                vec![$(Mod::$mod), *],
+                Key::$keyt( $( $key ), * ),
+                vec![$(Flag::$flag), *],
+                DispatchType::$dis( $($arg),* )
+            )
+        };
+        ($instance:expr,$( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
+            $crate::bind_raw!(
+                sync $instance,
+                vec![$(Mod::$mod), *],
+                Key::$keyt( $( $key ), * ),
+                vec![$(Flag::$flag), *],
+                DispatchType::$dis
+            )
+        };
+        ($instance:expr,$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
+            $crate::bind_raw!(
+                sync $instance,
+                vec![$(Mod::$mod), *],
+                Key::$keyt( $( $key ), * ),
+                vec![],
+                DispatchType::$dis( $($arg),* )
+            )
+        };
+        ($instance:expr,$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
+            $crate::bind_raw!(
+                sync $instance,
                 vec![$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
                 vec![],
