@@ -8,9 +8,7 @@
 //! use hyprland::Result;
 //! use hyprland::dispatch::{Dispatch, DispatchType};
 //! fn main() -> Result<()> {
-//!     let instance = hyprland::instance::Instance::from_current_env()?;
-//!
-//!     Dispatch::call(&instance, DispatchType::Exec("kitty"))?;
+//!     Dispatch::call(DispatchType::Exec("kitty"))?;
 //!
 //!    Ok(())
 //! }
@@ -19,6 +17,7 @@
 use crate::dispatch::fmt::*;
 use crate::error::HyprError;
 use crate::shared::*;
+use crate::default_instance;
 use derive_more::Display;
 use std::string::ToString;
 
@@ -587,12 +586,26 @@ impl Dispatch {
     /// # use hyprland::Result;
     /// # fn main() -> Result<()> {
     /// use hyprland::dispatch::{DispatchType,Dispatch};
-    /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::call(&instance, DispatchType::Exec("kitty"))
+    /// Dispatch::call(DispatchType::Exec("kitty"))
     /// # }
     /// ```
-    pub fn call(
+    pub fn call(dispatch_type: DispatchType) -> crate::Result<()> {
+        Self::instance_call(default_instance()?, dispatch_type)
+    }
+
+    /// This function calls a specified dispatcher (blocking)
+    ///
+    /// ```rust
+    /// # use hyprland::Result;
+    /// # fn main() -> Result<()> {
+    /// use hyprland::dispatch::{DispatchType,Dispatch};
+    /// let instance = hyprland::instance::Instance::from_current_env()?;
+    /// // This is an example of just one dispatcher, there are many more!
+    /// Dispatch::instance_call(&instance, DispatchType::Exec("kitty"))
+    /// # }
+    /// ```
+    pub fn instance_call(
         instance: &crate::instance::Instance,
         dispatch_type: DispatchType,
     ) -> crate::Result<()> {
@@ -612,13 +625,28 @@ impl Dispatch {
     /// # use hyprland::Result;
     /// # async fn main() -> Result<()> {
     /// use hyprland::dispatch::{Dispatch,DispatchType};
-    /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::call_async(&instance, DispatchType::Exec("kitty")).await
+    /// Dispatch::call_async(DispatchType::Exec("kitty")).await
     /// # }
     /// ```
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn call_async(
+    pub async fn call_async(dispatch_type: DispatchType<'_>) -> crate::Result<()> {
+        Self::instance_call_async(default_instance()?, dispatch_type).await
+    }
+
+    /// This function calls a specified dispatcher (async)
+    ///
+    /// ```rust
+    /// # use hyprland::Result;
+    /// # async fn main() -> Result<()> {
+    /// use hyprland::dispatch::{Dispatch,DispatchType};
+    /// let instance = hyprland::instance::Instance::from_current_env()?;
+    /// // This is an example of just one dispatcher, there are many more!
+    /// Dispatch::instance_call_async(&instance, DispatchType::Exec("kitty")).await
+    /// # }
+    /// ```
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_call_async(
         instance: &crate::instance::Instance,
         dispatch_type: DispatchType<'_>,
     ) -> crate::Result<()> {
@@ -639,9 +667,15 @@ impl Dispatch {
 #[macro_export]
 macro_rules! dispatch {
     (async; $instance:expr, $dis:ident, $( $arg:expr ), *) => {
-        $crate::dispatch::Dispatch::call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+        $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+    };
+    (async; $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::call_async($crate::dispatch::DispatchType::$dis($($arg), *))
     };
     ($instance:expr, $dis:ident, $( $arg:expr ), *) => {
-        $crate::dispatch::Dispatch::call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+        $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+    };
+    ($dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::call($crate::dispatch::DispatchType::$dis($($arg), *))
     };
 }

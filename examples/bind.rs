@@ -10,18 +10,24 @@ use std::io::Read;
 
 fn main() -> hyprland::Result<()> {
     let instance = default_instance_panic();
-    Keyword::set(instance, "submap", "example")?;
+    Keyword::instance_set(instance, "submap", "example")?;
     hyprland::bind!(instance, SUPER, Key, "I" => ToggleFloating, None)?;
     hyprland::bind!(instance, l | CTRL ALT, Key, "Delete" => Exec, "sudo reboot")?; // Reboot including from lock screen
     hyprland::bind!(instance, e | SUPER, Key, "C" => KillActiveWindow)?; // Kill all your windows
-    Keyword::set(instance, "submap", "reset")?;
+    Keyword::instance_set(instance, "submap", "reset")?;
 
     let instance = Instance::from_instance("long instance name".to_string())?;
-    Keyword::set(&instance, "submap", "example")?;
+    Keyword::instance_set(&instance, "submap", "example")?;
     hyprland::bind!(&instance, SUPER, Key, "I" => ToggleFloating, None)?;
     hyprland::bind!(&instance, l | CTRL ALT, Key, "Delete" => Exec, "sudo reboot")?; // Reboot including from lock screen
     hyprland::bind!(&instance, e | SUPER, Key, "C" => KillActiveWindow)?; // Kill all your windows
-    Keyword::set(&instance, "submap", "reset")?;
+    Keyword::instance_set(&instance, "submap", "reset")?;
+
+    Keyword::set("submap", "example")?;
+    hyprland::bind!(SUPER, Key, "I" => ToggleFloating, None)?;
+    hyprland::bind!(l | CTRL ALT, Key, "Delete" => Exec, "sudo reboot")?; // Reboot including from lock screen
+    hyprland::bind!(e | SUPER, Key, "C" => KillActiveWindow)?; // Kill all your windows
+    Keyword::set("submap", "reset")?;
 
     let instance = Instance::from_current_env()?;
     dispatch!(&instance, Custom, "submap", "example")?;

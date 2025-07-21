@@ -6,7 +6,6 @@
 use hyprland::data::{
     Animations, Binds, Client, Clients, Monitor, Monitors, Workspace, Workspaces,
 };
-use hyprland::default_instance_panic;
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 
 
@@ -16,16 +15,15 @@ fn main() -> hyprland::Result<()> {
         panic!("You have to specify client, workspace or monitor")
     }
 
-    let instance = default_instance_panic();
     match args[0].as_str() {
-        "client" => println!("{:#?}", Client::get_active(instance)?),
-        "monitor" => println!("{:#?}", Monitor::get_active(instance)?),
-        "workspace" => println!("{:#?}", Workspace::get_active(instance)?),
-        "animations" => println!("{:#?}", Animations::get(instance)?),
-        "binds" => println!("{:#?}", Binds::get(instance)?),
-        "clients" => println!("{:#?}", Clients::get(instance)?),
-        "monitors" => println!("{:#?}", Monitors::get(instance)?),
-        "workspaces" => println!("{:#?}", Workspaces::get(instance)?),
+        "client" => println!("{:#?}", Client::get_active()?),
+        "monitor" => println!("{:#?}", Monitor::get_active()?),
+        "workspace" => println!("{:#?}", Workspace::get_active()?),
+        "animations" => println!("{:#?}", Animations::get()?),
+        "binds" => println!("{:#?}", Binds::get()?),
+        "clients" => println!("{:#?}", Clients::get()?),
+        "monitors" => println!("{:#?}", Monitors::get()?),
+        "workspaces" => println!("{:#?}", Workspaces::get()?),
         _ => println!("Specify one of client(s), monitor(s) or workspace(s)"),
     };
 

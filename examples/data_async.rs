@@ -6,7 +6,6 @@
 use hyprland::data::{
     Animations, Binds, Client, Clients, Monitor, Monitors, Workspace, Workspaces,
 };
-use hyprland::instance::Instance;
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 
 
@@ -18,16 +17,15 @@ async fn main() -> hyprland::Result<()> {
         panic!("You have to specify client, workspace or monitor")
     }
 
-    let instance = Instance::from_current_env()?;
     match args[0].as_str() {
-        "client" => println!("{:#?}", Client::get_active_async(&instance).await?),
-        "monitor" => println!("{:#?}", Monitor::get_active_async(&instance).await?),
-        "workspace" => println!("{:#?}", Workspace::get_active_async(&instance).await?),
-        "animations" => println!("{:#?}", Animations::get_async(&instance).await?),
-        "binds" => println!("{:#?}", Binds::get_async(&instance).await?),
-        "clients" => println!("{:#?}", Clients::get_async(&instance).await?),
-        "monitors" => println!("{:#?}", Monitors::get_async(&instance).await?),
-        "workspaces" => println!("{:#?}", Workspaces::get_async(&instance).await?),
+        "client" => println!("{:#?}", Client::get_active_async().await?),
+        "monitor" => println!("{:#?}", Monitor::get_active_async().await?),
+        "workspace" => println!("{:#?}", Workspace::get_active_async().await?),
+        "animations" => println!("{:#?}", Animations::get_async().await?),
+        "binds" => println!("{:#?}", Binds::get_async().await?),
+        "clients" => println!("{:#?}", Clients::get_async().await?),
+        "monitors" => println!("{:#?}", Monitors::get_async().await?),
+        "workspaces" => println!("{:#?}", Workspaces::get_async().await?),
         _ => println!("Specify one of client(s), monitor(s) or workspace(s)"),
     };
 

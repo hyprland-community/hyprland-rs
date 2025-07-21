@@ -7,15 +7,16 @@
 //! ```rust, no_run
 //! use hyprland::keyword::Keyword;
 //! fn main() -> hyprland::Result<()> {
-//!     let instance = hyprland::instance::Instance::from_current_env()?;
-//!     Keyword::get(&instance, "some_keyword")?;
-//!     Keyword::set(&instance, "another_keyword", "the value to set it to")?;
+//!     Keyword::get("some_keyword")?;
+//!     Keyword::set("another_keyword", "the value to set it to")?;
 //!
 //!     Ok(())
 //! }
 //! ```
 
+use crate::default_instance;
 use crate::error::hypr_err;
+use crate::instance::Instance;
 use crate::shared::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
@@ -128,8 +129,13 @@ impl Keyword {
     }
 
     /// This function sets a keyword's value
-    pub fn set<Str: ToString, Opt: Into<OptionValue>>(
-        instance: &crate::instance::Instance,
+    pub fn set<Str: ToString, Opt: Into<OptionValue>>(key: Str, value: Opt) -> crate::Result<()> {
+        Self::instance_set(default_instance()?, key, value)
+    }
+
+    /// This function sets a keyword's value
+    pub fn instance_set<Str: ToString, Opt: Into<OptionValue>>(
+        instance: &Instance,
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
@@ -141,10 +147,20 @@ impl Keyword {
         ))?;
         Ok(())
     }
+
     /// This function sets a keyword's value (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn set_async<Str: ToString, Opt: Into<OptionValue>>(
-        instance: &crate::instance::Instance,
+        key: Str,
+        value: Opt,
+    ) -> crate::Result<()> {
+        Self::instance_set_async(default_instance()?, key, value).await
+    }
+
+    /// This function sets a keyword's value (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_set_async<Str: ToString, Opt: Into<OptionValue>>(
+        instance: &Instance,
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
@@ -158,20 +174,30 @@ impl Keyword {
             .await?;
         Ok(())
     }
+
     /// This function returns the value of a keyword
-    pub fn get<Str: ToString>(
-        instance: &crate::instance::Instance,
-        key: Str,
-    ) -> crate::Result<Self> {
+    pub fn get<Str: ToString>(key: Str) -> crate::Result<Self> {
+        Self::instance_get(default_instance()?, key)
+    }
+
+    /// This function returns the value of a keyword
+    pub fn instance_get<Str: ToString>(instance: &Instance, key: Str) -> crate::Result<Self> {
         let data = instance.write_to_socket(command!(JSON, "getoption {}", key.to_string()))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
         let keyword = Keyword::parse_opts(deserialized)?;
         Ok(keyword)
     }
+
     /// This function returns the value of a keyword (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn get_async<Str: ToString>(
-        instance: &crate::instance::Instance,
+    pub async fn get_async<Str: ToString>(key: Str) -> crate::Result<Self> {
+        Self::instance_get_async(default_instance()?, key).await
+    }
+
+    /// This function returns the value of a keyword (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_get_async<Str: ToString>(
+        instance: &Instance,
         key: Str,
     ) -> crate::Result<Self> {
         let data = instance

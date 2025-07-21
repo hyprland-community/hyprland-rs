@@ -1,5 +1,6 @@
-use crate::instance::Instance;
 use super::*;
+use crate::default_instance;
+use crate::instance::Instance;
 
 /// This struct is used for adding event handlers and executing them on events
 /// # The Event Listener
@@ -9,18 +10,19 @@ use super::*;
 /// ## Usage
 ///
 /// ```rust, no_run
-/// use hyprland::event_listener::EventListener;
-/// let instance = hyprland::instance::Instance::from_current_env().unwrap();
-/// let mut listener = EventListener::new(); // creates a new listener
-/// // add a event handler which will be ran when this event happens
-/// listener.add_workspace_changed_handler(|data| println!("{:#?}", data));
-/// listener.start_listener(&instance); // or `.start_listener_async().await` if async
+/// # use hyprland::event_listener;
+/// # use hyprland_macros::async_closure;
+/// async fn function() -> std::io::Result<()> {
+///     let mut listener = event_listener::AsyncEventListener::new();
+///     listener.add_workspace_changed_handler(async_closure! { |id| println!("workspace changed to {id:?}") });
+///     listener.start_listener_async().await?;
+///     Ok(())
+/// }
 /// ```
 pub struct AsyncEventListener {
     pub(crate) events: AsyncEvents,
 }
 
-// Mark the EventListener as thread-safe
 impl Default for AsyncEventListener {
     fn default() -> Self {
         Self::new()
@@ -31,8 +33,8 @@ impl AsyncEventListener {
     /// This method creates a new EventListener instance
     ///
     /// ```rust
-    /// use hyprland::event_listener::EventListener;
-    /// let mut listener = EventListener::new();
+    /// use hyprland::event_listener;
+    /// let mut listener = event_listener::AsyncEventListener::new();
     /// ```
     pub fn new() -> Self {
         Self {
@@ -44,16 +46,38 @@ impl AsyncEventListener {
     ///
     /// This should be ran after all of your handlers are defined
     /// ```rust, no_run
-    /// # async fn function() -> std::io::Result<()> {
-    /// use hyprland::event_listener::EventListener;
-    /// let instance = hyprland::instance::Instance::from_current_env().unwrap();
-    /// let mut listener = EventListener::new();
-    /// listener.add_workspace_changed_handler(|id| println!("changed workspace to {id:?}"));
-    /// listener.start_listener_async(&instance).await;
-    /// # Ok(())
-    /// # }
+    /// # use hyprland::event_listener;
+    /// # use hyprland_macros::async_closure;
+    /// async fn function() -> std::io::Result<()> {
+    ///     let mut listener = event_listener::AsyncEventListener::new();
+    ///     listener.add_workspace_changed_handler(async_closure! { |id| println!("workspace changed to {id:?}") });
+    ///     listener.start_listener_async().await?;
+    ///     Ok(())
+    /// }
     /// ```
-    pub async fn start_listener_async(&mut self, instance: &Instance) -> crate::Result<()> {
+    pub async fn start_listener_async(&mut self) -> crate::Result<()> {
+        self.instance_start_listener_async(default_instance()?)
+            .await
+    }
+
+    /// This method starts the event listener (async)
+    ///
+    /// This should be ran after all of your handlers are defined
+    /// ```rust, no_run
+    /// # use hyprland::{default_instance_panic, event_listener};
+    /// # use hyprland_macros::async_closure;
+    /// async fn function() -> std::io::Result<()> {
+    ///     let mut listener = event_listener::AsyncEventListener::new();
+    ///     listener.add_workspace_changed_handler(async_closure! { |id| println!("workspace changed to {id:?}") });
+    ///     let instance = default_instance()?;
+    ///     listener.instance_start_listener_async(instance).await?;
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn instance_start_listener_async(
+        &mut self,
+        instance: &Instance,
+    ) -> crate::Result<()> {
         use crate::async_import::*;
 
         let mut stream = instance.get_event_stream_async().await?;

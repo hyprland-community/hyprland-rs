@@ -4,6 +4,8 @@ use std::{
     task::{Context, Poll},
 };
 
+use crate::default_instance;
+use crate::instance::Instance;
 use futures_lite::{Stream, StreamExt};
 
 /// Event listener, but [Stream]
@@ -20,8 +22,7 @@ use futures_lite::{Stream, StreamExt};
 /// async fn main() -> HResult<()> {
 ///     use futures_lite::StreamExt;
 ///     use hyprland::instance::Instance;
-///     let instance = Instance::from_current_env()?;
-///     let mut stream = EventStream::new(instance);
+///     let mut stream = EventStream::new();
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
 ///     }
@@ -31,9 +32,43 @@ use futures_lite::{Stream, StreamExt};
 pub struct EventStream {
     stream: Pin<Box<dyn Stream<Item = crate::Result<Event>> + Send>>,
 }
+impl Default for EventStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventStream {
     /// Creates a new [EventStream]
-    pub fn new(instance: crate::instance::Instance) -> Self {
+    pub fn new() -> Self {
+        use crate::async_import::*;
+        let stream = async_stream::try_stream! {
+        let mut stream: UnixStream = default_instance()?.get_event_stream_async().await?;
+            let mut active_windows = vec![];
+            loop {
+                let mut buffer = [0; 4096];
+                let bytes_read = stream.read(&mut buffer).await?;
+                if bytes_read == 0 {
+                    // If no bytes were read, we can assume the stream is closed
+                    break;
+                }
+                let buf = &buffer[..bytes_read];
+                let string = String::from_utf8(buf.to_vec())?;
+                let parsed: Vec<Event> = event_parser(string)?;
+                for event in parsed {
+                    for primed_event in event_primer_noexec(event, &mut active_windows)? {
+                        yield primed_event;
+                    }
+                }
+            }
+        };
+        Self {
+            stream: Box::pin(stream),
+        }
+    }
+
+    /// Creates a new [EventStream]
+    pub fn instance_new(instance: Instance) -> Self {
         use crate::async_import::*;
         let stream = async_stream::try_stream! {
         let mut stream: UnixStream = instance.get_event_stream_async().await?;

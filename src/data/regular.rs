@@ -1,5 +1,7 @@
 use super::*;
+use crate::default_instance;
 use crate::error::hypr_err;
+use crate::instance::Instance;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -108,8 +110,15 @@ pub struct Monitor {
 }
 
 impl HyprDataActive for Monitor {
-    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Self> {
-        let all = Monitors::get(instance)?;
+    fn get_active() -> crate::Result<Self> {
+        Self::instance_get_active(default_instance()?)
+    }
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async() -> crate::Result<Self> {
+        Self::instance_get_active_async(default_instance()?).await
+    }
+    fn instance_get_active(instance: &Instance) -> crate::Result<Self> {
+        let all = Monitors::instance_get(instance)?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
@@ -117,8 +126,8 @@ impl HyprDataActive for Monitor {
         }
     }
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
-        let all = Monitors::get_async(instance).await?;
+    async fn instance_get_active_async(instance: &Instance) -> crate::Result<Self> {
+        let all = Monitors::instance_get_async(instance).await?;
         if let Some(it) = all.into_iter().find(|item| item.focused) {
             Ok(it)
         } else {
@@ -161,16 +170,23 @@ pub struct Workspace {
 }
 
 impl HyprDataActive for Workspace {
-    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Self> {
-        let data = instance
-            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace))?;
+    fn get_active() -> crate::Result<Self> {
+        Self::instance_get_active(default_instance()?)
+    }
+    async fn get_active_async() -> crate::Result<Self> {
+        Self::instance_get_active_async(default_instance()?).await
+    }
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    fn instance_get_active(instance: &Instance) -> crate::Result<Self> {
+        let data = instance.write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace))?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
+    async fn instance_get_active_async(instance: &Instance) -> crate::Result<Self> {
         let data = instance
-            .write_to_socket_async(command!(JSON, "{}", DataCommands::ActiveWorkspace)).await?;
+            .write_to_socket_async(command!(JSON, "{}", DataCommands::ActiveWorkspace))
+            .await?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
         Ok(deserialized)
     }
@@ -250,9 +266,15 @@ pub struct Client {
 struct Empty {}
 
 impl HyprDataActiveOptional for Client {
-    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Option<Self>> {
-        let data = instance
-            .write_to_socket(command!(JSON, "{}", DataCommands::ActiveWindow))?;
+    fn get_active() -> crate::Result<Option<Self>> {
+        Self::instance_get_active(default_instance()?)
+    }
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_active_async() -> crate::Result<Option<Self>> {
+        Self::instance_get_active_async(default_instance()?).await
+    }
+    fn instance_get_active(instance: &Instance) -> crate::Result<Option<Self>> {
+        let data = instance.write_to_socket(command!(JSON, "{}", DataCommands::ActiveWindow))?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -262,9 +284,10 @@ impl HyprDataActiveOptional for Client {
         }
     }
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Option<Self>> {
+    async fn instance_get_active_async(instance: &Instance) -> crate::Result<Option<Self>> {
         let data = instance
-            .write_to_socket_async(command!(JSON, "{}", DataCommands::ActiveWindow)).await?;
+            .write_to_socket_async(command!(JSON, "{}", DataCommands::ActiveWindow))
+            .await?;
         let res = serde_json::from_str::<Empty>(&data);
         if res.is_err() {
             let t = serde_json::from_str::<Client>(&data)?;
@@ -617,10 +640,16 @@ struct AnimationsRaw(Vec<AnimationRaw>, Vec<RawBezierIdent>);
 pub struct Animations(pub Vec<Animation>, pub Vec<BezierIdent>);
 
 impl HyprData for Animations {
-    fn get(instance: &crate::instance::Instance) -> crate::Result<Self>
-    where
-        Self: Sized,
-    {
+    fn get() -> crate::Result<Self> {
+        Self::instance_get(default_instance()?)
+    }
+
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn get_async() -> crate::Result<Self> {
+        Self::instance_get_async(default_instance()?).await
+    }
+
+    fn instance_get(instance: &Instance) -> crate::Result<Self> {
         let out = instance.write_to_socket(command!(JSON, "{}", DataCommands::Animations))?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
@@ -639,11 +668,10 @@ impl HyprData for Animations {
         Ok(Animations(new_anims, new_bezs))
     }
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_async(instance: &crate::instance::Instance) -> crate::Result<Self>
-    where
-        Self: Sized,
-    {
-        let out = instance.write_to_socket_async(command!(JSON, "{}", DataCommands::Animations)).await?;
+    async fn instance_get_async(instance: &Instance) -> crate::Result<Self> {
+        let out = instance
+            .write_to_socket_async(command!(JSON, "{}", DataCommands::Animations))
+            .await?;
         let des: AnimationsRaw = serde_json::from_str(&out)?;
         let AnimationsRaw(anims, beziers) = des;
         let new_anims: Vec<Animation> = anims

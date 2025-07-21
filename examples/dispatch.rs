@@ -1,12 +1,10 @@
 use hyprland::dispatch::DispatchType::*;
-use hyprland::dispatch::{
-    Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial,
-};
+use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
 /// Demonstrates usage of various dispatch calls
 ///
 /// Usage: cargo run --example dispatch <hyprland args>? <program_name>? <program_args>?
 /// Example: cargo run --example dispatch [workspace 2] kitty
-use hyprland::{default_instance_panic, dispatch};
+use hyprland::dispatch;
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));
@@ -16,25 +14,22 @@ fn describe(desc: &str) {
 fn main() -> hyprland::Result<()> {
     let program = std::env::args().skip(1).collect::<Vec<_>>().join(" ");
 
-    let instance = default_instance_panic();
-
-    dispatch!(instance, Exec, &program)?;
+    dispatch!(Exec, &program)?;
 
     describe("Moving cursor to top left");
-    dispatch!(instance, MoveCursorToCorner, Corner::TopLeft)?;
+    dispatch!(MoveCursorToCorner, Corner::TopLeft)?;
 
     describe("Moving cursor to top right");
-    dispatch!(instance, MoveCursorToCorner, Corner::TopRight)?;
+    dispatch!(MoveCursorToCorner, Corner::TopRight)?;
 
     describe("Moving cursor to bottom right");
-    dispatch!(instance, MoveCursorToCorner, Corner::BottomRight)?;
+    dispatch!(MoveCursorToCorner, Corner::BottomRight)?;
 
     describe("Moving cursor to bottom left");
-    dispatch!(instance, MoveCursorToCorner, Corner::BottomLeft)?;
+    dispatch!(MoveCursorToCorner, Corner::BottomLeft)?;
 
     describe("Moving window to next workspace");
     dispatch!(
-        instance,
         MoveToWorkspace,
         WorkspaceIdentifierWithSpecial::Relative(1),
         None
@@ -42,34 +37,33 @@ fn main() -> hyprland::Result<()> {
 
     describe("Moving window to previous workspace");
     dispatch!(
-        instance,
         MoveToWorkspace,
         WorkspaceIdentifierWithSpecial::Relative(-1),
         None
     )?;
 
     describe("Toggling fullscreen");
-    dispatch!(instance, ToggleFullscreen, FullscreenType::Maximize)?;
+    dispatch!(ToggleFullscreen, FullscreenType::Maximize)?;
     describe("Reverting fullscreen");
-    Dispatch::call(instance, ToggleFullscreen(FullscreenType::Maximize))?;
+    Dispatch::call(ToggleFullscreen(FullscreenType::Maximize))?;
 
     describe("Toggling floating window");
-    dispatch!(instance, ToggleFloating, None)?;
+    dispatch!(ToggleFloating, None)?;
     describe("Reverting floating window");
-    Dispatch::call(instance, ToggleFloating(None))?;
+    Dispatch::call(ToggleFloating(None))?;
 
     describe("Toggling split layout");
-    Dispatch::call(instance, ToggleSplit)?;
+    Dispatch::call(ToggleSplit)?;
     describe("Reverting split layout");
-    Dispatch::call(instance, ToggleSplit)?;
+    Dispatch::call(ToggleSplit)?;
 
     describe("Toggling opaque");
-    Dispatch::call(instance, ToggleOpaque)?;
+    Dispatch::call(ToggleOpaque)?;
     describe("Reverting opaque");
-    Dispatch::call(instance, ToggleOpaque)?;
+    Dispatch::call(ToggleOpaque)?;
 
     describe("Closing window");
-    Dispatch::call(instance, KillActiveWindow)?;
+    Dispatch::call(KillActiveWindow)?;
 
     Ok(())
 }

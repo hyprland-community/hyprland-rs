@@ -33,12 +33,21 @@ impl Address {
 /// This trait provides a standardized way to get data
 pub trait HyprData {
     /// This method gets the data
-    fn get(instance: &crate::instance::Instance) -> crate::Result<Self>
+    fn get() -> crate::Result<Self>
     where
         Self: Sized;
     /// This method gets the data (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_async(instance: &crate::instance::Instance) -> crate::Result<Self>
+    async fn get_async() -> crate::Result<Self>
+    where
+        Self: Sized;
+    /// This method gets the data
+    fn instance_get(instance: &Instance) -> crate::Result<Self>
+    where
+        Self: Sized;
+    /// This method gets the data (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn instance_get_async(instance: &Instance) -> crate::Result<Self>
     where
         Self: Sized;
 }
@@ -52,12 +61,21 @@ pub trait HyprDataVec<T>: HyprData {
 /// Trait for helper functions to get the active of the implementor
 pub trait HyprDataActive {
     /// This method gets the active data
-    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Self>
+    fn get_active() -> crate::Result<Self>
     where
         Self: Sized;
     /// This method gets the active data (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Self>
+    async fn get_active_async() -> crate::Result<Self>
+    where
+        Self: Sized;
+    /// This method gets the active data
+    fn instance_get_active(instance: &Instance) -> crate::Result<Self>
+    where
+        Self: Sized;
+    /// This method gets the active data (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn instance_get_active_async(instance: &Instance) -> crate::Result<Self>
     where
         Self: Sized;
 }
@@ -65,12 +83,21 @@ pub trait HyprDataActive {
 /// Trait for helper functions to get the active of the implementor, but for optional ones
 pub trait HyprDataActiveOptional {
     /// This method gets the active data
-    fn get_active(instance: &crate::instance::Instance) -> crate::Result<Option<Self>>
+    fn get_active() -> crate::Result<Option<Self>>
     where
         Self: Sized;
     /// This method gets the active data (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    async fn get_active_async(instance: &crate::instance::Instance) -> crate::Result<Option<Self>>
+    async fn get_active_async() -> crate::Result<Option<Self>>
+    where
+        Self: Sized;
+    /// This method gets the active data
+    fn instance_get_active(instance: &Instance) -> crate::Result<Option<Self>>
+    where
+        Self: Sized;
+    /// This method gets the active data (async)
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    async fn instance_get_active_async(instance: &Instance) -> crate::Result<Option<Self>>
     where
         Self: Sized;
 }
@@ -226,4 +253,5 @@ macro_rules! command {
     }};
 }
 use crate::error::hypr_err;
+use crate::instance::Instance;
 pub use command;

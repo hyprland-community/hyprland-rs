@@ -1,13 +1,20 @@
 macro_rules! impl_on {
     ($name:ident) => {
         impl HyprData for $name {
-            fn get(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            fn get() -> $crate::Result<Self> {
+                Self::instance_get(crate::default_instance()?)
+            }
+            fn instance_get(instance: &crate::instance::Instance) -> $crate::Result<Self> {
                 let data = instance.write_to_socket(command!(JSON, "{}", DataCommands::$name))?;
                 let deserialized: $name = serde_json::from_str(&data)?;
                 Ok(deserialized)
             }
             #[cfg(any(feature = "async-lite", feature = "tokio"))]
-            async fn get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            async fn get_async() -> $crate::Result<Self> {
+                Self::instance_get_async(crate::default_instance()?).await
+            }
+            #[cfg(any(feature = "async-lite", feature = "tokio"))]
+            async fn instance_get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
                 let data = instance
                     .write_to_socket_async(command!(JSON, "{}", DataCommands::$name))
                     .await?;
@@ -148,13 +155,20 @@ macro_rules! create_data_struct {
         );
 
         impl HyprData for $name {
-            fn get(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            fn get() -> $crate::Result<Self> {
+                Self::instance_get(crate::default_instance()?)
+            }
+            fn instance_get(instance: &crate::instance::Instance) -> $crate::Result<Self> {
                 let data = instance.write_to_socket(command!(JSON, "{}", $cmd_kind))?;
                 let deserialized: Vec<$holding_type> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
             #[cfg(any(feature = "async-lite", feature = "tokio"))]
-            async fn get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            async fn get_async() -> $crate::Result<Self> {
+                Self::instance_get_async(crate::default_instance()?).await
+            }
+            #[cfg(any(feature = "async-lite", feature = "tokio"))]
+            async fn instance_get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
                 let data = instance.write_to_socket_async(command!(JSON, "{}", $cmd_kind)).await?;
                 let deserialized: Vec<$holding_type> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
@@ -189,14 +203,20 @@ macro_rules! create_data_struct {
         );
 
         impl HyprData for $name {
-            fn get(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            fn get() -> $crate::Result<Self> {
+                Self::instance_get(crate::default_instance()?)
+            }
+            fn instance_get(instance: &crate::instance::Instance) -> $crate::Result<Self> {
                 let data = instance.write_to_socket(command!(JSON, "{}", $cmd_kind))?;
                 let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))
             }
-
             #[cfg(any(feature = "async-lite", feature = "tokio"))]
-            async fn get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            async fn get_async() -> $crate::Result<Self> {
+                Self::instance_get_async(crate::default_instance()?).await
+            }
+            #[cfg(any(feature = "async-lite", feature = "tokio"))]
+            async fn instance_get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
                 let data = instance.write_to_socket_async(command!(JSON, "{}", $cmd_kind)).await?;
                 let deserialized: HashMap<$key, $value> = serde_json::from_str(&data)?;
                 Ok(Self(deserialized))

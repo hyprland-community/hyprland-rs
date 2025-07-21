@@ -278,10 +278,18 @@ pub struct State {
 
 impl State {
     /// Execute changes in state
-    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn execute_state(
         self,
-        instance: &crate::instance::Instance,
+        old: State,
+    ) -> crate::Result<Self> {
+        self.instance_execute_state(default_instance()?, old).await
+    }
+
+    /// Execute changes in state
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_execute_state(
+        self,
+        instance: &Instance,
         old: State,
     ) -> crate::Result<Self> {
         let state = self.clone();
@@ -289,7 +297,7 @@ impl State {
             use crate::dispatch::{Dispatch, DispatchType};
             if old.fullscreen_state != state.fullscreen_state {
                 use crate::dispatch::FullscreenType;
-                Dispatch::call_async(
+                Dispatch::instance_call_async(
                     instance,
                     DispatchType::ToggleFullscreen(FullscreenType::NoParam),
                 )
@@ -297,7 +305,7 @@ impl State {
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                Dispatch::call_async(
+                Dispatch::instance_call_async(
                     instance,
                     DispatchType::Workspace(match &state.active_workspace {
                         WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
@@ -313,7 +321,7 @@ impl State {
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
-                Dispatch::call_async(
+                Dispatch::instance_call_async(
                     instance,
                     DispatchType::FocusMonitor(MonitorIdentifier::Name(&state.active_monitor)),
                 )
@@ -322,10 +330,20 @@ impl State {
         }
         Ok(state)
     }
+
+
     /// Execute changes in state
     pub fn execute_state_sync(
         self,
-        instance: &crate::instance::Instance,
+        old: State,
+    ) -> crate::Result<Self> {
+        self.instance_execute_state_sync(default_instance()?, old)
+    }
+
+    /// Execute changes in state
+    pub fn instance_execute_state_sync(
+        self,
+        instance: &Instance,
         old: State,
     ) -> crate::Result<Self> {
         let state = self.clone();
@@ -333,14 +351,14 @@ impl State {
             use crate::dispatch::{Dispatch, DispatchType};
             if old.fullscreen_state != state.fullscreen_state {
                 use crate::dispatch::FullscreenType;
-                Dispatch::call(
+                Dispatch::instance_call(
                     instance,
                     DispatchType::ToggleFullscreen(FullscreenType::NoParam),
                 )?;
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                Dispatch::call(
+                Dispatch::instance_call(
                     instance,
                     DispatchType::Workspace(match &state.active_workspace {
                         WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
@@ -355,7 +373,7 @@ impl State {
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
-                Dispatch::call(
+                Dispatch::instance_call(
                     instance,
                     DispatchType::FocusMonitor(MonitorIdentifier::Name(&state.active_monitor)),
                 )?;
@@ -712,6 +730,8 @@ pub(crate) static EVENTS: &[(&str, (usize, ParsedEventType))] = &[
 
 use crate::error::HyprError;
 use either::Either;
+use crate::default_instance;
+use crate::instance::Instance;
 
 type KnownEvent = (ParsedEventType, Vec<String>);
 type UnknownEvent = (String, String);

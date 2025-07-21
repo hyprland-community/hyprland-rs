@@ -8,6 +8,7 @@ mod wallpaper;
 mod wallpaper_listing;
 mod wallpaper_mode;
 
+use crate::default_instance;
 use crate::instance::Instance;
 use crate::shared::CommandContent;
 pub use error::Error;
@@ -31,7 +32,12 @@ pub enum Response {
 }
 
 /// Send a keyword to hyprpaper using IPC.
-pub fn hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Result<Response> {
+pub fn hyprpaper(keyword: Keyword) -> crate::Result<Response> {
+    instance_hyprpaper(default_instance()?, keyword)
+}
+
+/// Send a keyword to hyprpaper using IPC.
+pub fn instance_hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Result<Response> {
     let expected_response = keyword.expected_response();
 
     let content = CommandContent {
@@ -43,7 +49,15 @@ pub fn hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Result<Respons
 }
 
 /// Send a keyword to hyprpaper using IPC.
-pub async fn hyprpaper_async(instance: &Instance, keyword: Keyword) -> crate::Result<Response> {
+pub async fn hyprpaper_async(keyword: Keyword) -> crate::Result<Response> {
+    instance_hyprpaper_async(default_instance()?, keyword).await
+}
+
+/// Send a keyword to hyprpaper using IPC.
+pub async fn instance_hyprpaper_async(
+    instance: &Instance,
+    keyword: Keyword,
+) -> crate::Result<Response> {
     let expected_response = keyword.expected_response();
 
     let content = CommandContent {

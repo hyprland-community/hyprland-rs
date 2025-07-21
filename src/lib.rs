@@ -75,13 +75,17 @@ mod async_import {
 /// This type provides the result type used everywhere in Hyprland-rs
 pub type Result<T> = std::result::Result<T, HyprError>;
 
-static DEFAULT_INSTANCE: OnceLock<Result<Instance>> = OnceLock::new();
+static DEFAULT_INSTANCE: OnceLock<Instance> = OnceLock::new();
 
 /// Returns the result of the DEFAULT_INSTANCE OnceLock
-pub fn default_instance() -> std::result::Result<&'static Instance, &'static HyprError> {
-    DEFAULT_INSTANCE
-        .get_or_init(Instance::from_current_env)
-        .as_ref()
+pub fn default_instance() -> std::result::Result<&'static Instance, HyprError> {
+    if let Some(i) = DEFAULT_INSTANCE.get() {
+        return Ok(i);
+    }
+    let instance = Instance::from_current_env()?;
+    let _ = DEFAULT_INSTANCE.set(instance);
+    #[allow(clippy::unwrap_used)] // We just set the instance, so it can never fail
+    Ok(DEFAULT_INSTANCE.get().unwrap())
 }
 
 /// Returns the result of the DEFAULT_INSTANCE OnceLock
