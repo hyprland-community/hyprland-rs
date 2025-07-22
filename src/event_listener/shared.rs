@@ -278,10 +278,8 @@ pub struct State {
 
 impl State {
     /// Execute changes in state
-    pub async fn execute_state(
-        self,
-        old: State,
-    ) -> crate::Result<Self> {
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn execute_state(self, old: State) -> crate::Result<Self> {
         self.instance_execute_state(default_instance()?, old).await
     }
 
@@ -331,12 +329,8 @@ impl State {
         Ok(state)
     }
 
-
     /// Execute changes in state
-    pub fn execute_state_sync(
-        self,
-        old: State,
-    ) -> crate::Result<Self> {
+    pub fn execute_state_sync(self, old: State) -> crate::Result<Self> {
         self.instance_execute_state_sync(default_instance()?, old)
     }
 
@@ -728,10 +722,10 @@ pub(crate) static EVENTS: &[(&str, (usize, ParsedEventType))] = &[
     ("moveoutofgroup", (1, ParsedEventType::MoveOutOfGroup)),
 ];
 
-use crate::error::HyprError;
-use either::Either;
 use crate::default_instance;
+use crate::error::HyprError;
 use crate::instance::Instance;
+use either::Either;
 
 type KnownEvent = (ParsedEventType, Vec<String>);
 type UnknownEvent = (String, String);

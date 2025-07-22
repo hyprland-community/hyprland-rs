@@ -173,10 +173,10 @@ impl HyprDataActive for Workspace {
     fn get_active() -> crate::Result<Self> {
         Self::instance_get_active(default_instance()?)
     }
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     async fn get_active_async() -> crate::Result<Self> {
         Self::instance_get_active_async(default_instance()?).await
     }
-    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     fn instance_get_active(instance: &Instance) -> crate::Result<Self> {
         let data = instance.write_to_socket(command!(JSON, "{}", DataCommands::ActiveWorkspace))?;
         let deserialized: Workspace = serde_json::from_str(&data)?;
