@@ -12,8 +12,6 @@ extern crate paste;
 #[macro_use]
 extern crate hyprland_macros;
 
-pub use hyprland_macros::async_closure;
-
 /// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
 #[cfg(feature = "unsafe-impl")]
 pub mod unsafe_impl;
@@ -54,7 +52,6 @@ pub mod hyprpaper;
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};
-    pub use hyprland_macros::async_closure;
 }
 
 pub(crate) mod unix_async {

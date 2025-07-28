@@ -3,25 +3,11 @@
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens};
+use quote::{ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Block, ExprClosure, Result, Token, Type,
+    parse_macro_input, Block, Result, Token, Type,
 };
-
-/// Creates a async closure
-#[proc_macro]
-pub fn async_closure(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as ExprClosure);
-    let body = input.body;
-    let inputs = input.inputs;
-    let mova = input.capture;
-    let expanded = quote! {{
-        use std::future::IntoFuture;
-        #mova |#inputs| Box::pin(async move { #body })
-    }};
-    expanded.into()
-}
 
 struct If<T: Parse> {
     type_to_match: Type,

@@ -1,7 +1,6 @@
 /// Demostrats using hyprland-rs to asynchronously listen for events
-/// 
+///
 /// Usage: cargo run --example events
-
 use hyprland::async_closure;
 use hyprland::event_listener::AsyncEventListener;
 
@@ -10,22 +9,18 @@ async fn main() -> hyprland::Result<()> {
     // Create a event listener
     let mut event_listener = AsyncEventListener::new();
 
-    event_listener.add_active_window_changed_handler(async_closure! {
-        |data| println!("{data:#?}")
+    event_listener.add_active_window_changed_handler(async |data| println!("{data:#?}"));
+
+    event_listener.add_fullscreen_state_changed_handler(async |fstate| {
+        println!("Window {} fullscreen", if fstate { "is" } else { "is not" })
     });
 
-    event_listener.add_fullscreen_state_changed_handler(async_closure! {
-        |fstate| println!("Window {} fullscreen", if fstate { "is" } else { "is not" })
-    });
-
-    event_listener.add_active_monitor_changed_handler(async_closure! {
-        |state| println!("Monitor state: {state:#?}")
-    });
+    event_listener
+        .add_active_monitor_changed_handler(async |state| println!("Monitor state: {state:#?}"));
 
     // add event, yes functions and closures both work!
-    event_listener.add_workspace_changed_handler(async_closure! {
-        |id| println!("workspace changed to {id:?}")
-    });
+    event_listener
+        .add_workspace_changed_handler(async |id| println!("workspace changed to {id:?}"));
 
     // and execute the function
     // here we are using the blocking variant
