@@ -22,7 +22,9 @@ impl HyprData for FullscreenState {
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     async fn instance_get_async(instance: &crate::instance::Instance) -> crate::Result<Self> {
         Ok(Self(
-            Workspace::instance_get_active_async(instance).await?.fullscreen,
+            Workspace::instance_get_active_async(instance)
+                .await?
+                .fullscreen,
         ))
     }
 }

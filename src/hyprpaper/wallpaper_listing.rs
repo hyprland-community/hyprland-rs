@@ -1,5 +1,5 @@
-use crate::error::HyprError;
 use super::Error;
+use crate::error::HyprError;
 
 /// A listing of an active wallpaper.
 #[derive(Debug, PartialEq)]

@@ -5,7 +5,6 @@
 /// Example: cargo run --example keyword_async decoration:rounding  15 (sets value)
 use hyprland::keyword::Keyword;
 
-
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();

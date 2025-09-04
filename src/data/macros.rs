@@ -14,7 +14,9 @@ macro_rules! impl_on {
                 Self::instance_get_async(crate::default_instance()?).await
             }
             #[cfg(any(feature = "async-lite", feature = "tokio"))]
-            async fn instance_get_async(instance: &crate::instance::Instance) -> $crate::Result<Self> {
+            async fn instance_get_async(
+                instance: &crate::instance::Instance,
+            ) -> $crate::Result<Self> {
                 let data = instance
                     .write_to_socket_async(command!(JSON, "{}", DataCommands::$name))
                     .await?;

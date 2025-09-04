@@ -1,5 +1,5 @@
-use crate::error::HyprError;
 use super::{Error, Preload, Reload, Response, Unload, Wallpaper, WallpaperListing};
+use crate::error::HyprError;
 
 /// The hyprpaper keyword, used to interact with hyprpaper.
 pub enum Keyword {

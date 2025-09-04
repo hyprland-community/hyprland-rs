@@ -129,7 +129,6 @@ listener.start_listener();"#)]
     };
 }
 
-
 #[cfg(any(feature = "async-lite", feature = "tokio"))]
 macro_rules! add_async_listener_raw {
     ($name:ident,$list_name:ident,$f:ty,$c:literal,$c2:expr => $id:ident) => {

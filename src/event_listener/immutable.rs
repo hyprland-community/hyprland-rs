@@ -1,5 +1,5 @@
-use crate::default_instance;
 use super::*;
+use crate::default_instance;
 use crate::instance::Instance;
 
 /// This struct is used for adding event handlers and executing them on events
@@ -57,7 +57,8 @@ impl EventListener {
     /// ```
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn start_listener_async(&mut self) -> crate::Result<()> {
-        self.instance_start_listener_async(default_instance()?).await
+        self.instance_start_listener_async(default_instance()?)
+            .await
     }
 
     /// This method starts the event listener (async)
@@ -75,7 +76,10 @@ impl EventListener {
     /// }
     /// ```
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
-    pub async fn instance_start_listener_async(&mut self, instance: &Instance) -> crate::Result<()> {
+    pub async fn instance_start_listener_async(
+        &mut self,
+        instance: &Instance,
+    ) -> crate::Result<()> {
         use crate::async_import::*;
         let mut stream = instance.get_event_stream_async().await?;
 
@@ -113,7 +117,6 @@ impl EventListener {
     pub fn start_listener(&mut self) -> crate::Result<()> {
         self.instance_start_listener(default_instance()?)
     }
-
 
     /// This method starts the event listener (blocking)
     ///

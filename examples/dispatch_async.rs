@@ -1,9 +1,9 @@
-use hyprland::dispatch::DispatchType::*;
-use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
 /// Demonstrates usage of various asyncronous dispatch calls
 ///
 /// Usage: cargo run --example dispatch_async
 use hyprland::dispatch;
+use hyprland::dispatch::DispatchType::*;
+use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));

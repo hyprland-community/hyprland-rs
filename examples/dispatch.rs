@@ -1,10 +1,10 @@
-use hyprland::dispatch::DispatchType::*;
-use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
 /// Demonstrates usage of various dispatch calls
 ///
 /// Usage: cargo run --example dispatch <hyprland args>? <program_name>? <program_args>?
 /// Example: cargo run --example dispatch [workspace 2] kitty
 use hyprland::dispatch;
+use hyprland::dispatch::DispatchType::*;
+use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));

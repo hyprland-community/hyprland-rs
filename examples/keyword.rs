@@ -5,7 +5,6 @@
 /// Example: cargo run --example keyword decoration:rounding  15 (sets value)
 use hyprland::keyword::Keyword;
 
-
 fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     let keyword = args[0].clone();

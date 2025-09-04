@@ -8,7 +8,6 @@ use hyprland::data::{
 };
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 
-
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();

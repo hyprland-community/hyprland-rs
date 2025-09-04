@@ -8,7 +8,6 @@ use hyprland::data::{
 };
 use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 
-
 fn main() -> hyprland::Result<()> {
     let args: Vec<_> = std::env::args().skip(1).collect();
     if args.is_empty() {

@@ -14,10 +14,10 @@
 //! }
 //! ````
 
+use crate::default_instance;
 use crate::dispatch::fmt::*;
 use crate::error::HyprError;
 use crate::shared::*;
-use crate::default_instance;
 use derive_more::Display;
 use std::string::ToString;
 
