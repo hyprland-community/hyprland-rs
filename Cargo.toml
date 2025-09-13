@@ -52,7 +52,7 @@ async-net = { version = "2.0", optional = true }
 async-std = { version = "1.13", optional = true }
 futures-lite = { version = "2.3", default-features = false }
 num-traits = "0.2.19"
-paste = "1.0.14"
+paste = { version = "0.1.1", package = "pastey" }
 derive_more = { version = "1.0.0", features = [
     "display",
     "constructor",
