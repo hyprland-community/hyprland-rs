@@ -39,7 +39,7 @@ pub fn hyprpaper(keyword: Keyword) -> crate::Result<Response> {
         data: keyword.to_string(),
     };
 
-    let response = write_to_socket_sync(SocketType::Command, content)?;
+    let response = write_to_socket_sync(SocketType::Hyprpaper, content)?;
 
     expected_response.is_expected(response)
 }
