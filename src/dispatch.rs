@@ -292,6 +292,8 @@ pub enum DispatchType<'a> {
     TogglePseudo,
     /// This dispatcher pins the active window to all workspaces
     TogglePin,
+    /// This dispatcher pins the specified window to all workspaces
+    TogglePinWindow(WindowIdentifier<'a>),
     /// This dispatcher moves the window focus in a specified direction
     MoveFocus(Direction),
     /// This dispatcher moves the current window to a monitor or in a specified direction
@@ -480,6 +482,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         }
         TogglePseudo => "pseudo".to_string(),
         TogglePin => "pin".to_string(),
+        TogglePinWindow(win) => format!("pin{sep}{win}"),
         MoveFocus(dir) => format!("movefocus{sep}{dir}",),
         MoveWindow(ident) => format!(
             "movewindow{sep}{}",
