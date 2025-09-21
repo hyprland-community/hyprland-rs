@@ -307,8 +307,11 @@ dependencies = [
  "derive_more",
  "either",
  "futures-lite",
- "hyprland-macros",
- "paste",
+ "hyprland-macros", 
+ "once_cell",
+ "parking_lot",
+ "pastey",
+ "phf",
  "serde",
  "serde_json",
  "serde_repr",
@@ -424,10 +427,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "paste"
-version = "1.0.15"
+name = "pastey"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
+checksum = "35fb2e5f958ec131621fdd531e9fc186ed768cbe395337403ae56c17a74c68ec"
 
 [[package]]
 name = "pin-project-lite"
