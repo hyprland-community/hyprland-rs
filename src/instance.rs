@@ -32,14 +32,18 @@ impl Instance {
         Self::from_base_socket_path(path)
     }
 
-    /// instance: 9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_214680212
+    /// Uses the name to determine the sockets to use
+    ///
+    /// Example name: `9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_214680212`
     pub fn from_instance(name: String) -> crate::Result<Self> {
         let mut path = get_hypr_path()?;
         path.push(&name);
         Self::from_base_socket_path(path)
     }
 
-    /// /run/user/$UID/hypr/9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_214680212
+    /// Uses the path to determine the sockets to use
+    ///
+    /// Example path: `/run/user/1000/hypr/9958d297641b5c84dcff93f9039d80a5ad37ab00_1752788564_21468021`
     pub fn from_base_socket_path(path: PathBuf) -> crate::Result<Self> {
         let Some(name) = path.file_name().map(|n| n.to_string_lossy().to_string()) else {
             hypr_err!("Could not get instance name from path: {}", path.display());
@@ -65,7 +69,6 @@ impl Instance {
         stream.write_all(&content.as_bytes())?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response)?;
-        drop(stream);
         Ok(String::from_utf8(response)?)
     }
 
@@ -79,7 +82,6 @@ impl Instance {
         stream.write_all(&content.as_bytes()).await?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response).await?;
-        drop(stream);
         Ok(String::from_utf8(response)?)
     }
 
@@ -93,7 +95,6 @@ impl Instance {
         stream.write_all(content.data.as_bytes())?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response)?;
-        drop(stream);
         Ok(String::from_utf8(response)?)
     }
 
@@ -107,7 +108,6 @@ impl Instance {
         stream.write_all(content.data.as_bytes()).await?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response).await?;
-        drop(stream);
         Ok(String::from_utf8(response)?)
     }
 

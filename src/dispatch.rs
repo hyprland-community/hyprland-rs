@@ -154,7 +154,7 @@ pub enum WorkspaceOptions {
     AllFloat,
 }
 
-/// This enum holds a direction for cycling
+/// This struct holds options for the first empty workspace
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FirstEmpty {
     /// If the first empty workspace should be on the monitor
