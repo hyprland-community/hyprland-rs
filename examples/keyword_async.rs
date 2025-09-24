@@ -20,6 +20,5 @@ async fn main() -> hyprland::Result<()> {
         2 => Keyword::set_async(keyword, args[1].clone()).await?,
         _ => panic!("Takes up to 2 arguments only!"),
     }
-
     Ok(())
 }

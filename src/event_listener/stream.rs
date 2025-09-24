@@ -4,7 +4,8 @@ use std::{
     task::{Context, Poll},
 };
 
-use async_stream::try_stream;
+use crate::default_instance;
+use crate::instance::Instance;
 use futures_lite::{Stream, StreamExt};
 
 /// Event listener, but [Stream]
@@ -15,10 +16,12 @@ use futures_lite::{Stream, StreamExt};
 /// ```rust, no_run
 /// use hyprland::prelude::*;
 /// use hyprland::event_listener::EventStream;
-/// use futures_lite::StreamExt;
+/// use hyprland::Result as HResult;
 ///
-/// #[tokio::main(flavor = "current_thread")]
-/// async fn main() {
+/// #[tokio::main]
+/// async fn main() -> HResult<()> {
+///     use futures_lite::StreamExt;
+///     use hyprland::instance::Instance;
 ///     let mut stream = EventStream::new();
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
@@ -29,34 +32,63 @@ use futures_lite::{Stream, StreamExt};
 pub struct EventStream {
     stream: Pin<Box<dyn Stream<Item = crate::Result<Event>> + Send>>,
 }
+impl Default for EventStream {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventStream {
     /// Creates a new [EventStream]
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
-        use crate::unix_async::*;
-        let stream = try_stream! {
-
-        let socket_path = get_socket_path(SocketType::Listener)?;
-        let mut stream = UnixStream::connect(socket_path).await?;
-
-        let mut active_windows = vec![];
-        loop {
-            let mut buf = [0; 4096];
-
-            let num_read = stream.read(&mut buf).await?;
-            if num_read == 0 {
-                break;
-            }
-            let buf = &buf[..num_read];
-            let string = String::from_utf8(buf.to_vec())?;
-            let parsed: Vec<Event> = event_parser(string)?;
-
-            for event in parsed {
-                for primed_event in event_primer_noexec(event, &mut active_windows)? {
-                    yield primed_event;
+        use crate::async_import::*;
+        let stream = async_stream::try_stream! {
+        let mut stream: UnixStream = default_instance()?.get_event_stream_async().await?;
+            let mut active_windows = vec![];
+            loop {
+                let mut buffer = [0; 4096];
+                let bytes_read = stream.read(&mut buffer).await?;
+                if bytes_read == 0 {
+                    // If no bytes were read, we can assume the stream is closed
+                    break;
+                }
+                let buf = &buffer[..bytes_read];
+                let string = String::from_utf8(buf.to_vec())?;
+                let parsed: Vec<Event> = event_parser(string)?;
+                for event in parsed {
+                    for primed_event in event_primer_noexec(event, &mut active_windows)? {
+                        yield primed_event;
+                    }
                 }
             }
+        };
+        Self {
+            stream: Box::pin(stream),
         }
+    }
+
+    /// Creates a new [EventStream]
+    pub fn instance_new(instance: Instance) -> Self {
+        use crate::async_import::*;
+        let stream = async_stream::try_stream! {
+        let mut stream: UnixStream = instance.get_event_stream_async().await?;
+            let mut active_windows = vec![];
+            loop {
+                let mut buffer = [0; 4096];
+                let bytes_read = stream.read(&mut buffer).await?;
+                if bytes_read == 0 {
+                    // If no bytes were read, we can assume the stream is closed
+                    break;
+                }
+                let buf = &buffer[..bytes_read];
+                let string = String::from_utf8(buf.to_vec())?;
+                let parsed: Vec<Event> = event_parser(string)?;
+                for event in parsed {
+                    for primed_event in event_primer_noexec(event, &mut active_windows)? {
+                        yield primed_event;
+                    }
+                }
+            }
         };
         Self {
             stream: Box::pin(stream),
@@ -65,9 +97,9 @@ impl EventStream {
 }
 
 impl Stream for EventStream {
+    type Item = crate::Result<Event>;
+
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         self.as_mut().stream.poll_next(cx)
     }
-
-    type Item = crate::Result<Event>;
 }

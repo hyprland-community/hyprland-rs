@@ -7,12 +7,13 @@
 #![cfg_attr(not(feature = "unsafe-impl"), forbid(unsafe_code))]
 
 #[macro_use]
+extern crate hyprland_macros;
+#[macro_use]
 extern crate paste;
 
-#[macro_use]
-extern crate hyprland_macros;
-
-pub use hyprland_macros::async_closure;
+use crate::error::HyprError;
+use crate::instance::Instance;
+use std::sync::OnceLock;
 
 /// This module provides several impls that are unsafe, for FFI purposes. Only use if you know what you are doing.
 #[cfg(feature = "unsafe-impl")]
@@ -45,6 +46,11 @@ pub mod keyword;
 #[cfg(feature = "config")]
 pub mod config;
 
+/// Holds the error type used throughout the crate
+pub mod error;
+/// Used to generate the Instances to interface with Hyprland
+pub mod instance;
+
 /// This module is for interacting with [hyprpaper] using its IPC feature
 ///
 /// [hyprpaper]: https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/
@@ -57,28 +63,35 @@ pub mod prelude {
     pub use hyprland_macros::async_closure;
 }
 
-pub(crate) mod unix_async {
+mod async_import {
     #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use async_net::unix::UnixStream;
     #[cfg(all(feature = "async-lite", not(feature = "tokio")))]
     pub use futures_lite::io::{AsyncReadExt, AsyncWriteExt};
-
-    #[cfg(all(
-        feature = "async-std",
-        not(feature = "tokio"),
-        not(feature = "async-lite")
-    ))]
-    pub use async_std::{
-        io::{ReadExt, WriteExt},
-        os::unix::net::UnixStream,
-    };
-
     #[cfg(feature = "tokio")]
-    pub use tokio::{
-        io::{AsyncReadExt, AsyncWriteExt},
-        net::UnixStream,
-    };
+    pub use tokio::{io::AsyncReadExt, io::AsyncWriteExt, net::UnixStream};
 }
 
 /// This type provides the result type used everywhere in Hyprland-rs
-pub type Result<T> = std::result::Result<T, shared::HyprError>;
+pub type Result<T> = std::result::Result<T, HyprError>;
+
+static DEFAULT_INSTANCE: OnceLock<Instance> = OnceLock::new();
+
+/// Returns the result of the DEFAULT_INSTANCE OnceLock
+pub fn default_instance() -> std::result::Result<&'static Instance, HyprError> {
+    if let Some(i) = DEFAULT_INSTANCE.get() {
+        return Ok(i);
+    }
+    let instance = Instance::from_current_env()?;
+    let _ = DEFAULT_INSTANCE.set(instance);
+    #[allow(clippy::unwrap_used)] // We just set the instance, so it can never fail
+    Ok(DEFAULT_INSTANCE.get().unwrap())
+}
+
+/// Returns the result of the DEFAULT_INSTANCE OnceLock
+pub fn default_instance_panic() -> &'static Instance {
+    #[allow(clippy::expect_used)]
+    default_instance().expect(
+        "Default instance could not get initialized, use `Instance::from_instance()` instead.",
+    )
+}

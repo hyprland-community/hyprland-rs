@@ -1,16 +1,15 @@
-/// Demostrats using hyprland-rs to asynchronously listen for events
-/// 
-/// Usage: cargo run --example events
-
-use hyprland::async_closure;
 use hyprland::event_listener::AsyncEventListener;
+/// Demostrats using hyprland-rs to asynchronously listen for events
+///
+/// Usage: cargo run --example events
+use hyprland::prelude::*;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> hyprland::Result<()> {
     // Create a event listener
     let mut event_listener = AsyncEventListener::new();
 
-    event_listener.add_active_window_changed_handler(async_closure! {
+    event_listener.add_workspace_changed_handler(async_closure! {
         |data| println!("{data:#?}")
     });
 
@@ -31,6 +30,5 @@ async fn main() -> hyprland::Result<()> {
     // here we are using the blocking variant
     // but there is a async version too
     event_listener.start_listener_async().await?;
-
     Ok(())
 }

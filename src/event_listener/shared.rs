@@ -29,7 +29,7 @@ pub(crate) trait HasExecutor {
 
     fn event_primer(&mut self, event: Event, abuf: &mut Vec<ActiveWindowState>) -> crate::Result<()>
     where
-        Self: std::marker::Sized,
+        Self: Sized,
     {
         if abuf.is_empty() {
             abuf.push(ActiveWindowState::new());
@@ -72,6 +72,7 @@ pub(crate) trait HasExecutor {
     }
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) fn event_primer_noexec(
     event: Event,
     abuf: &mut Vec<ActiveWindowState>,
@@ -121,6 +122,7 @@ pub(crate) fn event_primer_noexec(
     Ok(events)
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) trait HasAsyncExecutor {
     async fn event_executor_async(&mut self, event: Event) -> crate::Result<()>;
 
@@ -130,7 +132,7 @@ pub(crate) trait HasAsyncExecutor {
         abuf: &mut Vec<ActiveWindowState>,
     ) -> crate::Result<()>
     where
-        Self: std::marker::Sized,
+        Self: Sized,
     {
         for x in event_primer_noexec(event, abuf)? {
             self.event_executor_async(x).await?;
@@ -212,7 +214,7 @@ pub(crate) fn into<T>(from: Option<(T, T)>) -> (ActiveWindowValue<T>, ActiveWind
 pub(crate) type EventType<T> = Box<T>;
 pub(crate) type AsyncEventType<T> = Pin<Box<T>>;
 
-pub(crate) type VoidFuture = std::pin::Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
+pub(crate) type VoidFuture = Pin<Box<dyn std::future::Future<Output = ()> + Send>>;
 
 pub(crate) type EmptyClosure = EventType<dyn Fn()>;
 pub(crate) type Closure<T> = EventType<dyn Fn(T)>;
@@ -276,64 +278,99 @@ pub struct State {
 
 impl State {
     /// Execute changes in state
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn execute_state(self, old: State) -> crate::Result<Self> {
+        self.instance_execute_state(default_instance()?, old).await
+    }
+
+    /// Execute changes in state
+    #[cfg(any(feature = "async-lite", feature = "tokio"))]
+    pub async fn instance_execute_state(
+        self,
+        instance: &Instance,
+        old: State,
+    ) -> crate::Result<Self> {
         let state = self.clone();
         if self != old {
             use crate::dispatch::{Dispatch, DispatchType};
             if old.fullscreen_state != state.fullscreen_state {
                 use crate::dispatch::FullscreenType;
-                Dispatch::call_async(DispatchType::ToggleFullscreen(FullscreenType::NoParam))
-                    .await?;
+                Dispatch::instance_call_async(
+                    instance,
+                    DispatchType::ToggleFullscreen(FullscreenType::NoParam),
+                )
+                .await?;
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                Dispatch::call_async(DispatchType::Workspace(match &state.active_workspace {
-                    WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
-                    WorkspaceType::Special(opt) => {
-                        WorkspaceIdentifierWithSpecial::Special(match opt {
-                            Some(name) => Some(name),
-                            None => None,
-                        })
-                    }
-                }))
+                Dispatch::instance_call_async(
+                    instance,
+                    DispatchType::Workspace(match &state.active_workspace {
+                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                        WorkspaceType::Special(opt) => {
+                            WorkspaceIdentifierWithSpecial::Special(match opt {
+                                Some(name) => Some(name),
+                                None => None,
+                            })
+                        }
+                    }),
+                )
                 .await?;
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
-                Dispatch::call_async(DispatchType::FocusMonitor(MonitorIdentifier::Name(
-                    &state.active_monitor,
-                )))
+                Dispatch::instance_call_async(
+                    instance,
+                    DispatchType::FocusMonitor(MonitorIdentifier::Name(&state.active_monitor)),
+                )
                 .await?;
             };
         }
         Ok(state)
     }
+
     /// Execute changes in state
     pub fn execute_state_sync(self, old: State) -> crate::Result<Self> {
+        self.instance_execute_state_sync(default_instance()?, old)
+    }
+
+    /// Execute changes in state
+    pub fn instance_execute_state_sync(
+        self,
+        instance: &Instance,
+        old: State,
+    ) -> crate::Result<Self> {
         let state = self.clone();
         if self != old {
             use crate::dispatch::{Dispatch, DispatchType};
             if old.fullscreen_state != state.fullscreen_state {
                 use crate::dispatch::FullscreenType;
-                Dispatch::call(DispatchType::ToggleFullscreen(FullscreenType::NoParam))?;
+                Dispatch::instance_call(
+                    instance,
+                    DispatchType::ToggleFullscreen(FullscreenType::NoParam),
+                )?;
             }
             if old.active_workspace != state.active_workspace {
                 use crate::dispatch::WorkspaceIdentifierWithSpecial;
-                Dispatch::call(DispatchType::Workspace(match &state.active_workspace {
-                    WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
-                    WorkspaceType::Special(opt) => {
-                        WorkspaceIdentifierWithSpecial::Special(match opt {
-                            Some(name) => Some(name),
-                            None => None,
-                        })
-                    }
-                }))?;
+                Dispatch::instance_call(
+                    instance,
+                    DispatchType::Workspace(match &state.active_workspace {
+                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                        WorkspaceType::Special(opt) => {
+                            WorkspaceIdentifierWithSpecial::Special(match opt {
+                                Some(name) => Some(name),
+                                None => None,
+                            })
+                        }
+                    }),
+                )?;
             }
             if old.active_monitor != state.active_monitor {
                 use crate::dispatch::MonitorIdentifier;
-                Dispatch::call(DispatchType::FocusMonitor(MonitorIdentifier::Name(
-                    &state.active_monitor,
-                )))?;
+                Dispatch::instance_call(
+                    instance,
+                    DispatchType::FocusMonitor(MonitorIdentifier::Name(&state.active_monitor)),
+                )?;
             };
         }
         Ok(state)
@@ -347,10 +384,13 @@ pub(crate) fn execute_empty_closure(f: &EmptyClosure) {
 pub(crate) fn execute_closure<T: Clone>(f: &Closure<T>, val: T) {
     f(val);
 }
+
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) async fn execute_empty_closure_async(f: &EmptyAsyncClosure) {
     f().await;
 }
 
+#[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) async fn execute_closure_async<T>(f: &AsyncClosure<T>, val: T) {
     f(val).await;
 }
@@ -640,39 +680,51 @@ pub(crate) enum ParsedEventType {
 /// The first item of the tuple is a usize of the argument count
 /// This allows for easy parsing because the last arg in a Hyprland event
 /// has the ability to have extra `,`s
-pub(crate) static EVENTS: phf::Map<&'static str, (usize, ParsedEventType)> = phf::phf_map! {
-    "workspacev2" => ((2),ParsedEventType::WorkspaceChangedV2),
-    "destroyworkspacev2" => ((2),ParsedEventType::WorkspaceDeletedV2),
-    "createworkspacev2" => ((2),ParsedEventType::WorkspaceAddedV2),
-    "moveworkspacev2" => ((3),ParsedEventType::WorkspaceMovedV2),
-    "renameworkspace" => ((2),ParsedEventType::WorkspaceRename),
-    "focusedmon" => ((2),ParsedEventType::ActiveMonitorChanged),
-    "activewindow" => ((2),ParsedEventType::ActiveWindowChangedV1),
-    "activewindowv2" => ((1),ParsedEventType::ActiveWindowChangedV2),
-    "fullscreen" => ((1),ParsedEventType::FullscreenStateChanged),
-    "monitorremoved" => ((1),ParsedEventType::MonitorRemoved),
-    "monitoraddedv2" => ((3),ParsedEventType::MonitorAddedV2),
-    "openwindow" => ((4),ParsedEventType::WindowOpened),
-    "closewindow" => ((1),ParsedEventType::WindowClosed),
-    "movewindowv2" => ((3),ParsedEventType::WindowMovedV2),
-    "activelayout" => ((2),ParsedEventType::LayoutChanged),
-    "activespecial" => ((2),ParsedEventType::ActiveSpecial),
-    "submap" => ((1), ParsedEventType::SubMapChanged),
-    "openlayer" => ((1),ParsedEventType::LayerOpened),
-    "closelayer" => ((1),ParsedEventType::LayerClosed),
-    "changefloatingmode" => ((2),ParsedEventType::FloatStateChanged),
-    "screencast" => ((2),ParsedEventType::Screencast),
-    "urgent" => ((1),ParsedEventType::UrgentStateChanged),
-    "windowtitlev2" => ((2),ParsedEventType::WindowTitleChangedV2),
-    "configreloaded" => ((0),ParsedEventType::ConfigReloaded),
-    "ignoregrouplock" => ((1),ParsedEventType::IgnoreGroupLock),
-    "lockgroups" => ((1),ParsedEventType::LockGroups),
-    "pin" => ((2),ParsedEventType::Pin),
-    "togglegroup" => (2,ParsedEventType::ToggleGroup),
-    "moveintogroup" => (1,ParsedEventType::MoveIntoGroup),
-    "moveoutofgroup" => (1,ParsedEventType::MoveOutOfGroup)
-};
+pub(crate) static EVENTS: &[(&str, (usize, ParsedEventType))] = &[
+    ("workspacev2", (2, ParsedEventType::WorkspaceChangedV2)),
+    (
+        "destroyworkspacev2",
+        (2, ParsedEventType::WorkspaceDeletedV2),
+    ),
+    ("createworkspacev2", (2, ParsedEventType::WorkspaceAddedV2)),
+    ("moveworkspacev2", (3, ParsedEventType::WorkspaceMovedV2)),
+    ("renameworkspace", (2, ParsedEventType::WorkspaceRename)),
+    ("focusedmon", (2, ParsedEventType::ActiveMonitorChanged)),
+    ("activewindow", (2, ParsedEventType::ActiveWindowChangedV1)),
+    (
+        "activewindowv2",
+        (1, ParsedEventType::ActiveWindowChangedV2),
+    ),
+    ("fullscreen", (1, ParsedEventType::FullscreenStateChanged)),
+    ("monitorremoved", (1, ParsedEventType::MonitorRemoved)),
+    ("monitoraddedv2", (3, ParsedEventType::MonitorAddedV2)),
+    ("openwindow", (4, ParsedEventType::WindowOpened)),
+    ("closewindow", (1, ParsedEventType::WindowClosed)),
+    ("movewindowv2", (3, ParsedEventType::WindowMovedV2)),
+    ("activelayout", (2, ParsedEventType::LayoutChanged)),
+    ("activespecial", (2, ParsedEventType::ActiveSpecial)),
+    ("submap", (1, ParsedEventType::SubMapChanged)),
+    ("openlayer", (1, ParsedEventType::LayerOpened)),
+    ("closelayer", (1, ParsedEventType::LayerClosed)),
+    (
+        "changefloatingmode",
+        (2, ParsedEventType::FloatStateChanged),
+    ),
+    ("screencast", (2, ParsedEventType::Screencast)),
+    ("urgent", (1, ParsedEventType::UrgentStateChanged)),
+    ("windowtitlev2", (2, ParsedEventType::WindowTitleChangedV2)),
+    ("configreloaded", (0, ParsedEventType::ConfigReloaded)),
+    ("ignoregrouplock", (1, ParsedEventType::IgnoreGroupLock)),
+    ("lockgroups", (1, ParsedEventType::LockGroups)),
+    ("pin", (2, ParsedEventType::Pin)),
+    ("togglegroup", (2, ParsedEventType::ToggleGroup)),
+    ("moveintogroup", (1, ParsedEventType::MoveIntoGroup)),
+    ("moveoutofgroup", (1, ParsedEventType::MoveOutOfGroup)),
+];
 
+use crate::default_instance;
+use crate::error::HyprError;
+use crate::instance::Instance;
 use either::Either;
 
 type KnownEvent = (ParsedEventType, Vec<String>);
@@ -686,7 +738,11 @@ fn new_event_parser(input: &str) -> crate::Result<Either<KnownEvent, UnknownEven
             "could not get event name from Hyprland IPC data (not hyprland-rs)".to_string(),
         ))
         .map(|(name, x)| {
-            if let Some(event) = EVENTS.get(name) {
+            if let Some(event) = EVENTS
+                .iter()
+                .find(|(i_name, _)| *i_name == name)
+                .map(|(_, event)| event)
+            {
                 Either::Left((
                     event.1,
                     x.splitn(event.0, ",").map(|y| y.to_string()).collect(),

@@ -1,15 +1,14 @@
 /// Demonstrates usage of various dispatch calls
 ///
 /// Usage: cargo run --example dispatch <hyprland args>? <program_name>? <program_args>?
-/// Example: cargo run --example dispatch [workspace 2] kitty 
-
+/// Example: cargo run --example dispatch [workspace 2] kitty
 use hyprland::dispatch;
-use hyprland::dispatch::{Corner, Dispatch, DispatchType, FullscreenType, WorkspaceIdentifierWithSpecial};
 use hyprland::dispatch::DispatchType::*;
+use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
 
 fn describe(desc: &str) {
-    std::thread::sleep(std::time::Duration::from_secs(2)); 
-    println!("{}", desc); 
+    std::thread::sleep(std::time::Duration::from_secs(2));
+    println!("{desc}");
 }
 
 fn main() -> hyprland::Result<()> {
@@ -30,10 +29,18 @@ fn main() -> hyprland::Result<()> {
     dispatch!(MoveCursorToCorner, Corner::BottomLeft)?;
 
     describe("Moving window to next workspace");
-    dispatch!(MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(1), None)?;
+    dispatch!(
+        MoveToWorkspace,
+        WorkspaceIdentifierWithSpecial::Relative(1),
+        None
+    )?;
 
     describe("Moving window to previous workspace");
-    dispatch!(MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(-1), None)?;
+    dispatch!(
+        MoveToWorkspace,
+        WorkspaceIdentifierWithSpecial::Relative(-1),
+        None
+    )?;
 
     describe("Toggling fullscreen");
     dispatch!(ToggleFullscreen, FullscreenType::Maximize)?;
@@ -59,4 +66,4 @@ fn main() -> hyprland::Result<()> {
     Dispatch::call(KillActiveWindow)?;
 
     Ok(())
-}   
+}
