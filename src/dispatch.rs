@@ -279,6 +279,79 @@ pub enum WindowMove<'a> {
     Direction(Direction),
 }
 
+/// This enum holds the signals
+#[derive(Debug, Clone, Copy)]
+pub enum SignalType {
+    /// Hangup detected on controlling terminal
+    SIGHUP = 1,
+    /// Interrupt from keyboard
+    SIGINT = 2,
+    /// Quit from keyboard
+    SIGQUIT = 3,
+    /// Illegal Instruction
+    SIGILL = 4,
+    /// Trace/breakpoint trap
+    SIGTRAP = 5,
+    /// Abort signal from abort
+    SIGABRT = 6,
+    /// Bus error (bad memory access)
+    SIGBUS = 7,
+    /// Erroneous arithmetic operation
+    SIGFPE = 8,
+    /// Kill signal
+    SIGKILL = 9,
+    /// User-defined signal 1
+    SIGUSR1 = 10,
+    /// Invalid memory reference
+    SIGSEGV = 11,
+    /// User-defined signal 2
+    SIGUSR2 = 12,
+    /// Broken pipe
+    SIGPIPE = 13,
+    /// Timer signal from alarm
+    SIGALRM = 14,
+    /// Termination signal
+    SIGTERM = 15,
+    /// Stack fault on coprocessor
+    SIGSTKFLT = 16,
+    /// Child stopped, terminated, or continued
+    SIGCHLD = 17,
+    /// Continue if stopped
+    SIGCONT = 18,
+    /// Stop process
+    SIGSTOP = 19,
+    /// Stop typed at terminal
+    SIGTSTP = 20,
+    /// Terminal input for background process
+    SIGTTIN = 21,
+    /// Terminal output for background process
+    SIGTTOU = 22,
+    /// Urgent condition on socket
+    SIGURG = 23,
+    /// CPU time limit exceeded
+    SIGXCPU = 24,
+    /// File size limit exceeded
+    SIGXFSZ = 25,
+    /// Virtual alarm clock
+    SIGVTALRM = 26,
+    /// Profiling timer expired
+    SIGPROF = 27,
+    /// Window resize signal
+    SIGWINCH = 28,
+    /// I/O now possible
+    SIGIO = 29,
+    /// Power failure
+    SIGPWR = 30,
+    /// Bad system call
+    SIGSYS = 31,
+}
+
+impl std::fmt::Display for SignalType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", *self as u8)
+    }
+}
+
 /// This enum holds every dispatcher
 #[derive(Debug, Clone)]
 pub enum DispatchType<'a> {
@@ -336,6 +409,10 @@ pub enum DispatchType<'a> {
     TogglePin,
     /// This dispatcher pins the specified window to all workspaces
     TogglePinWindow(WindowIdentifier<'a>),
+    /// This dispatcher sends a signal to the active window
+    Signal(SignalType),
+    /// This dispatcher sends a signal to the specified window
+    SignalWindow(WindowIdentifier<'a>, SignalType),
     /// This dispatcher moves the window focus in a specified direction
     MoveFocus(Direction),
     /// This dispatcher moves the current window to a monitor or in a specified direction
@@ -549,6 +626,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         SwapActiveWorkspaces(mon, mon2) => format!("swapactiveworkspaces{sep}{mon} {mon2}",),
         BringActiveToTop => "bringactivetotop".to_string(),
         SetCursor(theme, size) => format!("{theme} {}", *size),
+        Signal(sig) => format!("signal{sep}{sig}"),
+        SignalWindow(win, sig) => format!("signalwindow{sep}{win},{sig}"),
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
         FocusCurrentOrLast => "focuscurrentorlast".to_string(),
         ToggleSplit => "togglesplit".to_string(),
