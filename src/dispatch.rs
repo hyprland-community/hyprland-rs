@@ -438,7 +438,7 @@ pub enum DispatchType<'a> {
     /// This dispatcher focuses a specified monitor
     FocusMonitor(MonitorIdentifier<'a>),
     /// This dispatcher changed the split ratio
-    ChangeSplitRatio(f32),
+    ChangeSplitRatio(FloatValue),
     /// This dispatcher toggle opacity for the current window/client
     ToggleOpaque,
     /// This dispatcher moves the cursor to a specified corner of a window
@@ -517,7 +517,7 @@ pub enum DispatchType<'a> {
     /// Cycle to the next orientation from the provided list, for the current workspace
     OrientationCycle(OrientationParam),
     /// Change mfact, the master split ratio
-    Mfact(MasterSlpitRatio),
+    Mfact(FloatValue),
     /// Rotate the next window in stack to be the master, while keeping the focus on master
     RollNext,
     /// Rotate the previous window in stack to be the master, while keeping the focus on master
@@ -612,9 +612,9 @@ pub enum OrientationParam {
     Center,
 }
 
-/// Param for [DispatchType::Mfact] dispatcher
+/// Param for split ratio changes
 #[derive(Debug, Clone, Copy, PartialEq, Display)]
-pub enum MasterSlpitRatio {
+pub enum FloatValue {
     /// Change relative to current factor
     #[display("{}", _0)]
     Relative(f32),
@@ -670,7 +670,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         SwapWindow(dir) => format!("swapwindow{sep}{dir}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
         FocusMonitor(mon) => format!("focusmonitor{sep}{mon}"),
-        ChangeSplitRatio(ratio) => format!("splitratio {ratio}"),
+        ChangeSplitRatio(fv) => format!("splitratio {fv}"),
         ToggleOpaque => "toggleopaque".to_string(),
         MoveCursorToCorner(corner) => format!("movecursortocorner{sep}{}", corner.clone() as u8),
         MoveCursor(x, y) => format!("movecursor{sep}{x} {y}"),
@@ -711,7 +711,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         OrientationNext => format!("layoutmsg{sep}orientationnext"),
         OrientationPrev => format!("layoutmsg{sep}orientationprev"),
         OrientationCycle(param) => format!("layoutmsg{sep}orientationcycle {param}"),
-        Mfact(param) => format!("layoutmsg{sep}mfact {param}"),
+        Mfact(fv) => format!("layoutmsg{sep}mfact {fv}"),
         RollNext => format!("layoutmsg{sep}rollnext"),
         RollPrev => format!("layoutmsg{sep}rollprev"),
         ToggleGroup => "togglegroup".to_string(),
