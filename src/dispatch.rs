@@ -352,6 +352,17 @@ impl std::fmt::Display for SignalType {
     }
 }
 
+/// This enum hold the zheight variants
+#[derive(Debug, Clone, Copy, Display)]
+pub enum ZHeight {
+    /// Bring active window to top of the stack
+    #[display("top")]
+    Top,
+    /// Bring active window to bottom of the stack
+    #[display("bottom")]
+    Bottom,
+}
+
 /// This enum holds every dispatcher
 #[derive(Debug, Clone)]
 pub enum DispatchType<'a> {
@@ -462,6 +473,8 @@ pub enum DispatchType<'a> {
     SwapActiveWorkspaces(MonitorIdentifier<'a>, MonitorIdentifier<'a>),
     /// This dispatcher brings the active window to the top of the stack
     BringActiveToTop,
+    /// This dispatcher brings the active window to the top or bottom of the stack
+    AlterZOrder(ZHeight, Option<WindowIdentifier<'a>>),
     /// This toggles the special workspace (AKA scratchpad)
     ToggleSpecialWorkspace(Option<String>),
     /// This dispatcher jump to urgent or the last window
@@ -689,6 +702,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         }
         SwapActiveWorkspaces(mon, mon2) => format!("swapactiveworkspaces{sep}{mon} {mon2}",),
         BringActiveToTop => "bringactivetotop".to_string(),
+        AlterZOrder(z, Some(win)) => format!("alterzorder{sep}{z},{win}"),
+        AlterZOrder(z, None) => format!("alterzorder{sep}{z}"),
         SetCursor(theme, size) => format!("{theme} {}", *size),
         Signal(sig) => format!("signal{sep}{sig}"),
         SignalWindow(win, sig) => format!("signalwindow{sep}{win},{sig}"),
