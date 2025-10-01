@@ -354,7 +354,7 @@ impl std::fmt::Display for SignalType {
 
 /// This enum hold the zheight variants
 #[derive(Debug, Clone, Copy, Display)]
-pub enum ZHeight {
+pub enum ZOrder {
     /// Bring active window to top of the stack
     #[display("top")]
     Top,
@@ -474,7 +474,7 @@ pub enum DispatchType<'a> {
     /// This dispatcher brings the active window to the top of the stack
     BringActiveToTop,
     /// This dispatcher brings the active window to the top or bottom of the stack
-    AlterZOrder(ZHeight, Option<WindowIdentifier<'a>>),
+    AlterZOrder(ZOrder, Option<WindowIdentifier<'a>>),
     /// This toggles the special workspace (AKA scratchpad)
     ToggleSpecialWorkspace(Option<String>),
     /// This dispatcher jump to urgent or the last window
