@@ -481,6 +481,14 @@ pub enum DispatchType<'a> {
     SwapWithMaster(SwapWithMasterParam),
     /// Focuses the master window.
     FocusMaster(FocusMasterParam),
+    /// Focuses the next window respecting the layout
+    CycleNextMaster(MasterLoopParam),
+    /// Focuses the previous window respecting the layout
+    CyclePrevMaster(MasterLoopParam),
+    /// Swaps the focused window with the next window respecting the layout
+    SwapNextMaster(MasterLoopParam),
+    /// Swaps the focused window with the previous window respecting the layout
+    SwapPrevMaster(MasterLoopParam),
     /// Adds a master to the master side. That will be the active window,
     /// if it’s not a master, or the first non-master window.
     AddMaster,
@@ -506,6 +514,14 @@ pub enum DispatchType<'a> {
     OrientationNext,
     /// Cycle to the previous orientation for the current workspace (counter-clockwise)
     OrientationPrev,
+    /// Cycle to the next orientation from the provided list, for the current workspace
+    OrientationCycle(OrientationParam),
+    /// Change mfact, the master split ratio
+    Mfact(MasterSlpitRatio),
+    /// Rotate the next window in stack to be the master, while keeping the focus on master
+    RollNext,
+    /// Rotate the previous window in stack to be the master, while keeping the focus on master
+    RollPrev,
 
     // Group Dispatchers
     /// Toggles the current active window into a group
@@ -546,6 +562,9 @@ pub enum SwapWithMasterParam {
     /// Keep the focus of the previously focused window
     #[display("auto")]
     Auto,
+    /// Noop if master is already focused
+    #[display("ignoremaster")]
+    IgnoreMaster,
 }
 
 /// Param for [DispatchType::FocusMaster] dispatcher
@@ -557,6 +576,51 @@ pub enum FocusMasterParam {
     /// If the current window is the master, focuses the first child
     #[display("auto")]
     Auto,
+    /// If the current window is the master, focuses the previously focused one
+    #[display("previous")]
+    Previous,
+}
+
+/// Param for some master layout dispatchers
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+pub enum MasterLoopParam {
+    /// Allow looping through the pile
+    #[display("loop")]
+    Loop,
+    /// Do not allow looping through the pile
+    #[display("noloop")]
+    NoLoop,
+}
+
+/// Param for [DispatchType::OrientationCycle] dispatcher
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Display)]
+pub enum OrientationParam {
+    /// Set orientation to left
+    #[display("left")]
+    Left,
+    /// Set orientation to right
+    #[display("right")]
+    Right,
+    /// Set orientation to bottom
+    #[display("bottom")]
+    Bottom,
+    /// Set orientation to top
+    #[display("top")]
+    Top,
+    /// Set orientation to center
+    #[display("center")]
+    Center,
+}
+
+/// Param for [DispatchType::Mfact] dispatcher
+#[derive(Debug, Clone, Copy, PartialEq, Display)]
+pub enum MasterSlpitRatio {
+    /// Change relative to current factor
+    #[display("{}", _0)]
+    Relative(f32),
+    /// Set factor to exact value between 0 and 1
+    #[display("exact {}", _0)]
+    Exact(f32),
 }
 
 pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Result<CommandContent> {
@@ -631,17 +695,25 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
         FocusCurrentOrLast => "focuscurrentorlast".to_string(),
         ToggleSplit => "togglesplit".to_string(),
-        SwapWithMaster(param) => format!("swapwithmaster{sep}{param}"),
-        FocusMaster(param) => format!("focusmaster{sep}{param}"),
-        AddMaster => "addmaster".to_string(),
-        RemoveMaster => "removemaster".to_string(),
-        OrientationLeft => "orientationleft".to_string(),
-        OrientationRight => "orientationright".to_string(),
-        OrientationTop => "orientationtop".to_string(),
-        OrientationBottom => "orientationbottom".to_string(),
-        OrientationCenter => "orientationcenter".to_string(),
-        OrientationNext => "orientationnext".to_string(),
-        OrientationPrev => "orientationprev".to_string(),
+        SwapWithMaster(param) => format!("layoutmsg{sep}swapwithmaster {param}"),
+        FocusMaster(param) => format!("layoutmsg{sep}focusmaster {param}"),
+        CycleNextMaster(param) => format!("layoutmsg{sep}cyclenext {param}"),
+        CyclePrevMaster(param) => format!("layoutmsg{sep}cycleprev {param}"),
+        SwapNextMaster(param) => format!("layoutmsg{sep}swapnext {param}"),
+        SwapPrevMaster(param) => format!("layoutmsg{sep}swapprev {param}"),
+        AddMaster => format!("layoutmsg{sep}addmaster"),
+        RemoveMaster => format!("layoutmsg{sep}removemaster"),
+        OrientationLeft => format!("layoutmsg{sep}orientationleft"),
+        OrientationRight => format!("layoutmsg{sep}orientationright"),
+        OrientationTop => format!("layoutmsg{sep}orientationtop"),
+        OrientationBottom => format!("layoutmsg{sep}orientationbottom"),
+        OrientationCenter => format!("layoutmsg{sep}orientationcenter"),
+        OrientationNext => format!("layoutmsg{sep}orientationnext"),
+        OrientationPrev => format!("layoutmsg{sep}orientationprev"),
+        OrientationCycle(param) => format!("layoutmsg{sep}orientationcycle {param}"),
+        Mfact(param) => format!("layoutmsg{sep}mfact {param}"),
+        RollNext => format!("layoutmsg{sep}rollnext"),
+        RollPrev => format!("layoutmsg{sep}rollprev"),
         ToggleGroup => "togglegroup".to_string(),
         ChangeGroupActive(dir) => format!("changegroupactive{sep}{dir}"),
         LockGroups(how) => format!("lockgroups{sep}{how}"),
