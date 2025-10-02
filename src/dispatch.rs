@@ -489,6 +489,7 @@ pub enum DispatchType<'a> {
     FocusUrgentOrLast,
     /// Switch focus from current to previously focused window
     FocusCurrentOrLast,
+    /// Swallow or Unswallow a window
     ToggleSwallow,
 
     // LAYOUT DISPATCHERS
