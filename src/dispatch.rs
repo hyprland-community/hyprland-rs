@@ -352,13 +352,13 @@ impl std::fmt::Display for SignalType {
     }
 }
 
-/// This enum hold the zheight variants
+/// This enum holds the zheight variants
 #[derive(Debug, Clone, Copy, Display)]
 pub enum ZOrder {
-    /// Bring active window to top of the stack
+    /// Bring the active window to top of the stack
     #[display("top")]
     Top,
-    /// Bring active window to bottom of the stack
+    /// Bring the active window to bottom of the stack
     #[display("bottom")]
     Bottom,
 }
