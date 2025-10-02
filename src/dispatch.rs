@@ -835,28 +835,28 @@ impl Dispatch {
 /// Macro abstraction over [Dispatch::call]
 #[macro_export]
 macro_rules! dispatch {
-    (async; $instance:expr, $dis:ident) => {
-        $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis)
-    };
     (async; $instance:expr, $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
-    };
-    (async; $dis:ident) => {
-        $crate::dispatch::Dispatch::call_async($crate::dispatch::DispatchType::$dis)
     };
     (async; $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::call_async($crate::dispatch::DispatchType::$dis($($arg), *))
     };
-    ($instance:expr, $dis:ident) => {
-        $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis)
+    (async; $dis:ident) => {
+        $crate::dispatch::Dispatch::call_async($crate::dispatch::DispatchType::$dis)
+    };
+    (async; $instance:expr, $dis:ident) => {
+        $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis)
     };
     ($instance:expr, $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
-    ($dis:ident) => {
-        $crate::dispatch::Dispatch::call($crate::dispatch::DispatchType::$dis)
-    };
     ($dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::call($crate::dispatch::DispatchType::$dis($($arg), *))
+    };
+    ($instance:expr, $dis:ident) => {
+        $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis)
+    };
+    ($dis:ident) => {
+        $crate::dispatch::Dispatch::call($crate::dispatch::DispatchType::$dis)
     };
 }
