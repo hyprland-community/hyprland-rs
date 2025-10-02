@@ -427,7 +427,7 @@ pub enum DispatchType<'a> {
     /// This dispatcher toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
     /// This dispatcher sets the focused window’s fullscreen mode and the one sent to the client
-    ToggleFullscreenState(FullscreenState, FullscreenType),
+    ToggleFullscreenState(FullscreenState, FullscreenState),
     /// This dispatcher toggles the focused window’s internal
     /// fullscreen state without altering the geometry
     ToggleFakeFullscreen,
