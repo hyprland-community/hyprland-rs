@@ -58,8 +58,8 @@ impl std::fmt::Display for HyprGradient {
             Some(s) => (s.to_string(), " "),
             None => (String::from(""),""),
         };
-        f.write_fmt(format_args!("({}{}{} {}deg)",
-            self.color0, color1, space, self.angle))
+        f.write_fmt(format_args!("{}{}{} {}deg",
+            self.color0, space, color1, self.angle))
     }
 }
 
