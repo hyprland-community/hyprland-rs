@@ -17,6 +17,8 @@ pub enum HyprError {
     /// Error when interacting with Hyprpaper.
     #[cfg(feature = "hyprpaper")]
     Hyprpaper(crate::hyprpaper::Error),
+    /// Keyword does not exist
+    InvalidOptionKey(String),
     /// Unparsable Option
     InvalidOptionValue,
     /// Internal Hyprland error
@@ -40,6 +42,7 @@ impl HyprError {
             Self::InvalidHyprGradiantFormat => Ok(Self::InvalidHyprGradiantFormat),
             #[cfg(feature = "hyprpaper")]
             Self::Hyprpaper(_) => Err(self),
+            Self::InvalidOptionKey(key) => Ok(Self::InvalidOptionKey(key.clone())),
             Self::InvalidOptionValue => Ok(Self::InvalidOptionValue),
             Self::Internal(s) => Ok(Self::Internal(s.clone())),
             Self::Other(s) => Ok(Self::Other(s.clone())),

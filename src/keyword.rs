@@ -63,6 +63,49 @@ impl std::fmt::Display for HyprGradient {
     }
 }
 
+/// Bounds used for custom Rects
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct HyprRect {
+    /// Bound Top
+    pub top: i64,
+    /// Bound Right
+    pub right: i64,
+    /// Bound Bottom
+    pub bottom: i64,
+    /// Bound Left
+    pub left: i64,
+}
+
+impl std::fmt::Display for HyprRect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:0} {:0} {:0} {:0}", self.top, self.right, self.bottom, self.left))
+    }
+}
+
+impl TryFrom<&str> for HyprRect {
+    type Error = crate::HyprError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let mut s = s.trim().split(" ");
+        let top = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+            .map_err(|_| crate::HyprError::InvalidOptionValue)?;
+        let right = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+            .map_err(|_| crate::HyprError::InvalidOptionValue)?;
+        let bottom = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+            .map_err(|_| crate::HyprError::InvalidOptionValue)?;
+        let left = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+            .map_err(|_| crate::HyprError::InvalidOptionValue)?;
+        if  s.next().is_some() { return Err(crate::error::HyprError::InvalidOptionValue); }
+
+        Ok(Self {
+            top,
+            right,
+            bottom,
+            left,
+        })
+    }
+}
+
 
 #[derive(Serialize, Deserialize, Debug, Clone, Display)]
 /// A parseable value type for custom options
@@ -71,6 +114,8 @@ pub enum Custom {
     HyprColor(HyprColor),
     /// Gradiant Variant for Custom field
     HyprGradient(HyprGradient),
+    /// A general rect made of top, right, bottom, left
+    HyprRect(HyprRect)
 }
 
 impl HyprColor {
@@ -223,7 +268,10 @@ impl TryFrom<&str> for Custom {
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let c = s.trim().replace(", ", ",");
         let c = c.split(" ");
-        if c.count() > 1 {
+        let c = c.count();
+        if c == 4 {
+            Ok(Self::HyprRect(HyprRect::try_from(s)?))
+        } else if c > 1 {
             Ok(Self::HyprGradient(HyprGradient::try_from(s)?))
         } else {
             Ok(Self::HyprColor(HyprColor::try_from(s)?))
@@ -238,6 +286,9 @@ pub(crate) struct OptionRaw {
 
     #[serde(flatten)]
     pub value: std::collections::HashMap<String, serde_json::Value>,
+
+    #[serde(skip)]
+    pub json: String
 }
 
 /// This enum holds the possible values of a keyword/option
@@ -254,7 +305,7 @@ pub enum OptionValue {
     /// A Vector of 2 ints
     Vec2([i64; 2]),
     /// Could not parse value
-    Unknown,
+    Unknown(String),
 }
 
 impl std::fmt::Display for OptionValue {
@@ -265,7 +316,7 @@ impl std::fmt::Display for OptionValue {
             OptionValue::String(s) => f.write_fmt(format_args!("{}", s)),
             OptionValue::Custom(custom) => f.write_fmt(format_args!("{}", custom)),
             OptionValue::Vec2(v) => f.write_fmt(format_args!("{} {}", v[0], v[1])),
-            OptionValue::Unknown => f.write_str("(unknown value type)"),
+            OptionValue::Unknown(s) => f.write_fmt(format_args!("Unknown Value type ({})", s)),
         }
     }
 }
@@ -291,10 +342,10 @@ impl<Str: ToString + IsString> From<Str> for OptionValue {
 }
 
 macro_rules! match_unknown {
-    ($v:expr, $opt:ident) => {
+    ($k:expr, $v:expr, $opt:ident) => {
         match $v {
             Some(vi) => OptionValue::$opt(vi),
-            None => OptionValue::Unknown,
+            None => OptionValue::Unknown($k.to_string()),
         }
     };
 }
@@ -303,10 +354,10 @@ impl From<&OptionRaw> for OptionValue {
     fn from(raw: &OptionRaw) -> Self {
         match raw.value.iter().next() {
             Some((k, v)) => match k.as_str() {
-                "int" => match_unknown!(v.as_i64(), Int),
-                "float" => match_unknown!(v.as_f64(), Float),
-                "str" => match_unknown!(v.as_str().map(|v| v.to_string()), String),
-                "custom" => match_unknown!(v.as_str().and_then(|v| Custom::try_from(v).ok()), Custom),
+                "int" => match_unknown!(raw.json, v.as_i64(), Int),
+                "float" => match_unknown!(raw.json, v.as_f64(), Float),
+                "str" => match_unknown!(raw.json, v.as_str().map(|v| v.to_string()), String),
+                "custom" => match_unknown!(raw.json, v.as_str().and_then(|v| Custom::try_from(v).ok()), Custom),
                 "vec2" => {
                     if let Some(a) = v.as_array() {
                         if a.len() == 2 {
@@ -315,11 +366,11 @@ impl From<&OptionRaw> for OptionValue {
                             }
                         }
                     }
-                    OptionValue::Unknown
+                    OptionValue::Unknown(raw.json.to_string())
                 },
-                _ => OptionValue::Unknown,
+                _ => OptionValue::Unknown(raw.json.to_string()),
             },
-            None => OptionValue::Unknown,
+            None => OptionValue::Unknown(raw.json.to_string()),
         }
     }
 }
@@ -349,10 +400,9 @@ impl Keyword {
     ) -> crate::Result<()> {
 
         let value = value.into();
-        println!("value? {}", value);
 
         let value = match value {
-            OptionValue::Unknown => {
+            OptionValue::Unknown(_) => {
                 return Err(crate::HyprError::InvalidOptionValue);
             },
             x => x
@@ -402,7 +452,11 @@ impl Keyword {
     /// This function returns the value of a keyword
     pub fn instance_get<Str: ToString>(instance: &Instance, key: Str) -> crate::Result<Self> {
         let data = instance.write_to_socket(command!(JSON, "getoption {}", key.to_string()))?;
-        let deserialized: OptionRaw = serde_json::from_str(&data)?;
+        if data == "no such option" {
+            return Err(crate::error::HyprError::InvalidOptionKey(key.to_string()))
+        }
+        let mut deserialized: OptionRaw = serde_json::from_str(&data)?;
+        deserialized.json = data;
         let value = OptionValue::from(&deserialized);
 
         let keyword = Keyword {
@@ -428,7 +482,12 @@ impl Keyword {
         let data = instance
             .write_to_socket_async(command!(JSON, "getoption {}", key.to_string()))
             .await?;
-        let deserialized: OptionRaw = serde_json::from_str(&data)?;
+        if data == "no such option" {
+            return Err(crate::error::HyprError::InvalidOptionKey(key.to_string()))
+        }
+        let mut deserialized: OptionRaw = serde_json::from_str(&data)?;
+        deserialized.json = data;
+
         let value = OptionValue::from(&deserialized);
 
         let keyword = Keyword {
