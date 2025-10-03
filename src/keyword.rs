@@ -15,33 +15,259 @@
 //! ```
 
 use crate::default_instance;
-use crate::error::hypr_err;
 use crate::instance::Instance;
 use crate::shared::*;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
+/// A Color made up of rgba values (0-255)
+#[repr(packed)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct HyprColor {
+    /// Red Channel (0-255)
+    pub r: u8,
+    /// Green Channel (0-255)
+    pub g: u8,
+    /// Blue Channel (0-255)
+    pub b: u8,
+    /// Alpha (0-255)
+    pub a: u8,
+}
+
+impl std::fmt::Display for HyprColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("rgba({:02x}{:02x}{:02x}{:02x})",
+            self.r, self.g, self.b, self.a))
+    }
+}
+
+/// A Gradiant made up of HyprColor(s) and an angle
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct HyprGradient {
+    /// First gradiant color
+    pub color0: HyprColor,
+    /// Second gradiant color
+    pub color1: Option<HyprColor>,
+    /// Angle in degrees
+    pub angle: u32,
+}
+
+impl std::fmt::Display for HyprGradient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (color1,space) = match &self.color1 {
+            Some(s) => (s.to_string(), " "),
+            None => (String::from(""),""),
+        };
+        f.write_fmt(format_args!("({}{}{} {}deg)",
+            self.color0, color1, space, self.angle))
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Display)]
+/// A parseable value type for custom options
+pub enum Custom {
+    /// Color Variant for Custom field
+    HyprColor(HyprColor),
+    /// Gradiant Variant for Custom field
+    HyprGradient(HyprGradient),
+}
+
+impl HyprColor {
+    /// Convert an AARRGGBB u32 value to a HyprColor
+    pub fn from_argb_u32(i: u32) -> Self {
+        Self {
+            a: ( i  >> 24                )   as u8, // 0xFF000000
+            r: ((i  >> 16 )  & 0x00FF    )   as u8, // 0x00FF0000
+            g: ((i  >> 8  )  & 0x0000FF  )   as u8, // 0x0000FF00
+            b: ( i           & 0x000000FF)   as u8, // 0x000000FF
+        }
+    }
+
+    /// Try to convert from &str in the argb legacy format to HyprColor,
+    /// e.g. 0xeeb3ff1a
+    pub fn try_from_argb_str(s: &str) -> Option<Self> {
+        let s = s.trim().strip_prefix("0x").unwrap_or(s);
+        u32::from_str_radix(s, 16).ok().map(|i| Self::from_argb_u32(i))
+    }
+
+    /// Try to convert from &str in the rgba format to HyprColor,
+    /// e.g. rgba(b3ff1aee), or the decimal equivalent rgba(179,255,26,0.933)
+    pub fn try_from_rgba_str(s: &str) -> Option<Self> {
+        s.trim().strip_prefix("rgba(")?.strip_suffix(")")
+                .and_then( |s|
+                    match s.contains(",") {
+                        // b10 parse (e.g., "rgba(255, 0, 170, 0.5)")
+                        true => {
+                            let mut parts = s.split(",").enumerate().map(|(i, t)| {
+                                if i < 3 {
+                                    u8::from_str_radix(t.trim(), 10).ok()
+                                } else {
+                                    let f: f32 = t.trim().parse().ok()?;
+                                    Some((f.clamp(0.0, 1.0) * 255.0).round() as u8)
+                                }
+                            });
+
+                            let r = parts.next()?? as u32;
+                            let g = parts.next()?? as u32;
+                            let b = parts.next()?? as u32;
+                            let a = parts.next()?? as u32;
+                            if parts.next().is_some() { return None; }
+
+                            let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
+                            Some(Self::from_argb_u32(u))
+                        }
+                        // b16 parse (e.g., "rgba(FF00AA7F)")
+                        false => {
+                            let s = s.trim();
+                            if s.len() != 6 { return None; }
+                            let i = u32::from_str_radix(s, 16).ok()?;
+                            let a = (i & 0xFF) << 24;
+                            let i = (i >> 8) | a;
+                            Some(Self::from_argb_u32(i))
+                        }
+                    })
+    }
+
+    /// Try to convert from &str in the rgb format to HyprColor,
+    /// e.g. rgb(b3ff1a), or the decimal equivalent rgb(179,255,26)
+    pub fn try_from_rgb_str(s: &str) -> Option<Self> {
+        s.trim().strip_prefix("rgb(")?.strip_suffix(")")
+                .and_then( |s|
+                    match s.contains(",") {
+                        // b10 parse (e.g., "rgb(255, 0, 170)")
+                        true => {
+                            let mut parts = s.split(",").map(|t| {
+                                    u8::from_str_radix(t.trim(), 10).ok()
+                            });
+                            let r = parts.next()?? as u32;
+                            let g = parts.next()?? as u32;
+                            let b = parts.next()?? as u32;
+                            if parts.next().is_some() { return None; }
+                            let a = 0xFFu32;
+
+                            let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
+                            Some(Self::from_argb_u32(u))
+                        }
+                        // b16 parse (e.g., "rgb(ff00aa)")
+                        false => {
+                            let s = s.trim();
+                            if s.len() != 6 { return None; }
+                            let i = u32::from_str_radix(s, 16).ok()?;
+                            let a = 0xFF000000;
+                            let i = i | a;
+                            Some(Self::from_argb_u32(i))
+                        }
+                    })
+    }
+}
+
+impl TryFrom<&str> for HyprColor {
+    type Error = crate::HyprError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let s = s.trim().to_lowercase();
+        if s.starts_with("rgba") {
+            Self::try_from_rgba_str(&s).ok_or(crate::HyprError::InvalidHyprColorFormat)
+        } else if s.starts_with("rgb") {
+            Self::try_from_rgb_str(&s).ok_or(crate::HyprError::InvalidHyprColorFormat)
+        } else {
+            Self::try_from_argb_str(&s).ok_or(crate::HyprError::InvalidHyprColorFormat)
+        }
+    }
+}
+
+impl TryFrom<&str> for HyprGradient {
+    type Error = crate::HyprError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let mut a = None;
+        let s = s.trim().replace(", ", ",");
+        let mut s = s.split(" ");
+        let color0 = HyprColor::try_from(s.next().ok_or(crate::HyprError::InvalidHyprGradiantFormat)?)?;
+        let mut color1 = None;
+        let c1_angle = s.next().ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+        if c1_angle.contains("deg") {
+            let tmp = c1_angle.strip_suffix("deg").ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+            a = Some(u32::from_str_radix(tmp, 10).map_err(|_| crate::HyprError::InvalidHyprGradiantFormat)?);
+        } else {
+            color1 = Some(HyprColor::try_from(c1_angle)?)
+        }
+
+        let angle = match a {
+            Some(a) => a,
+            None => {
+                let c1_angle = s.next().ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+                let tmp = c1_angle.strip_suffix("deg").ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+                match u32::from_str_radix(tmp, 10) {
+                    Ok(i) => i,
+                    Err(_) => return Err(crate::HyprError::InvalidHyprGradiantFormat),
+                }
+            },
+        };
+
+        if s.next().is_some() { return Err(crate::HyprError::InvalidHyprGradiantFormat); }
+
+
+        Ok(HyprGradient{
+            color0,
+            color1,
+            angle,
+        })
+    }
+}
+
+impl TryFrom<&str> for Custom {
+    type Error = crate::HyprError;
+
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        let c = s.trim().replace(", ", ",");
+        let c = c.split(" ");
+        if c.count() > 1 {
+            Ok(Self::HyprGradient(HyprGradient::try_from(s)?))
+        } else {
+            Ok(Self::HyprColor(HyprColor::try_from(s)?))
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub(crate) struct OptionRaw {
     pub option: String,
-    pub int: Option<i64>,
-    pub float: Option<f64>,
-    pub str: Option<String>,
     pub set: bool,
+
+    #[serde(flatten)]
+    pub value: std::collections::HashMap<String, serde_json::Value>,
 }
 
 /// This enum holds the possible values of a keyword/option
-#[derive(Serialize, Deserialize, Debug, Clone, Display)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum OptionValue {
     /// A integer (64-bit)
-    #[display("{_0}")]
     Int(i64),
     /// A floating point (64-point)
-    #[display("{_0}")]
     Float(f64),
     /// A string
-    #[display("{_0}")]
     String(String),
+    /// A hyprland Color or Gradiant
+    Custom(Custom),
+    /// A Vector of 2 ints
+    Vec2([i64; 2]),
+    /// Could not parse value
+    Unknown,
+}
+
+impl std::fmt::Display for OptionValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            OptionValue::Int(i) => f.write_fmt(format_args!("{:0}", i)),
+            OptionValue::Float(fl) => f.write_fmt(format_args!("{:0}", fl)),
+            OptionValue::String(s) => f.write_fmt(format_args!("{}", s)),
+            OptionValue::Custom(custom) => f.write_fmt(format_args!("{}", custom)),
+            OptionValue::Vec2(v) => f.write_fmt(format_args!("{} {}", v[0], v[1])),
+            OptionValue::Unknown => f.write_str("(unknown value type)"),
+        }
+    }
 }
 
 impl From<OptionValue> for String {
@@ -56,37 +282,47 @@ impl IsString for &str {}
 
 impl<Str: ToString + IsString> From<Str> for OptionValue {
     fn from(str: Str) -> Self {
-        OptionValue::String(str.to_string())
+        if let Ok(c) = Custom::try_from(str.to_string().as_str()) {
+            OptionValue::Custom(c)
+        } else {
+            OptionValue::String(str.to_string())
+        }
     }
 }
 
-macro_rules! ints_to_opt {
-    ($($ty:ty), *) => {
-        $(
-            impl From<$ty> for OptionValue {
-                fn from(num: $ty) -> Self {
-                    OptionValue::Int(num as i64)
-                }
-            }
-        )*
+macro_rules! match_unknown {
+    ($v:expr, $opt:ident) => {
+        match $v {
+            Some(vi) => OptionValue::$opt(vi),
+            None => OptionValue::Unknown,
+        }
     };
 }
 
-ints_to_opt!(u8, i8, u16, i16, u32, i32, u64, i64);
-
-macro_rules! floats_to_opt {
-    ($($ty:ty),*) => {
-        $(
-            impl From<$ty> for OptionValue {
-                fn from(num: $ty) -> Self {
-                    OptionValue::Float(num as f64)
-                }
-            }
-        )*
-    };
+impl From<&OptionRaw> for OptionValue {
+    fn from(raw: &OptionRaw) -> Self {
+        match raw.value.iter().next() {
+            Some((k, v)) => match k.as_str() {
+                "int" => match_unknown!(v.as_i64(), Int),
+                "float" => match_unknown!(v.as_f64(), Float),
+                "str" => match_unknown!(v.as_str().map(|v| v.to_string()), String),
+                "custom" => match_unknown!(v.as_str().and_then(|v| Custom::try_from(v).ok()), Custom),
+                "vec2" => {
+                    if let Some(a) = v.as_array() {
+                        if a.len() == 2 {
+                            if a[0].is_i64() && a[1].is_i64() {
+                                return OptionValue::Vec2([a[0].as_i64().unwrap(), a[1].as_i64().unwrap()])
+                            }
+                        }
+                    }
+                    OptionValue::Unknown
+                },
+                _ => OptionValue::Unknown,
+            },
+            None => OptionValue::Unknown,
+        }
+    }
 }
-
-floats_to_opt!(f32, f64);
 
 /// This struct holds a keyword
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -100,34 +336,6 @@ pub struct Keyword {
 }
 
 impl Keyword {
-    fn parse_opts(
-        OptionRaw {
-            option,
-            int,
-            float,
-            str,
-            set,
-        }: OptionRaw,
-    ) -> crate::Result<Keyword> {
-        let int_exists = int.is_some() as u8;
-        let float_exists = float.is_some() as u8;
-        let str_exists = str.is_some() as u8;
-
-        // EXPLANATION: if at least two types of value is exists then we stop execution.
-        if int_exists + float_exists + str_exists > 1 {
-            hypr_err!("Expected single value type, but received more than one! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!");
-        }
-
-        let value = match (int, float, str) {
-            (Some(int), _, _) => OptionValue::Int(int),
-            (_, Some(float), _) => OptionValue::Float(float),
-            (_, _, Some(str)) => OptionValue::String(str),
-            (int, float, str) => hypr_err!("Expected either an 'int', a 'float' or a 'str', but none of them is not received! Please open an issue with hyprland-rs with the information: Option {{ option: {option}, int: {int:?}, float: {float:?}, str: {str:?}, set: {set} }}!"),
-        };
-
-        Ok(Keyword { option, value, set })
-    }
-
     /// This function sets a keyword's value
     pub fn set<Str: ToString, Opt: Into<OptionValue>>(key: Str, value: Opt) -> crate::Result<()> {
         Self::instance_set(default_instance()?, key, value)
@@ -139,11 +347,22 @@ impl Keyword {
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
+
+        let value = value.into();
+        println!("value? {}", value);
+
+        let value = match value {
+            OptionValue::Unknown => {
+                return Err(crate::HyprError::InvalidOptionValue);
+            },
+            x => x
+        };
+
         instance.write_to_socket(command!(
             Empty,
             "keyword {} {}",
             key.to_string(),
-            value.into().to_string()
+            value.to_string()
         ))?;
         Ok(())
     }
@@ -184,7 +403,13 @@ impl Keyword {
     pub fn instance_get<Str: ToString>(instance: &Instance, key: Str) -> crate::Result<Self> {
         let data = instance.write_to_socket(command!(JSON, "getoption {}", key.to_string()))?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let keyword = Keyword::parse_opts(deserialized)?;
+        let value = OptionValue::from(&deserialized);
+
+        let keyword = Keyword {
+            option: deserialized.option,
+            value,
+            set: deserialized.set,
+        };
         Ok(keyword)
     }
 
@@ -204,7 +429,13 @@ impl Keyword {
             .write_to_socket_async(command!(JSON, "getoption {}", key.to_string()))
             .await?;
         let deserialized: OptionRaw = serde_json::from_str(&data)?;
-        let keyword = Keyword::parse_opts(deserialized)?;
+        let value = OptionValue::from(&deserialized);
+
+        let keyword = Keyword {
+            option: deserialized.option,
+            value,
+            set: deserialized.set,
+        };
         Ok(keyword)
     }
 }
