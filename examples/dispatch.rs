@@ -53,17 +53,17 @@ fn main() -> hyprland::Result<()> {
     Dispatch::call(ToggleFloating(None))?;
 
     describe("Toggling split layout");
-    Dispatch::call(ToggleSplit)?;
+    dispatch!(ToggleSplit)?;
     describe("Reverting split layout");
     Dispatch::call(ToggleSplit)?;
 
     describe("Toggling opaque");
-    Dispatch::call(ToggleOpaque)?;
+    dispatch!(ToggleOpaque)?;
     describe("Reverting opaque");
     Dispatch::call(ToggleOpaque)?;
 
     describe("Closing window");
-    Dispatch::call(KillActiveWindow)?;
+    dispatch!(KillActiveWindow)?;
 
     Ok(())
 }
