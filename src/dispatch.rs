@@ -33,9 +33,21 @@ pub enum WindowIdentifier<'a> {
     /// The window title
     #[display("title:{_0}")]
     Title(&'a str),
+    /// A window tag regex
+    #[display("tag:{_0}")]
+    Tag(&'a str),
     /// The window's process Id
     #[display("pid:{_0}")]
     ProcessId(u32),
+    /// The active window
+    #[display("activewindow")]
+    ActiveWindow,
+    /// The first floating window
+    #[display("floating")]
+    Floating,
+    /// The first tiled window
+    #[display("tiled")]
+    Tiled,
 }
 
 /// This enum holds the fullscreen types
@@ -67,22 +79,20 @@ pub enum Direction {
 }
 
 /// This enum is used for resizing and moving windows precisely
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum Position {
-    /// A delta
+    /// A delta in pixels
+    #[display("{_0} {_0}")]
     Delta(i16, i16),
-    /// The exact size
+    /// The exact size in pixels
+    #[display("exact {_0} {_0}")]
     Exact(i16, i16),
-}
-
-impl std::fmt::Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let out = match self {
-            Position::Delta(x, y) => format!("{x} {y}"),
-            Position::Exact(w, h) => format!("exact {w} {h}"),
-        };
-        write!(f, "{out}")
-    }
+    /// A delta in window fraction
+    #[display("{_0}% {_0}%")]
+    DeltaFraction(i16, i16),
+    /// The exact size in screen fraction
+    #[display("exact {_0}% {_0}%")]
+    ExactFraction(i16, i16),
 }
 
 /// This enum holds a direction for cycling
@@ -736,6 +746,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         MoveOutOfGroup => "moveoutofgroup".to_string(),
     };
 
+    println!("{string_to_pass}");
     if let SetCursor(_, _) = cmd {
         Ok(command!(JSON, "setcursor {string_to_pass}"))
     } else if dispatch {
