@@ -279,6 +279,18 @@ pub enum WindowMove<'a> {
     Direction(Direction),
 }
 
+/// This enum hold the actions that can be applied to a tag
+#[derive(Debug, Clone, Display)]
+#[allow(missing_docs)]
+pub enum TagAction {
+    #[display("+")]
+    Add,
+    #[display("-")]
+    Remove,
+    #[display("")]
+    Toggle,
+}
+
 /// This enum holds the signals
 #[derive(Debug, Clone, Copy)]
 pub enum SignalType {
@@ -444,6 +456,8 @@ pub enum DispatchType<'a> {
     SwapNext(CycleDirection),
     /// This dispatcher swaps windows using a specified direction
     SwapWindow(Direction),
+    /// Apply tag to current or the first window matching
+    TagWindow(TagAction, &'a str, Option<WindowIdentifier<'a>>),
     /// This dispatcher focuses a specified window
     FocusWindow(WindowIdentifier<'a>),
     /// This dispatcher focuses a specified monitor
@@ -681,6 +695,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
         SwapNext(dir) => format!("swapnext{sep}{dir}"),
         SwapWindow(dir) => format!("swapwindow{sep}{dir}"),
+        TagWindow(act, tag, Some(win)) => format!("tagwindow{sep}{act}{tag} {win}"),
+        TagWindow(act, tag, None) => format!("tagwindow{sep}{act}{tag}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
         FocusMonitor(mon) => format!("focusmonitor{sep}{mon}"),
         ChangeSplitRatio(fv) => format!("splitratio {fv}"),
