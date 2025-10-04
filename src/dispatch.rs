@@ -52,7 +52,7 @@ pub enum FullscreenType {
     NoParam,
 }
 
-/// This enum is the params to [DispatchType::ToggleFullscreenState] dispatcher
+/// This enum holds the params to the [DispatchType::ToggleFullscreenState] dispatcher
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy)]
 pub enum FullscreenState {
