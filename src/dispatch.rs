@@ -415,7 +415,7 @@ pub enum ZOrder {
     Bottom,
 }
 
-/// This enum is the params to [DispatchType::Submap] dispatcher
+/// This enum holds the params to the [DispatchType::Submap] dispatcher
 #[derive(Debug, Clone, Copy, Display)]
 pub enum SubmapParam<'a> {
     /// Go back to global submap
