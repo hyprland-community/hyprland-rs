@@ -279,7 +279,7 @@ pub enum WindowMove<'a> {
     Direction(Direction),
 }
 
-/// This enum hold the actions that can be applied to a tag
+/// This enum holds the actions that can be applied to a tag
 #[derive(Debug, Clone, Display)]
 #[allow(missing_docs)]
 pub enum TagAction {
