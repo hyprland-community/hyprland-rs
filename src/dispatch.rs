@@ -103,6 +103,8 @@ pub enum WindowSwitchDirection {
     Back,
     #[display("f")]
     Forward,
+    #[display("{}", _0)]
+    Index(i32),
 }
 
 /// This enum is used for identifying monitors
@@ -560,10 +562,32 @@ pub enum DispatchType<'a> {
     ChangeGroupActive(WindowSwitchDirection),
     /// Locks the groups
     LockGroups(LockType),
+    /// Locks the currently focused group
+    LockActiveGroup(LockType),
     /// Moves the active window into a group in a specified direction
     MoveIntoGroup(Direction),
+    /// Moves the active window into or out of a group in a specified direction
+    MoveWindowOrGroup(Direction),
     /// Moves the active window out of a group.
     MoveOutOfGroup,
+    /// Swaps the active window with the next or previous in a group
+    MoveGroupWindow(WindowSwitchDirection),
+    /// Prohibit the active window from becoming or being inserted into group
+    DenyWindowFromGroup(BinaryState),
+    /// Temporarily enable or disable ignore_group_lock
+    SetIgnoreGroupLock(BinaryState),
+}
+
+/// Enum used for options with a binary on/off state
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Copy, Display, PartialEq, Eq, PartialOrd, Ord)]
+pub enum BinaryState {
+    #[display("on")]
+    On,
+    #[display("off")]
+    Off,
+    #[display("toggle")]
+    Toggle,
 }
 
 /// Enum used with [DispatchType::LockGroups], to determine how to lock/unlock
@@ -753,8 +777,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ToggleGroup => "togglegroup".to_string(),
         ChangeGroupActive(dir) => format!("changegroupactive{sep}{dir}"),
         LockGroups(how) => format!("lockgroups{sep}{how}"),
+        LockActiveGroup(how) => format!("lockactivegroups{sep}{how}"),
         MoveIntoGroup(dir) => format!("moveintogroup{sep}{dir}"),
+        MoveWindowOrGroup(dir) => format!("movewindoworgroup{sep}{dir}"),
         MoveOutOfGroup => "moveoutofgroup".to_string(),
+        MoveGroupWindow(dir) => format!("movegroupwindow{sep}{dir}"),
+        DenyWindowFromGroup(state) => format!("denywindowfromgroup{sep}{state}"),
+        SetIgnoreGroupLock(state) => format!("setignoregrouplock{sep}{state}"),
     };
 
     if let SetCursor(_, _) = cmd {
