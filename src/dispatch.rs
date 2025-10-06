@@ -65,7 +65,7 @@ pub enum FullscreenState {
 
 impl std::fmt::Display for FullscreenState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", *self as u8)
+        write!(f, "{}", *self as i8)
     }
 }
 
