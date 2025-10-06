@@ -115,6 +115,7 @@ impl Instance {
         use crate::async_import::{AsyncReadExt, AsyncWriteExt};
         let mut stream = crate::async_import::UnixStream::connect(&self.hyprpaper_stream).await?;
         stream.write_all(content.data.as_bytes()).await?;
+
         let mut response = Vec::new();
         const BUFFER_SIZE: usize = 4096;
         let mut buf = [0u8; BUFFER_SIZE];
@@ -125,7 +126,6 @@ impl Instance {
                 break;
             }
         }
-
         Ok(String::from_utf8(response)?)
     }
 
