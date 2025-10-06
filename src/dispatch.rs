@@ -352,6 +352,17 @@ impl std::fmt::Display for SignalType {
     }
 }
 
+#[derive(Debug, Clone, Copy, Display)]
+/// This enum holds the params to the [DispatchType::MoveToRoot] dispatcher
+pub enum MoveToRootParam {
+    /// Maximize the window in its current subtree
+    #[display("")]
+    Stable,
+    /// Swap the window with the other subtree
+    #[display("unstable")]
+    Unstable,
+}
+
 /// This enum holds the zheight variants
 #[derive(Debug, Clone, Copy, Display)]
 pub enum ZOrder {
@@ -484,8 +495,14 @@ pub enum DispatchType<'a> {
 
     // LAYOUT DISPATCHERS
     // DWINDLE
-    /// Toggles the split (top/side) of the current window. `preserve_split` must be enabled for toggling to work.
+    /// Toggles the split (top/side) of the current window. `preserve_split` must be enabled for toggling to work
     ToggleSplit,
+    /// Swaps the two halves of the split of the current window
+    SwapSplit,
+    /// One-time override for the split direction (only works on tiled windows)
+    PreSelect(Direction),
+    /// Moves the selected window (active window if unspecified) to the root of its workspace tree
+    MoveToRoot(Option<WindowIdentifier<'a>>, MoveToRootParam),
 
     // MASTER
     /// Swaps the current window with master.
@@ -709,7 +726,11 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         SignalWindow(win, sig) => format!("signalwindow{sep}{win},{sig}"),
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
         FocusCurrentOrLast => "focuscurrentorlast".to_string(),
-        ToggleSplit => "togglesplit".to_string(),
+        ToggleSplit => format!("layoutmsg{sep}togglesplit"),
+        SwapSplit => format!("layoutmsg{sep}swapsplit"),
+        PreSelect(dir) => format!("layoutmsg{sep}preselect {dir}"),
+        MoveToRoot(Some(win), param) => format!("layoutmsg{sep}movetoroot {win} {param}"),
+        MoveToRoot(None, _) => format!("layoutmsg{sep}movetoroot"),
         SwapWithMaster(param) => format!("layoutmsg{sep}swapwithmaster {param}"),
         FocusMaster(param) => format!("layoutmsg{sep}focusmaster {param}"),
         CycleNextMaster(param) => format!("layoutmsg{sep}cyclenext {param}"),
