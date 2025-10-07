@@ -93,8 +93,17 @@ impl Instance {
         use std::io::{Read, Write};
         let mut stream = std::os::unix::net::UnixStream::connect(&self.hyprpaper_stream)?;
         stream.write_all(content.data.as_bytes())?;
+
         let mut response = Vec::new();
-        stream.read_to_end(&mut response)?;
+        const BUFFER_SIZE: usize = 4096;
+        let mut buf = [0u8; BUFFER_SIZE];
+        loop {
+            let n = stream.read(&mut buf[..])?;
+            response.extend_from_slice(&buf[..n]);
+            if n < BUFFER_SIZE {
+                break;
+            }
+        }
         Ok(String::from_utf8(response)?)
     }
 
@@ -106,8 +115,17 @@ impl Instance {
         use crate::async_import::{AsyncReadExt, AsyncWriteExt};
         let mut stream = crate::async_import::UnixStream::connect(&self.hyprpaper_stream).await?;
         stream.write_all(content.data.as_bytes()).await?;
+
         let mut response = Vec::new();
-        stream.read_to_end(&mut response).await?;
+        const BUFFER_SIZE: usize = 4096;
+        let mut buf = [0u8; BUFFER_SIZE];
+        loop {
+            let n = stream.read(&mut buf[..]).await?;
+            response.extend_from_slice(&buf[..n]);
+            if n < BUFFER_SIZE {
+                break;
+            }
+        }
         Ok(String::from_utf8(response)?)
     }
 
