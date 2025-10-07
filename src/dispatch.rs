@@ -64,6 +64,23 @@ pub enum FullscreenType {
     NoParam,
 }
 
+/// This enum holds the params to the [DispatchType::ToggleFullscreenState] dispatcher
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Copy)]
+pub enum FullscreenState {
+    Current = -1,
+    None = 0,
+    Maximize = 1,
+    Fullscreen = 2,
+    MaximizeFullscreen = 3,
+}
+
+impl std::fmt::Display for FullscreenState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", *self as i8)
+    }
+}
+
 /// This enum holds directions, typically used for moving
 #[derive(Debug, Clone, Display)]
 #[allow(missing_docs)]
@@ -432,6 +449,8 @@ pub enum DispatchType<'a> {
     ToggleFloating(Option<WindowIdentifier<'a>>),
     /// This dispatcher toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
+    /// This dispatcher sets the focused window’s fullscreen mode and the one sent to the client
+    ToggleFullscreenState(FullscreenState, FullscreenState),
     /// This dispatcher toggles the focused window’s internal
     /// fullscreen state without altering the geometry
     ToggleFakeFullscreen,
@@ -705,6 +724,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ToggleFloating(Some(v)) => format!("togglefloating{sep}{v}"),
         ToggleFloating(None) => "togglefloating".to_string(),
         ToggleFullscreen(ftype) => format!("fullscreen{sep}{ftype}"),
+        ToggleFullscreenState(int, cl) => format!("fullscreenstate{sep}{int} {cl}"),
         ToggleFakeFullscreen => "fakefullscreen".to_string(),
         ToggleDPMS(stat, mon) => {
             format!(
