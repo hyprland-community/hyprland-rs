@@ -493,6 +493,8 @@ pub struct Bind {
     pub dispatcher: String,
     /// The dispatcher arg
     pub arg: String,
+    /// description from bind[d]
+    pub description: String,
 }
 
 create_data_struct!(
