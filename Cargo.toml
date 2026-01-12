@@ -1,6 +1,6 @@
 [package]
 name = "hyprland"
-edition = "2021"
+edition = "2024"
 readme = "README.md"
 description = "A unoffical rust wrapper for hyprland's IPC"
 homepage = "https://github.com/hyprland-community/hyprland-rs"
@@ -10,7 +10,7 @@ authors.workspace = true
 repository.workspace = true
 keywords.workspace = true
 categories.workspace = true
-rust-version = "1.75.0"
+rust-version = "1.85.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.nix]
@@ -87,4 +87,3 @@ unsafe-impl = []
 
 tokio = ["dep:tokio"]
 async-lite = ["dep:async-net"]
-

@@ -145,7 +145,7 @@ impl ActiveWindowState {
     pub fn execute<T: HasExecutor>(&mut self, listener: &mut T) -> crate::Result<()> {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
-        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+        if let (Queued(title), Queued(class), Queued(addr)) = data {
             listener.event_executor(Event::ActiveWindowChanged(Some(WindowEventData {
                 class: class.to_string(),
                 title: title.to_string(),
@@ -161,7 +161,7 @@ impl ActiveWindowState {
         use ActiveWindowValue::{None, Queued};
         let data = (&self.title, &self.class, &self.addr);
         let mut event = Option::None;
-        if let (Queued(ref title), Queued(ref class), Queued(ref addr)) = data {
+        if let (Queued(title), Queued(class), Queued(addr)) = data {
             event = Some(Event::ActiveWindowChanged(Some(WindowEventData {
                 class: class.to_string(),
                 title: title.to_string(),
