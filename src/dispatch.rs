@@ -33,9 +33,21 @@ pub enum WindowIdentifier<'a> {
     /// The window title
     #[display("title:{_0}")]
     Title(&'a str),
+    /// A window tag regex
+    #[display("tag:{_0}")]
+    Tag(&'a str),
     /// The window's process Id
     #[display("pid:{_0}")]
     ProcessId(u32),
+    /// The active window
+    #[display("activewindow")]
+    ActiveWindow,
+    /// The first floating window
+    #[display("floating")]
+    Floating,
+    /// The first tiled window
+    #[display("tiled")]
+    Tiled,
 }
 
 /// This enum holds the fullscreen types
@@ -50,6 +62,23 @@ pub enum FullscreenType {
     /// Passes no param
     #[display("")]
     NoParam,
+}
+
+/// This enum holds the params to the [DispatchType::ToggleFullscreenState] dispatcher
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Copy)]
+pub enum FullscreenState {
+    Current = -1,
+    None = 0,
+    Maximize = 1,
+    Fullscreen = 2,
+    MaximizeFullscreen = 3,
+}
+
+impl std::fmt::Display for FullscreenState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", *self as i8)
+    }
 }
 
 /// This enum holds directions, typically used for moving
@@ -67,22 +96,20 @@ pub enum Direction {
 }
 
 /// This enum is used for resizing and moving windows precisely
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Display)]
 pub enum Position {
-    /// A delta
+    /// A delta in pixels
+    #[display("{_0} {_0}")]
     Delta(i16, i16),
-    /// The exact size
+    /// The exact size in pixels
+    #[display("exact {_0} {_0}")]
     Exact(i16, i16),
-}
-
-impl std::fmt::Display for Position {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let out = match self {
-            Position::Delta(x, y) => format!("{x} {y}"),
-            Position::Exact(w, h) => format!("exact {w} {h}"),
-        };
-        write!(f, "{out}")
-    }
+    /// A delta in window fraction
+    #[display("{_0}% {_0}%")]
+    DeltaFraction(i16, i16),
+    /// The exact size in screen fraction
+    #[display("exact {_0}% {_0}%")]
+    ExactFraction(i16, i16),
 }
 
 /// This enum holds a direction for cycling
@@ -103,6 +130,8 @@ pub enum WindowSwitchDirection {
     Back,
     #[display("f")]
     Forward,
+    #[display("{}", _0)]
+    Index(i32),
 }
 
 /// This enum is used for identifying monitors
@@ -279,6 +308,18 @@ pub enum WindowMove<'a> {
     Direction(Direction),
 }
 
+/// This enum holds the actions that can be applied to a tag
+#[derive(Debug, Clone, Display)]
+#[allow(missing_docs)]
+pub enum TagAction {
+    #[display("+")]
+    Add,
+    #[display("-")]
+    Remove,
+    #[display("")]
+    Toggle,
+}
+
 /// This enum holds the signals
 #[derive(Debug, Clone, Copy)]
 pub enum SignalType {
@@ -352,6 +393,17 @@ impl std::fmt::Display for SignalType {
     }
 }
 
+#[derive(Debug, Clone, Copy, Display)]
+/// This enum holds the params to the [DispatchType::MoveToRoot] dispatcher
+pub enum MoveToRootParam {
+    /// Maximize the window in its current subtree
+    #[display("")]
+    Stable,
+    /// Swap the window with the other subtree
+    #[display("unstable")]
+    Unstable,
+}
+
 /// This enum holds the zheight variants
 #[derive(Debug, Clone, Copy, Display)]
 pub enum ZOrder {
@@ -417,6 +469,8 @@ pub enum DispatchType<'a> {
     SetTiled(Option<WindowIdentifier<'a>>),
     /// This dispatcher toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
+    /// This dispatcher sets the focused window’s fullscreen mode and the one sent to the client
+    ToggleFullscreenState(FullscreenState, FullscreenState),
     /// This dispatcher toggles the focused window’s internal
     /// fullscreen state without altering the geometry
     ToggleFakeFullscreen,
@@ -452,6 +506,8 @@ pub enum DispatchType<'a> {
     SwapNext(CycleDirection),
     /// This dispatcher swaps windows using a specified direction
     SwapWindow(Direction),
+    /// Apply tag to current or the first window matching
+    TagWindow(TagAction, &'a str, Option<WindowIdentifier<'a>>),
     /// This dispatcher focuses a specified window
     FocusWindow(WindowIdentifier<'a>),
     /// This dispatcher focuses a specified monitor
@@ -494,8 +550,14 @@ pub enum DispatchType<'a> {
 
     // LAYOUT DISPATCHERS
     // DWINDLE
-    /// Toggles the split (top/side) of the current window. `preserve_split` must be enabled for toggling to work.
+    /// Toggles the split (top/side) of the current window. `preserve_split` must be enabled for toggling to work
     ToggleSplit,
+    /// Swaps the two halves of the split of the current window
+    SwapSplit,
+    /// One-time override for the split direction (only works on tiled windows)
+    PreSelect(Direction),
+    /// Moves the selected window (active window if unspecified) to the root of its workspace tree
+    MoveToRoot(Option<WindowIdentifier<'a>>, MoveToRootParam),
 
     // MASTER
     /// Swaps the current window with master.
@@ -553,10 +615,32 @@ pub enum DispatchType<'a> {
     ChangeGroupActive(WindowSwitchDirection),
     /// Locks the groups
     LockGroups(LockType),
+    /// Locks the currently focused group
+    LockActiveGroup(LockType),
     /// Moves the active window into a group in a specified direction
     MoveIntoGroup(Direction),
+    /// Moves the active window into or out of a group in a specified direction
+    MoveWindowOrGroup(Direction),
     /// Moves the active window out of a group.
     MoveOutOfGroup,
+    /// Swaps the active window with the next or previous in a group
+    MoveGroupWindow(WindowSwitchDirection),
+    /// Prohibit the active window from becoming or being inserted into group
+    DenyWindowFromGroup(BinaryState),
+    /// Temporarily enable or disable ignore_group_lock
+    SetIgnoreGroupLock(BinaryState),
+}
+
+/// Enum used for options with a binary on/off state
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Copy, Display, PartialEq, Eq, PartialOrd, Ord)]
+pub enum BinaryState {
+    #[display("on")]
+    On,
+    #[display("off")]
+    Off,
+    #[display("toggle")]
+    Toggle,
 }
 
 /// Enum used with [DispatchType::LockGroups], to determine how to lock/unlock
@@ -670,6 +754,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         SetTiled(Some(v)) => format!("settiled{sep}{v}"),
         SetTiled(None) => "settiled".to_string(),
         ToggleFullscreen(ftype) => format!("fullscreen{sep}{ftype}"),
+        ToggleFullscreenState(int, cl) => format!("fullscreenstate{sep}{int} {cl}"),
         ToggleFakeFullscreen => "fakefullscreen".to_string(),
         ToggleDPMS(stat, mon) => {
             format!(
@@ -697,6 +782,8 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
         SwapNext(dir) => format!("swapnext{sep}{dir}"),
         SwapWindow(dir) => format!("swapwindow{sep}{dir}"),
+        TagWindow(act, tag, Some(win)) => format!("tagwindow{sep}{act}{tag} {win}"),
+        TagWindow(act, tag, None) => format!("tagwindow{sep}{act}{tag}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
         FocusMonitor(mon) => format!("focusmonitor{sep}{mon}"),
         ChangeSplitRatio(fv) => format!("splitratio {fv}"),
@@ -726,7 +813,11 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         FocusUrgentOrLast => "focusurgentorlast".to_string(),
         FocusCurrentOrLast => "focuscurrentorlast".to_string(),
         ToggleSwallow => "toggleswallow".to_string(),
-        ToggleSplit => "togglesplit".to_string(),
+        ToggleSplit => format!("layoutmsg{sep}togglesplit"),
+        SwapSplit => format!("layoutmsg{sep}swapsplit"),
+        PreSelect(dir) => format!("layoutmsg{sep}preselect {dir}"),
+        MoveToRoot(Some(win), param) => format!("layoutmsg{sep}movetoroot {win} {param}"),
+        MoveToRoot(None, _) => format!("layoutmsg{sep}movetoroot"),
         SwapWithMaster(param) => format!("layoutmsg{sep}swapwithmaster {param}"),
         FocusMaster(param) => format!("layoutmsg{sep}focusmaster {param}"),
         CycleNextMaster(param) => format!("layoutmsg{sep}cyclenext {param}"),
@@ -749,8 +840,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ToggleGroup => "togglegroup".to_string(),
         ChangeGroupActive(dir) => format!("changegroupactive{sep}{dir}"),
         LockGroups(how) => format!("lockgroups{sep}{how}"),
+        LockActiveGroup(how) => format!("lockactivegroups{sep}{how}"),
         MoveIntoGroup(dir) => format!("moveintogroup{sep}{dir}"),
+        MoveWindowOrGroup(dir) => format!("movewindoworgroup{sep}{dir}"),
         MoveOutOfGroup => "moveoutofgroup".to_string(),
+        MoveGroupWindow(dir) => format!("movegroupwindow{sep}{dir}"),
+        DenyWindowFromGroup(state) => format!("denywindowfromgroup{sep}{state}"),
+        SetIgnoreGroupLock(state) => format!("setignoregrouplock{sep}{state}"),
     };
 
     if let SetCursor(_, _) = cmd {
@@ -852,16 +948,28 @@ impl Dispatch {
 /// Macro abstraction over [Dispatch::call]
 #[macro_export]
 macro_rules! dispatch {
-    (async; $instance:expr, $dis:ident, $( $arg:expr ), *) => {
-        $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+    (async; $dis:ident) => {
+        $crate::dispatch::Dispatch::call_async($crate::dispatch::DispatchType::$dis)
     };
     (async; $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::call_async($crate::dispatch::DispatchType::$dis($($arg), *))
     };
-    ($instance:expr, $dis:ident, $( $arg:expr ), *) => {
-        $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+    (async; $instance:expr; $dis:ident) => {
+        $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis)
+    };
+    (async; $instance:expr; $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::instance_call_async($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
+    };
+    ($dis:ident) => {
+        $crate::dispatch::Dispatch::call($crate::dispatch::DispatchType::$dis)
     };
     ($dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::call($crate::dispatch::DispatchType::$dis($($arg), *))
+    };
+    ($instance:expr; $dis:ident) => {
+        $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis)
+    };
+    ($instance:expr; $dis:ident, $( $arg:expr ), *) => {
+        $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
 }

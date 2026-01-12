@@ -107,6 +107,12 @@ pub struct Monitor {
     pub vrr: bool,
     /// Is the monitor disabled or not
     pub disabled: bool,
+    /// The physical width of the monitor in mm
+    #[serde(rename = "physicalWidth", default)]
+    pub physical_width: u16,
+    /// The physical size of the monitor in mm
+    #[serde(rename = "physicalHeight", default)]
+    pub physical_height: u16,
 }
 
 impl HyprDataActive for Monitor {
@@ -493,6 +499,8 @@ pub struct Bind {
     pub dispatcher: String,
     /// The dispatcher arg
     pub arg: String,
+    /// description from bind[d]
+    pub description: String,
 }
 
 create_data_struct!(
