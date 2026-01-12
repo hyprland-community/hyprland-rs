@@ -14,14 +14,14 @@
 //! }
 //! ```
 
-use crate::default_instance;
 use crate::instance::Instance;
 use crate::shared::*;
+use crate::{default_instance, error::HyprError};
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 /// A Color made up of rgba values (0-255)
-#[repr(packed)]
+#[repr(Rust, packed)]
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct HyprColor {
     /// Red Channel (0-255)
@@ -36,8 +36,10 @@ pub struct HyprColor {
 
 impl std::fmt::Display for HyprColor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("rgba({:02x}{:02x}{:02x}{:02x})",
-            self.r, self.g, self.b, self.a))
+        f.write_fmt(format_args!(
+            "rgba({:02x}{:02x}{:02x}{:02x})",
+            self.r, self.g, self.b, self.a
+        ))
     }
 }
 
@@ -54,12 +56,14 @@ pub struct HyprGradient {
 
 impl std::fmt::Display for HyprGradient {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (color1,space) = match &self.color1 {
+        let (color1, space) = match &self.color1 {
             Some(s) => (s.to_string(), " "),
-            None => (String::from(""),""),
+            None => (String::from(""), ""),
         };
-        f.write_fmt(format_args!("{}{}{} {}deg",
-            self.color0, space, color1, self.angle))
+        f.write_fmt(format_args!(
+            "{}{}{} {}deg",
+            self.color0, space, color1, self.angle
+        ))
     }
 }
 
@@ -78,7 +82,10 @@ pub struct HyprRect {
 
 impl std::fmt::Display for HyprRect {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:0} {:0} {:0} {:0}", self.top, self.right, self.bottom, self.left))
+        f.write_fmt(format_args!(
+            "{:0} {:0} {:0} {:0}",
+            self.top, self.right, self.bottom, self.left
+        ))
     }
 }
 
@@ -87,15 +94,21 @@ impl TryFrom<&str> for HyprRect {
 
     fn try_from(s: &str) -> Result<Self, Self::Error> {
         let mut s = s.trim().split(" ");
-        let top = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+        let top = (s.next().ok_or(crate::HyprError::InvalidOptionValue)?)
+            .parse::<i64>()
             .map_err(|_| crate::HyprError::InvalidOptionValue)?;
-        let right = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+        let right = (s.next().ok_or(crate::HyprError::InvalidOptionValue)?)
+            .parse::<i64>()
             .map_err(|_| crate::HyprError::InvalidOptionValue)?;
-        let bottom = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+        let bottom = (s.next().ok_or(crate::HyprError::InvalidOptionValue)?)
+            .parse::<i64>()
             .map_err(|_| crate::HyprError::InvalidOptionValue)?;
-        let left = i64::from_str_radix(s.next().ok_or(crate::HyprError::InvalidOptionValue)?, 10)
+        let left = (s.next().ok_or(crate::HyprError::InvalidOptionValue)?)
+            .parse::<i64>()
             .map_err(|_| crate::HyprError::InvalidOptionValue)?;
-        if  s.next().is_some() { return Err(crate::error::HyprError::InvalidOptionValue); }
+        if s.next().is_some() {
+            return Err(crate::error::HyprError::InvalidOptionValue);
+        }
 
         Ok(Self {
             top,
@@ -106,7 +119,6 @@ impl TryFrom<&str> for HyprRect {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug, Clone, Display)]
 /// A parseable value type for custom options
 pub enum Custom {
@@ -115,17 +127,17 @@ pub enum Custom {
     /// Gradiant Variant for Custom field
     HyprGradient(HyprGradient),
     /// A general rect made of top, right, bottom, left
-    HyprRect(HyprRect)
+    HyprRect(HyprRect),
 }
 
 impl HyprColor {
     /// Convert an AARRGGBB u32 value to a HyprColor
     pub fn from_argb_u32(i: u32) -> Self {
         Self {
-            a: ( i  >> 24                )   as u8, // 0xFF000000
-            r: ((i  >> 16 )  & 0x00FF    )   as u8, // 0x00FF0000
-            g: ((i  >> 8  )  & 0x0000FF  )   as u8, // 0x0000FF00
-            b: ( i           & 0x000000FF)   as u8, // 0x000000FF
+            a: (i >> 24) as u8,             // 0xFF000000
+            r: ((i >> 16) & 0x00FF) as u8,  // 0x00FF0000
+            g: ((i >> 8) & 0x0000FF) as u8, // 0x0000FF00
+            b: (i & 0x000000FF) as u8,      // 0x000000FF
         }
     }
 
@@ -133,77 +145,85 @@ impl HyprColor {
     /// e.g. 0xeeb3ff1a
     pub fn try_from_argb_str(s: &str) -> Option<Self> {
         let s = s.trim().strip_prefix("0x").unwrap_or(s);
-        u32::from_str_radix(s, 16).ok().map(|i| Self::from_argb_u32(i))
+        u32::from_str_radix(s, 16).ok().map(Self::from_argb_u32)
     }
 
     /// Try to convert from &str in the rgba format to HyprColor,
     /// e.g. rgba(b3ff1aee), or the decimal equivalent rgba(179,255,26,0.933)
     pub fn try_from_rgba_str(s: &str) -> Option<Self> {
-        s.trim().strip_prefix("rgba(")?.strip_suffix(")")
-                .and_then( |s|
-                    match s.contains(",") {
-                        // b10 parse (e.g., "rgba(255, 0, 170, 0.5)")
-                        true => {
-                            let mut parts = s.split(",").enumerate().map(|(i, t)| {
-                                if i < 3 {
-                                    u8::from_str_radix(t.trim(), 10).ok()
-                                } else {
-                                    let f: f32 = t.trim().parse().ok()?;
-                                    Some((f.clamp(0.0, 1.0) * 255.0).round() as u8)
-                                }
-                            });
-
-                            let r = parts.next()?? as u32;
-                            let g = parts.next()?? as u32;
-                            let b = parts.next()?? as u32;
-                            let a = parts.next()?? as u32;
-                            if parts.next().is_some() { return None; }
-
-                            let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
-                            Some(Self::from_argb_u32(u))
+        s.trim()
+            .strip_prefix("rgba(")?
+            .strip_suffix(")")
+            .and_then(|s| match s.contains(",") {
+                // b10 parse (e.g., "rgba(255, 0, 170, 0.5)")
+                true => {
+                    let mut parts = s.split(",").enumerate().map(|(i, t)| {
+                        if i < 3 {
+                            t.trim().parse::<u8>().ok()
+                        } else {
+                            let f: f32 = t.trim().parse().ok()?;
+                            Some((f.clamp(0.0, 1.0) * 255.0).round() as u8)
                         }
-                        // b16 parse (e.g., "rgba(FF00AA7F)")
-                        false => {
-                            let s = s.trim();
-                            if s.len() != 6 { return None; }
-                            let i = u32::from_str_radix(s, 16).ok()?;
-                            let a = (i & 0xFF) << 24;
-                            let i = (i >> 8) | a;
-                            Some(Self::from_argb_u32(i))
-                        }
-                    })
+                    });
+
+                    let r = parts.next()?? as u32;
+                    let g = parts.next()?? as u32;
+                    let b = parts.next()?? as u32;
+                    let a = parts.next()?? as u32;
+                    if parts.next().is_some() {
+                        return None;
+                    }
+
+                    let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
+                    Some(Self::from_argb_u32(u))
+                }
+                // b16 parse (e.g., "rgba(FF00AA7F)")
+                false => {
+                    let s = s.trim();
+                    if s.len() != 6 {
+                        return None;
+                    }
+                    let i = u32::from_str_radix(s, 16).ok()?;
+                    let a = (i & 0xFF) << 24;
+                    let i = (i >> 8) | a;
+                    Some(Self::from_argb_u32(i))
+                }
+            })
     }
 
     /// Try to convert from &str in the rgb format to HyprColor,
     /// e.g. rgb(b3ff1a), or the decimal equivalent rgb(179,255,26)
     pub fn try_from_rgb_str(s: &str) -> Option<Self> {
-        s.trim().strip_prefix("rgb(")?.strip_suffix(")")
-                .and_then( |s|
-                    match s.contains(",") {
-                        // b10 parse (e.g., "rgb(255, 0, 170)")
-                        true => {
-                            let mut parts = s.split(",").map(|t| {
-                                    u8::from_str_radix(t.trim(), 10).ok()
-                            });
-                            let r = parts.next()?? as u32;
-                            let g = parts.next()?? as u32;
-                            let b = parts.next()?? as u32;
-                            if parts.next().is_some() { return None; }
-                            let a = 0xFFu32;
+        s.trim()
+            .strip_prefix("rgb(")?
+            .strip_suffix(")")
+            .and_then(|s| match s.contains(",") {
+                // b10 parse (e.g., "rgb(255, 0, 170)")
+                true => {
+                    let mut parts = s.split(",").map(|t| t.trim().parse::<u8>().ok());
+                    let r = parts.next()?? as u32;
+                    let g = parts.next()?? as u32;
+                    let b = parts.next()?? as u32;
+                    if parts.next().is_some() {
+                        return None;
+                    }
+                    let a = 0xFFu32;
 
-                            let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
-                            Some(Self::from_argb_u32(u))
-                        }
-                        // b16 parse (e.g., "rgb(ff00aa)")
-                        false => {
-                            let s = s.trim();
-                            if s.len() != 6 { return None; }
-                            let i = u32::from_str_radix(s, 16).ok()?;
-                            let a = 0xFF000000;
-                            let i = i | a;
-                            Some(Self::from_argb_u32(i))
-                        }
-                    })
+                    let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
+                    Some(Self::from_argb_u32(u))
+                }
+                // b16 parse (e.g., "rgb(ff00aa)")
+                false => {
+                    let s = s.trim();
+                    if s.len() != 6 {
+                        return None;
+                    }
+                    let i = u32::from_str_radix(s, 16).ok()?;
+                    let a = 0xFF000000;
+                    let i = i | a;
+                    Some(Self::from_argb_u32(i))
+                }
+            })
     }
 }
 
@@ -229,12 +249,22 @@ impl TryFrom<&str> for HyprGradient {
         let mut a = None;
         let s = s.trim().replace(", ", ",");
         let mut s = s.split(" ");
-        let color0 = HyprColor::try_from(s.next().ok_or(crate::HyprError::InvalidHyprGradiantFormat)?)?;
+        let color0 = HyprColor::try_from(
+            s.next()
+                .ok_or(crate::HyprError::InvalidHyprGradiantFormat)?,
+        )?;
         let mut color1 = None;
-        let c1_angle = s.next().ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+        let c1_angle = s
+            .next()
+            .ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
         if c1_angle.contains("deg") {
-            let tmp = c1_angle.strip_suffix("deg").ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
-            a = Some(u32::from_str_radix(tmp, 10).map_err(|_| crate::HyprError::InvalidHyprGradiantFormat)?);
+            let tmp = c1_angle
+                .strip_suffix("deg")
+                .ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+            a = Some(
+                tmp.parse::<u32>()
+                    .map_err(|_| crate::HyprError::InvalidHyprGradiantFormat)?,
+            );
         } else {
             color1 = Some(HyprColor::try_from(c1_angle)?)
         }
@@ -242,19 +272,24 @@ impl TryFrom<&str> for HyprGradient {
         let angle = match a {
             Some(a) => a,
             None => {
-                let c1_angle = s.next().ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
-                let tmp = c1_angle.strip_suffix("deg").ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
-                match u32::from_str_radix(tmp, 10) {
+                let c1_angle = s
+                    .next()
+                    .ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+                let tmp = c1_angle
+                    .strip_suffix("deg")
+                    .ok_or(crate::HyprError::InvalidHyprGradiantFormat)?;
+                match tmp.parse::<u32>() {
                     Ok(i) => i,
                     Err(_) => return Err(crate::HyprError::InvalidHyprGradiantFormat),
                 }
-            },
+            }
         };
 
-        if s.next().is_some() { return Err(crate::HyprError::InvalidHyprGradiantFormat); }
+        if s.next().is_some() {
+            return Err(crate::HyprError::InvalidHyprGradiantFormat);
+        }
 
-
-        Ok(HyprGradient{
+        Ok(HyprGradient {
             color0,
             color1,
             angle,
@@ -288,7 +323,7 @@ pub(crate) struct OptionRaw {
     pub value: std::collections::HashMap<String, serde_json::Value>,
 
     #[serde(skip)]
-    pub json: String
+    pub json: String,
 }
 
 /// This enum holds the possible values of a keyword/option
@@ -350,28 +385,36 @@ macro_rules! match_unknown {
     };
 }
 
-impl From<&OptionRaw> for OptionValue {
-    fn from(raw: &OptionRaw) -> Self {
-        match raw.value.iter().next() {
+impl TryFrom<&OptionRaw> for OptionValue {
+    type Error = HyprError;
+    fn try_from(raw: &OptionRaw) -> crate::Result<Self> {
+        Ok(match raw.value.iter().next() {
             Some((k, v)) => match k.as_str() {
                 "int" => match_unknown!(raw.json, v.as_i64(), Int),
                 "float" => match_unknown!(raw.json, v.as_f64(), Float),
                 "str" => match_unknown!(raw.json, v.as_str().map(|v| v.to_string()), String),
-                "custom" => match_unknown!(raw.json, v.as_str().and_then(|v| Custom::try_from(v).ok()), Custom),
+                "custom" => match_unknown!(
+                    raw.json,
+                    v.as_str().and_then(|v| Custom::try_from(v).ok()),
+                    Custom
+                ),
                 "vec2" => {
-                    if let Some(a) = v.as_array() {
-                        if a.len() == 2 {
-                            if a[0].is_i64() && a[1].is_i64() {
-                                return OptionValue::Vec2([a[0].as_i64().unwrap(), a[1].as_i64().unwrap()])
-                            }
-                        }
+                    if let Some(a) = v.as_array()
+                        && a.len() == 2
+                        && a[0].is_i64()
+                        && a[1].is_i64()
+                    {
+                        return Ok(OptionValue::Vec2([
+                            a[0].as_i64().ok_or(HyprError::InvalidOptionValue)?,
+                            a[1].as_i64().ok_or(HyprError::InvalidOptionValue)?,
+                        ]));
                     }
                     OptionValue::Unknown(raw.json.to_string())
-                },
+                }
                 _ => OptionValue::Unknown(raw.json.to_string()),
             },
             None => OptionValue::Unknown(raw.json.to_string()),
-        }
+        })
     }
 }
 
@@ -398,14 +441,13 @@ impl Keyword {
         key: Str,
         value: Opt,
     ) -> crate::Result<()> {
-
         let value = value.into();
 
         let value = match value {
             OptionValue::Unknown(_) => {
                 return Err(crate::HyprError::InvalidOptionValue);
-            },
-            x => x
+            }
+            x => x,
         };
 
         instance.write_to_socket(command!(
@@ -453,11 +495,11 @@ impl Keyword {
     pub fn instance_get<Str: ToString>(instance: &Instance, key: Str) -> crate::Result<Self> {
         let data = instance.write_to_socket(command!(JSON, "getoption {}", key.to_string()))?;
         if data == "no such option" {
-            return Err(crate::error::HyprError::InvalidOptionKey(key.to_string()))
+            return Err(crate::error::HyprError::InvalidOptionKey(key.to_string()));
         }
         let mut deserialized: OptionRaw = serde_json::from_str(&data)?;
         deserialized.json = data;
-        let value = OptionValue::from(&deserialized);
+        let value = OptionValue::try_from(&deserialized)?;
 
         let keyword = Keyword {
             option: deserialized.option,
@@ -483,12 +525,12 @@ impl Keyword {
             .write_to_socket_async(command!(JSON, "getoption {}", key.to_string()))
             .await?;
         if data == "no such option" {
-            return Err(crate::error::HyprError::InvalidOptionKey(key.to_string()))
+            return Err(crate::error::HyprError::InvalidOptionKey(key.to_string()));
         }
         let mut deserialized: OptionRaw = serde_json::from_str(&data)?;
         deserialized.json = data;
 
-        let value = OptionValue::from(&deserialized);
+        let value = OptionValue::try_from(&deserialized)?;
 
         let keyword = Keyword {
             option: deserialized.option,
