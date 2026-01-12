@@ -20,7 +20,7 @@ pub mod binds {
         /// Variant for if the bind holds a modded key
         Mod(
             /// Mods
-            Vec<Mod>,
+            &'a [Mod],
             /// Key
             &'a str,
         ),
@@ -61,6 +61,16 @@ pub mod binds {
         fn join(&self) -> String {
             let mut buf = String::new();
             for i in self {
+                buf.push_str(&i.to_string());
+            }
+            buf
+        }
+    }
+
+    impl<'a> Join for &'a [Mod] {
+        fn join(&self) -> String {
+            let mut buf = String::new();
+            for i in *self {
                 buf.push_str(&i.to_string());
             }
             buf
@@ -113,15 +123,34 @@ pub mod binds {
         }
     }
 
+    impl<'a> Join for &'a [Flag] {
+        fn join(&self) -> String {
+            let mut buf = String::new();
+            for f in *self {
+                buf.push_str(&f.to_string());
+            }
+            buf
+        }
+    }
+
+    /// A struct used for indentifying bindings
+    #[derive(Debug, Clone)]
+    pub struct PartialBind<'a> {
+        /// The modifiers used
+        pub mods: &'a [Mod],
+        /// The main key used
+        pub key: Key<'a>,
+    }
+
     /// A struct providing a key bind
     #[derive(Debug, Clone)]
     pub struct Binding<'a> {
         /// All the mods
-        pub mods: Vec<Mod>,
+        pub mods: &'a [Mod],
         /// The key
         pub key: Key<'a>,
         /// Bind flags
-        pub flags: Vec<Flag>,
+        pub flags: &'a [Flag],
         /// The dispatcher to be called once complete
         pub dispatcher: DispatchType<'a>,
     }
@@ -130,12 +159,22 @@ pub mod binds {
     pub struct Binder;
 
     impl Binder {
-        pub(crate) fn gen_str(binding: Binding) -> crate::Result<String> {
+        pub(crate) fn gen_str_partial(PartialBind { mods, key }: PartialBind) -> String {
+            format!("{},{key}", (&mods).join())
+        }
+
+        pub(crate) fn gen_str(
+            Binding {
+                mods,
+                key,
+                dispatcher,
+                ..
+            }: Binding,
+        ) -> crate::Result<String> {
             Ok(format!(
-                "{mods},{key},{dispatcher}",
-                mods = binding.mods.join(),
-                key = binding.key,
-                dispatcher = gen_dispatch_str(binding.dispatcher, false)?.data
+                "{partial},{dispatcher}",
+                partial = Self::gen_str_partial(PartialBind { mods, key }),
+                dispatcher = gen_dispatch_str(dispatcher, false)?.data
             ))
         }
 
@@ -144,14 +183,38 @@ pub mod binds {
             Self::instance_bind(default_instance()?, binding)
         }
 
+        /// Unbinds a keybinding
+        pub fn unbind(binding: PartialBind) -> crate::Result<()> {
+            Self::instance_unbind(default_instance()?, binding)
+        }
+
+        /// Unbinds a keybinding
+        pub fn instance_unbind(instance: &Instance, binding: PartialBind) -> crate::Result<()> {
+            Keyword::instance_set(instance, "unbind", Self::gen_str_partial(binding))
+        }
+
+        /// Unbinds a keybinding (async)
+        #[cfg(any(feature = "async-lite", feature = "tokio"))]
+        pub async fn unbind_async(binding: PartialBind<'_>) -> crate::Result<()> {
+            Self::instance_unbind_async(default_instance()?, binding).await
+        }
+
+        /// Unbinds a keybinding (async)
+        #[cfg(any(feature = "async-lite", feature = "tokio"))]
+        pub async fn instance_unbind_async(
+            instance: &Instance,
+            binding: PartialBind<'_>,
+        ) -> crate::Result<()> {
+            Keyword::instance_set_async(instance, "unbind", Self::gen_str_partial(binding)).await
+        }
+
         /// Binds a keybinding
         pub fn instance_bind(instance: &Instance, binding: Binding) -> crate::Result<()> {
             Keyword::instance_set(
                 instance,
-                format!("bind{}", binding.flags.join()),
+                format!("bind{}", (&binding.flags).join()),
                 Self::gen_str(binding)?,
-            )?;
-            Ok(())
+            )
         }
 
         /// Binds a keybinding (async)
@@ -168,11 +231,10 @@ pub mod binds {
         ) -> crate::Result<()> {
             Keyword::instance_set_async(
                 instance,
-                format!("bind{}", binding.flags.join()),
+                format!("bind{}", (&binding.flags).join()),
                 Self::gen_str(binding)?,
             )
-            .await?;
-            Ok(())
+            .await
         }
     }
 
@@ -253,9 +315,9 @@ pub mod binds {
             $crate::bind_raw!(
                 async,
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis( $($arg),* )
             )
         };
@@ -263,9 +325,9 @@ pub mod binds {
             $crate::bind_raw!(
                 async,
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis
             )
         };
@@ -273,9 +335,9 @@ pub mod binds {
             $crate::bind_raw!(
                 async,
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis( $($arg),* )
             )
         };
@@ -283,113 +345,113 @@ pub mod binds {
             $crate::bind_raw!(
                 async,
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis
             )
         };
         (async ; $( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
                 async,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis( $($arg),* )
             )
         };
         (async ; $( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
                 async,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis
             )
         };
         (async ; $( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
                 async,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis( $($arg),* )
             )
         };
         (async ; $( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
                 async,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis
             )
         };
         ($instance:expr, $( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis( $($arg),* )
             )
         };
         ($instance:expr, $( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis
             )
         };
         ($instance:expr, $( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis( $($arg),* )
             )
         };
         ($instance:expr, $( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
                 $instance,
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis
             )
         };
         ($( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident, $( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis( $($arg),* )
             )
         };
         ($( $flag:ident ) *|$( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![$(Flag::$flag), *],
+                &[$(Flag::$flag), *],
                 DispatchType::$dis
             )
         };
         ($( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident, $( $arg:expr ), *) => {
             $crate::bind_raw!(
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis( $($arg),* )
             )
         };
         ($( $mod:ident ) *,$keyt:ident,$( $key:expr ), * => $dis:ident ) => {
             $crate::bind_raw!(
-                vec![$(Mod::$mod), *],
+                &[$(Mod::$mod), *],
                 Key::$keyt( $( $key ), * ),
-                vec![],
+                &[],
                 DispatchType::$dis
             )
         };
@@ -400,9 +462,9 @@ pub mod binds {
 fn test_binds() {
     use binds::*;
     let binding = Binding {
-        mods: vec![Mod::SUPER],
+        mods: &[Mod::SUPER],
         key: Key::Key("v"),
-        flags: vec![],
+        flags: &[],
         dispatcher: DispatchType::ToggleFloating(None),
     };
     let built_bind = match Binder::gen_str(binding) {
