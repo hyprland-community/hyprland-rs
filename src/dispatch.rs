@@ -415,6 +415,17 @@ pub enum ZOrder {
     Bottom,
 }
 
+/// This enum holds the params to the [DispatchType::Submap] dispatcher
+#[derive(Debug, Clone, Copy, Display)]
+pub enum SubmapParam<'a> {
+    /// Go back to global submap
+    #[display("reset")]
+    Reset,
+    /// Go to named submap
+    #[display("{}", _0)]
+    Name(&'a str),
+}
+
 /// This enum holds every dispatcher
 #[derive(Debug, Clone)]
 pub enum DispatchType<'a> {
@@ -547,6 +558,8 @@ pub enum DispatchType<'a> {
     FocusCurrentOrLast,
     /// Swallow or Unswallow a window
     ToggleSwallow,
+    /// Change the current mapping group
+    Submap(SubmapParam<'a>),
 
     // LAYOUT DISPATCHERS
     // DWINDLE
@@ -818,6 +831,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         PreSelect(dir) => format!("layoutmsg{sep}preselect {dir}"),
         MoveToRoot(Some(win), param) => format!("layoutmsg{sep}movetoroot {win} {param}"),
         MoveToRoot(None, _) => format!("layoutmsg{sep}movetoroot"),
+        Submap(param) => format!("submap{sep}{param}"),
         SwapWithMaster(param) => format!("layoutmsg{sep}swapwithmaster {param}"),
         FocusMaster(param) => format!("layoutmsg{sep}focusmaster {param}"),
         CycleNextMaster(param) => format!("layoutmsg{sep}cyclenext {param}"),
