@@ -72,6 +72,19 @@ pub(crate) trait HasExecutor {
     }
 }
 
+const BLACKLISTED_UNKNOWN_EVENTS: &[&str; 10] = &[
+    "workspace",
+    "focusedmon",
+    "monitorremoved",
+    "monitoradded",
+    "createworkspace",
+    "destroyworkspace",
+    "moveworkspace",
+    "activespecial",
+    "movewindow",
+    "windowtitle",
+];
+
 #[cfg(any(feature = "async-lite", feature = "tokio"))]
 pub(crate) fn event_primer_noexec(
     event: Event,
@@ -115,6 +128,10 @@ pub(crate) fn event_primer_noexec(
         }
         for index in to_remove.into_iter().rev() {
             abuf.swap_remove(index);
+        }
+    } else if let Event::Unknown(ref data) = event {
+        if !BLACKLISTED_UNKNOWN_EVENTS.contains(&&*data.name) {
+            events.push(event);
         }
     } else {
         events.push(event);
