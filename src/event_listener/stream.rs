@@ -53,8 +53,8 @@ impl EventStream {
                     break;
                 }
                 let buf = &buffer[..bytes_read];
-                let string = String::from_utf8(buf.to_vec())?;
-                let parsed: Vec<Event> = event_parser(string)?;
+                let string = String::from_utf8_lossy(buf);
+                let parsed: Vec<Event> = event_parser(&string)?;
                 for event in parsed {
                     for primed_event in event_primer_noexec(event, &mut active_windows)? {
                         yield primed_event;
@@ -81,8 +81,8 @@ impl EventStream {
                     break;
                 }
                 let buf = &buffer[..bytes_read];
-                let string = String::from_utf8(buf.to_vec())?;
-                let parsed: Vec<Event> = event_parser(string)?;
+                let string = String::from_utf8_lossy(buf);
+                let parsed: Vec<Event> = event_parser(&string)?;
                 for event in parsed {
                     for primed_event in event_primer_noexec(event, &mut active_windows)? {
                         yield primed_event;
