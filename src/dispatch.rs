@@ -493,6 +493,15 @@ pub enum DispatchType<'a> {
     TogglePin,
     /// This dispatcher pins the specified window to all workspaces
     TogglePinWindow(WindowIdentifier<'a>),
+    /// This dispatcher sends a shortcut to the specified window
+    SendShortcut(
+        /// The modifiers
+        &'a [crate::shared::Mod],
+        /// The key, e.g., "A"
+        &'a str,
+        /// The window identifier
+        Option<WindowIdentifier<'a>>,
+    ),
     /// This dispatcher sends a signal to the active window
     Signal(SignalType),
     /// This dispatcher sends a signal to the specified window
@@ -779,6 +788,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         TogglePseudo => "pseudo".to_string(),
         TogglePin => "pin".to_string(),
         TogglePinWindow(win) => format!("pin{sep}{win}"),
+        SendShortcut(mods, key, win_opt) => {
+            let mods_str: String = mods.iter().map(|m| m.to_string()).collect();
+            match win_opt {
+                Some(win) => format!("sendshortcut{sep}{mods_str},{key},{win}"),
+                None => format!("sendshortcut{sep}{mods_str},{key},"),
+            }
+        }
         MoveFocus(dir) => format!("movefocus{sep}{dir}",),
         MoveWindow(ident) => format!(
             "movewindow{sep}{}",

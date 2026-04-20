@@ -41,21 +41,7 @@ pub mod binds {
         }
     }
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::Display)]
-    #[allow(missing_docs)]
-    /// Enum for mod keys used in bind combinations
-    pub enum Mod {
-        #[display("SUPER")]
-        SUPER,
-        #[display("SHIFT")]
-        SHIFT,
-        #[display("ALT")]
-        ALT,
-        #[display("CTRL")]
-        CTRL,
-        #[display("")]
-        NONE,
-    }
+    pub use crate::shared::Mod;
 
     impl Join for Vec<Mod> {
         fn join(&self) -> String {
