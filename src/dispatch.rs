@@ -495,8 +495,8 @@ pub enum DispatchType<'a> {
     TogglePinWindow(WindowIdentifier<'a>),
     /// This dispatcher sends a shortcut to the specified window
     SendShortcut(
-        /// The modifiers, e.g., "SUPER" or "SUPER_SHIFT" (see Hyprland docs)
-        &'a str,
+        /// The modifiers
+        &'a [crate::shared::Mod],
         /// The key, e.g., "A"
         &'a str,
         /// The window identifier
@@ -788,8 +788,13 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         TogglePseudo => "pseudo".to_string(),
         TogglePin => "pin".to_string(),
         TogglePinWindow(win) => format!("pin{sep}{win}"),
-        SendShortcut(mods, key, Some(win)) => format!("sendshortcut{sep}{mods},{key},{win}"),
-        SendShortcut(mods, key, None) => format!("sendshortcut{sep}{mods},{key},"),
+        SendShortcut(mods, key, win_opt) => {
+            let mods_str: String = mods.iter().map(|m| m.to_string()).collect();
+            match win_opt {
+                Some(win) => format!("sendshortcut{sep}{mods_str},{key},{win}"),
+                None => format!("sendshortcut{sep}{mods_str},{key},"),
+            }
+        }
         MoveFocus(dir) => format!("movefocus{sep}{dir}",),
         MoveWindow(ident) => format!(
             "movewindow{sep}{}",
