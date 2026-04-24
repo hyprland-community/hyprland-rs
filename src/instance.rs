@@ -1,5 +1,5 @@
 use crate::error::hypr_err;
-use crate::shared::{get_hypr_path, CommandContent};
+use crate::shared::{CommandContent, get_hypr_path};
 use std::path::{Path, PathBuf};
 
 /// This is the sync version of the Hyprland Instance.

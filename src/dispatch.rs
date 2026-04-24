@@ -935,8 +935,10 @@ impl Dispatch {
     ///
     /// ```rust
     /// # use hyprland::Result;
+    /// #[tokio::main(flavor = "current_thread")]
     /// # async fn main() -> Result<()> {
     /// use hyprland::dispatch::{Dispatch,DispatchType};
+    /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
     /// Dispatch::call_async(DispatchType::Exec("kitty")).await
     /// # }
@@ -950,11 +952,12 @@ impl Dispatch {
     ///
     /// ```rust
     /// # use hyprland::Result;
+    /// #[tokio::main(flavor = "current_thread")]
     /// # async fn main() -> Result<()> {
     /// use hyprland::dispatch::{Dispatch,DispatchType};
     /// let instance = hyprland::instance::Instance::from_current_env()?;
     /// // This is an example of just one dispatcher, there are many more!
-    /// Dispatch::instance_call_async(&instance, DispatchType::Exec("kitty")).await
+    /// Dispatch::call_async(DispatchType::Exec("kitty")).await
     /// # }
     /// ```
     #[cfg(any(feature = "async-lite", feature = "tokio"))]

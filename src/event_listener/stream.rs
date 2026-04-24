@@ -18,7 +18,7 @@ use futures_lite::{Stream, StreamExt};
 /// use hyprland::event_listener::EventStream;
 /// use hyprland::Result as HResult;
 ///
-/// #[tokio::main]
+/// #[tokio::main(flavor = "current_thread")]
 /// async fn main() -> HResult<()> {
 ///     use futures_lite::StreamExt;
 ///     use hyprland::instance::Instance;
@@ -26,6 +26,7 @@ use futures_lite::{Stream, StreamExt};
 ///     while let Some(Ok(event)) = stream.next().await {
 ///          println!("{event:?}");
 ///     }
+///     Ok(())
 /// }
 /// ```
 #[must_use = "streams nothing unless polled"]
