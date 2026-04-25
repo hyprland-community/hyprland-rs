@@ -302,11 +302,11 @@ impl State {
                 .await?;
             }
             if old.active_workspace != state.active_workspace {
-                use crate::dispatch::WorkspaceIdentifierWithSpecial;
+                use crate::dispatch::{WorkspaceIdentifier, WorkspaceIdentifierWithSpecial};
                 Dispatch::instance_call_async(
                     instance,
                     DispatchType::Workspace(match &state.active_workspace {
-                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Regular(WorkspaceIdentifier::Name(name)),
                         WorkspaceType::Special(opt) => {
                             WorkspaceIdentifierWithSpecial::Special(match opt {
                                 Some(name) => Some(name),
@@ -351,11 +351,11 @@ impl State {
                 )?;
             }
             if old.active_workspace != state.active_workspace {
-                use crate::dispatch::WorkspaceIdentifierWithSpecial;
+                use crate::dispatch::{WorkspaceIdentifier, WorkspaceIdentifierWithSpecial};
                 Dispatch::instance_call(
                     instance,
                     DispatchType::Workspace(match &state.active_workspace {
-                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Name(name),
+                        WorkspaceType::Regular(name) => WorkspaceIdentifierWithSpecial::Regular(WorkspaceIdentifier::Name(name)),
                         WorkspaceType::Special(opt) => {
                             WorkspaceIdentifierWithSpecial::Special(match opt {
                                 Some(name) => Some(name),
