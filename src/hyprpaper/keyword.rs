@@ -185,12 +185,40 @@ mod tests {
     fn test_expected_response() {
         use super::ExpectedResponse;
 
-        assert!(matches!(Keyword::Preload(Preload { path: "".into() }).expected_response(), ExpectedResponse::Ok));
-        assert!(matches!(Keyword::Reload(Reload { monitor: None, mode: None, path: "".into() }).expected_response(), ExpectedResponse::Ok));
-        assert!(matches!(Keyword::Unload(Unload::All).expected_response(), ExpectedResponse::Ok));
-        assert!(matches!(Keyword::Wallpaper(Wallpaper { monitor: None, mode: None, path: "".into() }).expected_response(), ExpectedResponse::Ok));
-        assert!(matches!(Keyword::ListActive.expected_response(), ExpectedResponse::Active));
-        assert!(matches!(Keyword::ListLoaded.expected_response(), ExpectedResponse::Loaded));
+        assert!(matches!(
+            Keyword::Preload(Preload { path: "".into() }).expected_response(),
+            ExpectedResponse::Ok
+        ));
+        assert!(matches!(
+            Keyword::Reload(Reload {
+                monitor: None,
+                mode: None,
+                path: "".into()
+            })
+            .expected_response(),
+            ExpectedResponse::Ok
+        ));
+        assert!(matches!(
+            Keyword::Unload(Unload::All).expected_response(),
+            ExpectedResponse::Ok
+        ));
+        assert!(matches!(
+            Keyword::Wallpaper(Wallpaper {
+                monitor: None,
+                mode: None,
+                path: "".into()
+            })
+            .expected_response(),
+            ExpectedResponse::Ok
+        ));
+        assert!(matches!(
+            Keyword::ListActive.expected_response(),
+            ExpectedResponse::Active
+        ));
+        assert!(matches!(
+            Keyword::ListLoaded.expected_response(),
+            ExpectedResponse::Loaded
+        ));
     }
 
     #[test]
@@ -198,8 +226,14 @@ mod tests {
         use super::ExpectedResponse;
 
         let expected = ExpectedResponse::Ok;
-        assert!(matches!(expected.is_expected("ok".into()), Ok(Response::Ok)));
-        assert!(matches!(expected.is_expected(" ok ".into()), Ok(Response::Ok)));
+        assert!(matches!(
+            expected.is_expected("ok".into()),
+            Ok(Response::Ok)
+        ));
+        assert!(matches!(
+            expected.is_expected(" ok ".into()),
+            Ok(Response::Ok)
+        ));
         assert!(expected.is_expected("error".into()).is_err());
     }
 
