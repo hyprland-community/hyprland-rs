@@ -144,4 +144,86 @@ mod tests {
         let command = Keyword::Unload(Unload::All);
         check(command, "unload all");
     }
+
+    #[test]
+    fn test_reload() {
+        let command = Keyword::Reload(Reload {
+            monitor: None,
+            mode: None,
+            path: "/foo/bar".into(),
+        });
+        check(command, "reload ,/foo/bar");
+
+        let command = Keyword::Reload(Reload {
+            monitor: Some(Monitor::Port("DP-1".into())),
+            mode: None,
+            path: "/foo/bar".into(),
+        });
+        check(command, "reload DP-1,/foo/bar");
+
+        let command = Keyword::Reload(Reload {
+            monitor: Some(Monitor::Description("main".into())),
+            mode: Some(WallpaperMode::Contain),
+            path: "/wallpaper.png".into(),
+        });
+        check(command, "reload desc:main,contain:/wallpaper.png");
+    }
+
+    #[test]
+    fn test_list_active() {
+        let command = Keyword::ListActive;
+        check(command, "listactive");
+    }
+
+    #[test]
+    fn test_list_loaded() {
+        let command = Keyword::ListLoaded;
+        check(command, "listloaded");
+    }
+
+    #[test]
+    fn test_expected_response() {
+        use super::ExpectedResponse;
+
+        assert!(matches!(Keyword::Preload(Preload { path: "".into() }).expected_response(), ExpectedResponse::Ok));
+        assert!(matches!(Keyword::Reload(Reload { monitor: None, mode: None, path: "".into() }).expected_response(), ExpectedResponse::Ok));
+        assert!(matches!(Keyword::Unload(Unload::All).expected_response(), ExpectedResponse::Ok));
+        assert!(matches!(Keyword::Wallpaper(Wallpaper { monitor: None, mode: None, path: "".into() }).expected_response(), ExpectedResponse::Ok));
+        assert!(matches!(Keyword::ListActive.expected_response(), ExpectedResponse::Active));
+        assert!(matches!(Keyword::ListLoaded.expected_response(), ExpectedResponse::Loaded));
+    }
+
+    #[test]
+    fn test_expected_response_ok() {
+        use super::ExpectedResponse;
+
+        let expected = ExpectedResponse::Ok;
+        assert!(matches!(expected.is_expected("ok".into()), Ok(Response::Ok)));
+        assert!(matches!(expected.is_expected(" ok ".into()), Ok(Response::Ok)));
+        assert!(expected.is_expected("error".into()).is_err());
+    }
+
+    #[test]
+    fn test_expected_response_active() {
+        use super::ExpectedResponse;
+
+        let expected = ExpectedResponse::Active;
+        assert!(matches!(
+            expected.is_expected("DP-1 = /path/to/wallpaper.png".into()),
+            Ok(Response::ActiveWallpapers(_))
+        ));
+        assert!(expected.is_expected("no wallpapers active".into()).is_err());
+    }
+
+    #[test]
+    fn test_expected_response_loaded() {
+        use super::ExpectedResponse;
+
+        let expected = ExpectedResponse::Loaded;
+        assert!(matches!(
+            expected.is_expected("/path/to/wallpaper.png".into()),
+            Ok(Response::LoadedWallpapers(_))
+        ));
+        assert!(expected.is_expected("no wallpapers loaded".into()).is_err());
+    }
 }
