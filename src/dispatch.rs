@@ -480,9 +480,9 @@ pub enum DispatchType<'a> {
     SetTiled(Option<WindowIdentifier<'a>>),
     /// This dispatcher toggles the current window fullscreen state
     ToggleFullscreen(FullscreenType),
-    /// This dispatcher sets the focused window’s fullscreen mode and the one sent to the client
+    /// This dispatcher sets the focused window's fullscreen mode and the one sent to the client
     ToggleFullscreenState(FullscreenState, FullscreenState),
-    /// This dispatcher toggles the focused window’s internal
+    /// This dispatcher toggles the focused window's internal
     /// fullscreen state without altering the geometry
     ToggleFakeFullscreen,
     /// This dispatcher sets the DPMS status for all monitors
@@ -597,10 +597,10 @@ pub enum DispatchType<'a> {
     /// Swaps the focused window with the previous window respecting the layout
     SwapPrevMaster(MasterLoopParam),
     /// Adds a master to the master side. That will be the active window,
-    /// if it’s not a master, or the first non-master window.
+    /// if it's not a master, or the first non-master window.
     AddMaster,
     /// Removes a master from the master side. That will be the
-    /// active window, if it’s a master, or the last master window.
+    /// active window, if it's a master, or the last master window.
     RemoveMaster,
     /// Sets the orientation for the current workspace to left
     /// (master area left, slave windows to the right, vertically stacked)
@@ -1005,4 +1005,133 @@ macro_rules! dispatch {
     ($instance:expr; $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_dispatch_str(dispatch: DispatchType, expected: &str) {
+        let result = gen_dispatch_str(dispatch, false);
+        let result = match result {
+            Ok(r) => r,
+            Err(e) => panic!("gen_dispatch_str failed: {}", e),
+        };
+        assert_eq!(result.data, expected);
+    }
+
+    #[test]
+    fn test_simple_dispatchers() {
+        test_dispatch_str(DispatchType::KillActiveWindow, "killactive");
+        test_dispatch_str(DispatchType::TogglePseudo, "pseudo");
+        test_dispatch_str(DispatchType::ToggleFakeFullscreen, "fakefullscreen");
+        test_dispatch_str(DispatchType::TogglePin, "pin");
+        test_dispatch_str(DispatchType::CenterWindow, "centerwindow");
+        // ToggleSplit is under layoutmsg
+        test_dispatch_str(DispatchType::ToggleSplit, "layoutmsg,togglesplit");
+        test_dispatch_str(DispatchType::SwapSplit, "layoutmsg,swapsplit");
+        test_dispatch_str(DispatchType::Exit, "exit");
+        test_dispatch_str(DispatchType::ForceRendererReload, "forcerendererreload");
+        test_dispatch_str(DispatchType::BringActiveToTop, "bringactivetotop");
+        test_dispatch_str(DispatchType::ToggleSwallow, "toggleswallow");
+        test_dispatch_str(DispatchType::FocusUrgentOrLast, "focusurgentorlast");
+        test_dispatch_str(DispatchType::FocusCurrentOrLast, "focuscurrentorlast");
+    }
+
+    #[test]
+    fn test_single_arg_dispatchers() {
+        test_dispatch_str(DispatchType::Exec("kitty"), "exec,kitty");
+        test_dispatch_str(DispatchType::ExecRaw("ls -la"), "execr,ls -la");
+        test_dispatch_str(
+            DispatchType::Workspace(WorkspaceIdentifierWithSpecial::Name("2")),
+            "workspace,name:2",
+        );
+        test_dispatch_str(DispatchType::ToggleFloating(None), "togglefloating");
+        test_dispatch_str(
+            DispatchType::ToggleFloating(Some(WindowIdentifier::ActiveWindow)),
+            "togglefloating,activewindow",
+        );
+    }
+
+    #[test]
+    fn test_multi_arg_dispatchers() {
+        test_dispatch_str(
+            DispatchType::MoveToWorkspace(
+                WorkspaceIdentifierWithSpecial::Name("3"),
+                Some(WindowIdentifier::ActiveWindow),
+            ),
+            "movetoworkspace,name:3,activewindow",
+        );
+        test_dispatch_str(
+            DispatchType::SendShortcut(
+                &[Mod::SUPER],
+                "A",
+                Some(WindowIdentifier::Address(Address::new("0x123"))),
+            ),
+            "sendshortcut,SUPER,A,address:0x123",
+        );
+    }
+
+    #[test]
+    fn test_fullscreen_dispatchers() {
+        test_dispatch_str(
+            DispatchType::ToggleFullscreen(FullscreenType::Real),
+            "fullscreen,0",
+        );
+        test_dispatch_str(
+            DispatchType::ToggleFullscreen(FullscreenType::NoParam),
+            "fullscreen,",
+        );
+    }
+
+    #[test]
+    fn test_custom_dispatcher() {
+        test_dispatch_str(DispatchType::Custom("myevent", "data"), "myevent,data");
+    }
+
+    #[test]
+    fn test_more_dispatchers() {
+        // ForceKillActiveWindow
+        test_dispatch_str(DispatchType::ForceKillActiveWindow, "forcekillactive");
+        // CloseWindow with ActiveWindow
+        test_dispatch_str(
+            DispatchType::CloseWindow(WindowIdentifier::ActiveWindow),
+            "closewindow,activewindow",
+        );
+        // MoveToWorkspaceSilent with workspace and window
+        test_dispatch_str(
+            DispatchType::MoveToWorkspaceSilent(
+                WorkspaceIdentifierWithSpecial::Name("4"),
+                Some(WindowIdentifier::ActiveWindow),
+            ),
+            "movetoworkspacesilent,name:4,activewindow",
+        );
+        // SetTiled None
+        test_dispatch_str(DispatchType::SetTiled(None), "settiled");
+        // SetTiled Some
+        test_dispatch_str(
+            DispatchType::SetTiled(Some(WindowIdentifier::ActiveWindow)),
+            "settiled,activewindow",
+        );
+        // ToggleFullscreenState
+        test_dispatch_str(
+            DispatchType::ToggleFullscreenState(
+                FullscreenState::Fullscreen,
+                FullscreenState::Fullscreen,
+            ),
+            "fullscreenstate,2 2",
+        );
+        // MoveFocus Left
+        test_dispatch_str(DispatchType::MoveFocus(Direction::Left), "movefocus,l");
+        // ResizeActive Delta(100, 200) - Note: existing Delta display repeats first field
+        test_dispatch_str(
+            DispatchType::ResizeActive(Position::Delta(100, 200)),
+            "resizeactive,100 100",
+        );
+        // FocusMonitor Id(0)
+        test_dispatch_str(
+            DispatchType::FocusMonitor(MonitorIdentifier::Id(0)),
+            "focusmonitor,0",
+        );
+    }
 }
