@@ -1,7 +1,7 @@
 //! # Hyprland Configuration in Rust
 //!
 
-use crate::dispatch::{gen_dispatch_str, DispatchType};
+use crate::dispatch::{DispatchType, gen_dispatch_str};
 use crate::keyword::Keyword;
 
 /// Module providing stuff for adding an removing keybinds
@@ -53,7 +53,7 @@ pub mod binds {
         }
     }
 
-    impl<'a> Join for &'a [Mod] {
+    impl Join for &[Mod] {
         fn join(&self) -> String {
             let mut buf = String::new();
             for i in *self {
@@ -109,7 +109,7 @@ pub mod binds {
         }
     }
 
-    impl<'a> Join for &'a [Flag] {
+    impl Join for &[Flag] {
         fn join(&self) -> String {
             let mut buf = String::new();
             for f in *self {
@@ -227,13 +227,15 @@ pub mod binds {
     /// Very macro basic abstraction over [Binder] for internal use, **Dont use this instead use [crate::bind]**
     ///
     /// ```rust
-    /// # use hyprland::{bind_raw, default_instance, default_instance_panic, dispatch::DispatchType};
-    /// # async fn test() {
+    /// # use hyprland::{bind_raw, default_instance, default_instance_panic, dispatch::DispatchType, Result};
+    /// #[tokio::main(flavor = "current_thread")]
+    /// # async fn test() -> Result<()> {
     ///   let instance = default_instance()?;
-    ///   bind_raw!(instance , vec! [ Mod :: SHIFT ] , Key :: Key ( "m"  ) ,  vec ! [ Flag :: l , Flag :: r , Flag :: m ] ,  DispatchType :: Exit )?;
-    ///   bind_raw!(vec! [ Mod :: SHIFT ] , Key :: Key ( "m"  ) ,  vec ! [ Flag :: l , Flag :: r , Flag :: m ] ,  DispatchType :: Exit )?;
-    ///   bind_raw!(async, instance, vec ! [ Mod :: SHIFT ] , Key :: Key ( "m"  ) ,  vec ! [ Flag :: l , Flag :: r , Flag :: m ] ,  DispatchType :: Exit ).await?;
-    ///   bind_raw!(async, vec ! [ Mod :: SHIFT ] , Key :: Key ( "m"  ) ,  vec ! [ Flag :: l , Flag :: r , Flag :: m ] ,  DispatchType :: Exit ).await?;
+    ///   bind_raw!(instance , &[Mod::SHIFT] , Key::Key("m")  ,  &[Flag::l, Flag::r, Flag::m] ,  DispatchType::Exit )?;
+    ///   bind_raw!(&[Mod::SHIFT] , Key::Key("m")  ,  &[Flag::l, Flag::r, Flag::m] ,  DispatchType::Exit )?;
+    ///   bind_raw!(async, instance, &[Mod::SHIFT] , Key::Key("m")  ,  &[Flag::l, Flag::r, Flag::m] ,  DispatchType::Exit).await?;
+    ///   bind_raw!(async, &[Mod::SHIFT] , Key::Key("m")  ,  &[Flag::l, Flag::r, Flag::m] ,  DispatchType::Exit).await?;
+    ///   Ok(())
     /// # }
     /// ```
     #[macro_export]
@@ -283,16 +285,18 @@ pub mod binds {
     /// Macro abstraction over [Binder]
     ///
     /// ```rust
-    /// # use hyprland::{bind, default_instance_panic};
+    /// # use hyprland::{bind, default_instance, dispatch::DispatchType, Result};
     /// # use hyprland::instance::Instance;
     ///
-    /// # async fn test() {
+    /// #[tokio::main(flavor = "current_thread")]
+    /// # async fn test() -> Result<()> {
     ///     let instance = default_instance()?;
     ///     bind!(instance, l r m | SHIFT, Key, "m" => Exit);
     ///     bind!(SHIFT ALT, Key, "b" => CenterWindow);
     ///     bind!(async ; l r m | SHIFT, Key, "m" => Exit);
-    ///     bind!(async ; instance,  SUPER, Mod, vec![Mod::SUPER], "l" => CenterWindow);
+    ///     bind!(async ; instance, SUPER, Key, "l" => CenterWindow);
     ///     bind!(async ; SHIFT ALT, Key, "b" => CenterWindow);
+    ///     Ok(())
     /// # }
     /// ```
     #[macro_export]
