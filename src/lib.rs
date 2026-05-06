@@ -57,6 +57,11 @@ pub mod instance;
 #[cfg(feature = "hyprpaper")]
 pub mod hyprpaper;
 
+#[cfg(feature = "lua")]
+mod lua;
+#[cfg(feature = "lua")]
+pub mod window_rule;
+
 /// The prelude module, this is to import all traits
 pub mod prelude {
     pub use crate::shared::{HyprData, HyprDataActive, HyprDataActiveOptional, HyprDataVec};
