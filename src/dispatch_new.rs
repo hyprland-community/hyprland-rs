@@ -168,7 +168,7 @@ pub enum Dispatch {
     /// execute a command. Rules can be a table of window rule effects to apply.
     /// TODO implement rules
     #[display("hl.dsp.exec_cmd({})", format_string(_0))]
-    ExecCmd(String, Option<String>),
+    ExecCmd(String, Option<()>),
     /// execute a raw command. While exec_cmd will do bash -c, this won’t.
     #[display("hl.dsp.exec_raw({})", format_string(_0))]
     ExecRaw(String),

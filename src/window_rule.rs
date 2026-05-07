@@ -1,3 +1,4 @@
+use crate::error::hypr_err;
 use crate::instance::Instance;
 use crate::lua::{format_bool_field, format_raw_field, format_string_field};
 use crate::{command, default_instance};
@@ -50,7 +51,13 @@ impl WindowRule {
     /// This function sets a keyword's value
     pub fn instance_apply(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
-        instance.write_to_socket(command!(Empty, "eval {}", lua))?;
+        let ret = instance.write_to_socket(command!(Empty, "eval {}", lua))?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not apply rule: {}",
+                ret
+            )));
+        }
         Ok(())
     }
 
@@ -64,9 +71,15 @@ impl WindowRule {
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn instance_apply_async(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
-        instance
+        let ret = instance
             .write_to_socket_async(command!(Empty, "eval {}", lua))
             .await?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not apply rule: {}",
+                ret
+            )));
+        }
         Ok(())
     }
 }

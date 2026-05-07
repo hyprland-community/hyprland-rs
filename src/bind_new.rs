@@ -1,4 +1,5 @@
 use crate::dispatch_new::{Direction, Dispatch, ToDispatch, WindowIdentifier};
+use crate::error::hypr_err;
 use crate::instance::Instance;
 use crate::lua::{format_bool_field, format_string_field};
 use crate::{command, default_instance};
@@ -77,7 +78,7 @@ impl<D: ToDispatch> fmt::Display for Binding<D> {
         }
         bind.push_str(&self.key);
         f.write_str(&format!("\"{}\"", bind))?;
-        f.write_str("), ")?;
+        f.write_str(", ")?;
 
         f.write_str(&self.dispatcher.to_string())?;
 
@@ -99,7 +100,13 @@ impl<D: ToDispatch> Binding<D> {
     /// Binds a keybinding
     pub fn instance_bind(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
-        instance.write_to_socket(command!(Empty, "eval {}", lua))?;
+        let ret = instance.write_to_socket(command!(Empty, "eval {}", lua))?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not bind key: {}",
+                ret
+            )));
+        }
         Ok(())
     }
 
@@ -113,9 +120,15 @@ impl<D: ToDispatch> Binding<D> {
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn instance_bind_async(&self, instance: &Instance) -> crate::Result<()> {
         let lua = self.to_string();
-        instance
+        let ret = instance
             .write_to_socket_async(command!(Empty, "eval {}", lua))
             .await?;
+        if ret != "ok" {
+            return Err(crate::error::HyprError::NotOkDispatch(format!(
+                "Could not bind key: {}",
+                ret
+            )));
+        }
         Ok(())
     }
 }
