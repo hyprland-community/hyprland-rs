@@ -30,10 +30,6 @@ pub mod data;
 #[cfg(feature = "listener")]
 pub mod event_listener;
 
-/// This module is for calling dispatchers and changing keywords
-#[cfg(feature = "dispatch")]
-pub mod dispatch;
-
 /// This module is for calling hyprctl **commands**, for getting data use [data]
 #[cfg(feature = "ctl")]
 pub mod ctl;
@@ -51,12 +47,15 @@ pub mod error;
 /// Used to generate the Instances to interface with Hyprland
 pub mod instance;
 
+#[cfg(feature = "lua")]
+pub mod bind_new;
+#[cfg(feature = "lua")]
+pub mod dispatch_new;
 /// This module is for interacting with [hyprpaper] using its IPC feature
 ///
 /// [hyprpaper]: https://wiki.hyprland.org/Hypr-Ecosystem/hyprpaper/
 #[cfg(feature = "hyprpaper")]
 pub mod hyprpaper;
-
 #[cfg(feature = "lua")]
 mod lua;
 #[cfg(feature = "lua")]

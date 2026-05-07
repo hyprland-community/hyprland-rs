@@ -1,12 +1,12 @@
 use crate::instance::Instance;
-use crate::lua::{write_bool_field, write_raw_field, write_string_field};
+use crate::lua::{format_bool_field, format_raw_field, format_string_field};
 use crate::{command, default_instance};
-use serde::{Deserialize, Serialize};
+use derive_more::Display;
 use std::fmt;
 use std::fmt::Write;
 
 /// This struct holds a keyword
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct WindowRule {
     /// The name of the rule
     pub name: Option<String>,
@@ -20,21 +20,21 @@ impl fmt::Display for WindowRule {
         f.write_str("hl.window_rule({")?;
 
         if let Some(name) = &self.name {
-            write_string_field(f, "name", name)?;
+            f.write_str(&format_string_field("name", name))?;
             f.write_str(", ")?;
         }
 
         f.write_str("match = {")?;
 
-        for m in &self.r#match {
-            m.fmt_lua_pair(f)?;
+        for mat in &self.r#match {
+            mat.fmt(f)?;
             f.write_str(", ")?;
         }
 
         f.write_str("}, ")?;
 
         for effect in &self.effects {
-            effect.fmt_lua_pair(f)?;
+            effect.fmt(f)?;
             f.write_str(", ")?;
         }
 
@@ -72,99 +72,83 @@ impl WindowRule {
 }
 
 /// Enum containing all match options
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum WindowMatch {
+    #[display("{}", format_string_field("class", _0))]
     Class(String),
+    #[display("{}", format_string_field("title", _0))]
     Title(String),
+    #[display("{}", format_string_field("initial_class", _0))]
     InitialClass(String),
+    #[display("{}", format_string_field("initial_title", _0))]
     InitialTitle(String),
+    #[display("{}", format_string_field("tag", _0))]
     Tag(String),
+    #[display("{}", format_bool_field("xwayland", *_0))]
     XWayland(bool),
+    #[display("{}", format_bool_field("float", *_0))]
     Float(bool),
+    #[display("{}", format_bool_field("fullscreen", *_0))]
     Fullscreen(bool),
+    #[display("{}", format_bool_field("pin", *_0))]
     Pin(bool),
+    #[display("{}", format_bool_field("focus", *_0))]
     Focus(bool),
+    #[display("{}", format_bool_field("group",* _0))]
     Group(bool),
+    #[display("{}", format_bool_field("modal", *_0))]
     Modal(bool),
+    #[display("{}", format_raw_field("fullscreen_state_client", _0))]
     FullscreenStateClient(u8),
+    #[display("{}", format_raw_field("fullscreen_state_internal", _0))]
     FullscreenStateInternal(u8),
+    #[display("{}", format_string_field("workspace", _0))]
     Workspace(String),
+    #[display("{}", format_string_field("content", _0))]
     Content(String),
+    #[display("{}", format_string_field("xdg_tag", _0))]
     XdgTag(String),
-}
-impl WindowMatch {
-    fn fmt_lua_pair(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            WindowMatch::Class(v) => write_string_field(f, "class", v),
-            WindowMatch::Title(v) => write_string_field(f, "title", v),
-            WindowMatch::InitialClass(v) => write_string_field(f, "initial_class", v),
-            WindowMatch::InitialTitle(v) => write_string_field(f, "initial_title", v),
-            WindowMatch::Tag(v) => write_string_field(f, "tag", v),
-            WindowMatch::XWayland(v) => write_bool_field(f, "xwayland", *v),
-            WindowMatch::Float(v) => write_bool_field(f, "float", *v),
-            WindowMatch::Fullscreen(v) => write_bool_field(f, "fullscreen", *v),
-            WindowMatch::Pin(v) => write_bool_field(f, "pin", *v),
-            WindowMatch::Focus(v) => write_bool_field(f, "focus", *v),
-            WindowMatch::Group(v) => write_bool_field(f, "group", *v),
-            WindowMatch::Modal(v) => write_bool_field(f, "modal", *v),
-            WindowMatch::FullscreenStateClient(v) => {
-                write_raw_field(f, "fullscreen_state_client", *v)
-            }
-            WindowMatch::FullscreenStateInternal(v) => {
-                write_raw_field(f, "fullscreen_state_internal", *v)
-            }
-            WindowMatch::Workspace(v) => write_string_field(f, "workspace", v),
-            WindowMatch::Content(v) => write_string_field(f, "content", v),
-            WindowMatch::XdgTag(v) => write_string_field(f, "xdg_tag", v),
-        }
-    }
 }
 
 /// Enum containing all effects
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum WindowEffect {
+    #[display("{}", format_bool_field("float", *_0))]
     Float(bool),
+    #[display("{}", format_bool_field("title", *_0))]
     Tile(bool),
+    #[display("{}", format_bool_field("fullscreen", *_0))]
     Fullscreen(bool),
+    #[display("{}", format_bool_field("maximize", *_0))]
     Maximize(bool),
+    #[display("{}", format_string_field("fullscreen_state", _0))]
     FullscreenState(String),
+    #[display("{}", format_string_field("move", _0))]
     Move(String),
+    #[display("{}", format_string_field("size", _0))]
     Size(String),
+    #[display("{}", format_bool_field("center", *_0))]
     Center(bool),
+    #[display("{}", format_bool_field("pseudo", *_0))]
     Pseudo(bool),
+    #[display("{}", format_string_field("monitor", _0))]
     Monitor(String),
+    #[display("{}", format_string_field("workspace", _0))]
     Workspace(String),
+    #[display("{}", format_bool_field("no_initial_focus", *_0))]
     NoInitialFocus(bool),
+    #[display("{}", format_bool_field("pin", *_0))]
     Pin(bool),
+    #[display("{}", format_string_field("group", _0))]
     Group(String),
+    #[display("{}", format_string_field("suppress_event", _0))]
     SuppressEvent(String),
+    #[display("{}", format_string_field("content", _0))]
     Content(String),
+    #[display("{}", format_raw_field("no_close_for", _0))]
     NoCloseFor(i64),
+    #[display("{}", format_raw_field("scrolling_width", _0))]
     ScrollingWidth(i64),
-}
-impl WindowEffect {
-    fn fmt_lua_pair(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            WindowEffect::Float(v) => write_bool_field(f, "float", *v),
-            WindowEffect::Tile(v) => write_bool_field(f, "tile", *v),
-            WindowEffect::Fullscreen(v) => write_bool_field(f, "fullscreen", *v),
-            WindowEffect::Maximize(v) => write_bool_field(f, "maximize", *v),
-            WindowEffect::FullscreenState(v) => write_string_field(f, "fullscreen_state", v),
-            WindowEffect::Move(v) => write_string_field(f, "move", v),
-            WindowEffect::Size(v) => write_string_field(f, "size", v),
-            WindowEffect::Center(v) => write_bool_field(f, "center", *v),
-            WindowEffect::Pseudo(v) => write_bool_field(f, "pseudo", *v),
-            WindowEffect::Monitor(v) => write_string_field(f, "monitor", v),
-            WindowEffect::Workspace(v) => write_string_field(f, "workspace", v),
-            WindowEffect::NoInitialFocus(v) => write_bool_field(f, "no_initial_focus", *v),
-            WindowEffect::Pin(v) => write_bool_field(f, "pin", *v),
-            WindowEffect::Group(v) => write_string_field(f, "group", v),
-            WindowEffect::SuppressEvent(v) => write_string_field(f, "suppress_event", v),
-            WindowEffect::Content(v) => write_string_field(f, "content", v),
-            WindowEffect::NoCloseFor(v) => write_raw_field(f, "no_close_for", *v),
-            WindowEffect::ScrollingWidth(v) => write_raw_field(f, "scrolling_width", *v),
-        }
-    }
 }
 
 #[test]
@@ -216,7 +200,7 @@ fn test_window_rules() {
 }
 
 /// This struct holds a keyword
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct LayerRule {
     /// The name of the rule
     pub name: Option<String>,
@@ -230,21 +214,21 @@ impl fmt::Display for LayerRule {
         f.write_str("hl.layer_rule({")?;
 
         if let Some(name) = &self.name {
-            write_string_field(f, "name", name)?;
+            f.write_str(&format_string_field("name", name))?;
             f.write_str(", ")?;
         }
 
         f.write_str("match = {")?;
 
-        for m in &self.r#match {
-            m.fmt_lua_pair(f)?;
+        for mat in &self.r#match {
+            mat.fmt(f)?;
             f.write_str(", ")?;
         }
 
         f.write_str("}, ")?;
 
         for effect in &self.effects {
-            effect.fmt_lua_pair(f)?;
+            effect.fmt(f)?;
             f.write_str(", ")?;
         }
 
@@ -282,48 +266,35 @@ impl LayerRule {
 }
 
 /// Enum containing all match options
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Display)]
 pub enum LayerMatch {
+    #[display("{}", format_string_field("namespace", _0))]
     Namespace(String),
 }
 
-impl LayerMatch {
-    fn fmt_lua_pair(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LayerMatch::Namespace(v) => write_string_field(f, "namespace", v),
-        }
-    }
-}
-
 /// Enum containing all effects
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Display)]
 pub enum LayerEffect {
+    #[display("{}", format_bool_field("no_anim", *_0))]
     NoAnim(bool),
+    #[display("{}", format_bool_field("blur", *_0))]
     Blur(bool),
+    #[display("{}", format_bool_field("blur_popups", *_0))]
     BlurPopups(bool),
+    #[display("{}", format_raw_field("ignore_alpha", _0))]
     IgnoreAlpha(f32),
+    #[display("{}", format_bool_field("dim_around", *_0))]
     DimAround(bool),
+    #[display("{}", format_bool_field("xray", *_0))]
     Xray(bool),
+    #[display("{}", format_string_field("animation", _0))]
     Animation(String),
+    #[display("{}", format_raw_field("order", _0))]
     Order(i64),
+    #[display("{}", format_raw_field("above_lock", _0))]
     AboveLock(i64),
+    #[display("{}", format_bool_field("no_screen_share", *_0))]
     NoScreenShare(bool),
-}
-impl LayerEffect {
-    fn fmt_lua_pair(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            LayerEffect::NoAnim(v) => write_bool_field(f, "no_anim", *v),
-            LayerEffect::Blur(v) => write_bool_field(f, "blur", *v),
-            LayerEffect::BlurPopups(v) => write_bool_field(f, "blur_popups", *v),
-            LayerEffect::IgnoreAlpha(v) => write_raw_field(f, "ignore_alpha", *v),
-            LayerEffect::DimAround(v) => write_bool_field(f, "dim_around", *v),
-            LayerEffect::Xray(v) => write_bool_field(f, "xray", *v),
-            LayerEffect::Animation(v) => write_string_field(f, "animation", v),
-            LayerEffect::Order(v) => write_raw_field(f, "order", *v),
-            LayerEffect::AboveLock(v) => write_raw_field(f, "above_lock", *v),
-            LayerEffect::NoScreenShare(v) => write_bool_field(f, "no_screen_share", *v),
-        }
-    }
 }
 
 #[test]
