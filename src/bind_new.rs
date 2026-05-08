@@ -1,5 +1,4 @@
 use crate::dispatch_new::{Direction, Dispatch, ToDispatch, WindowIdentifier};
-use crate::error::hypr_err;
 use crate::instance::Instance;
 use crate::lua::{format_bool_field, format_string_field};
 use crate::{command, default_instance};
