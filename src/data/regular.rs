@@ -260,6 +260,8 @@ pub struct Client {
     pub grouped: Vec<Box<Address>>,
     /// Is this window print on screen
     pub mapped: bool,
+    /// Is this window visible on screen
+    pub visible: bool,
     /// The swallowed window
     pub swallowing: Option<Box<Address>>,
     /// When was this window last focused relatively to other windows? 0 for current, 1 previous, 2 previous before that, etc
