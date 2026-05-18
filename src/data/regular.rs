@@ -329,6 +329,8 @@ pub struct LayerClient {
     pub h: i16,
     /// The layer's namespace
     pub namespace: String,
+    /// The process Id of the layer
+    pub pid: i32,
 }
 
 /// This struct holds all the layer surfaces for a display
