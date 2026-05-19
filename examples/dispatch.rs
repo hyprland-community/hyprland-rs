@@ -4,7 +4,7 @@
 /// Example: cargo run --example dispatch [workspace 2] kitty
 use hyprland::dispatch;
 use hyprland::dispatch::DispatchType::*;
-use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
+use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifier, WorkspaceIdentifierWithSpecial};
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));
@@ -31,14 +31,14 @@ fn main() -> hyprland::Result<()> {
     describe("Moving window to next workspace");
     dispatch!(
         MoveToWorkspace,
-        WorkspaceIdentifierWithSpecial::Relative(1),
+        WorkspaceIdentifierWithSpecial::Regular(WorkspaceIdentifier::Relative(1)),
         None
     )?;
 
     describe("Moving window to previous workspace");
     dispatch!(
         MoveToWorkspace,
-        WorkspaceIdentifierWithSpecial::Relative(-1),
+        WorkspaceIdentifierWithSpecial::Regular(WorkspaceIdentifier::Relative(-1)),
         None
     )?;
 
