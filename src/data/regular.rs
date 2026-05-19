@@ -231,11 +231,11 @@ pub enum FullscreenMode {
 pub struct Client {
     /// The client's [`Address`][crate::shared::Address]
     pub address: Address,
-    /// Is this window print on screen
+    /// Is this window printed on screen?
     pub mapped: bool,
     /// Is this window hidden?
     pub hidden: bool,
-    /// Is this window visible on screen
+    /// Is this window visible on screen?
     pub visible: bool,
     #[serde(rename = "acceptsInput")]
     /// Does this window accept input?
@@ -244,11 +244,11 @@ pub struct Client {
     pub at: (i16, i16),
     /// The window size
     pub size: (i16, i16),
-    /// The workspace its on
+    /// The workspace the window is on
     pub workspace: WorkspaceBasic,
     /// Is this window floating?
     pub floating: bool,
-    /// The monitor id the window is on, can be None in some cases
+    /// The monitor ID the window is on, can be None in some cases
     pub monitor: Option<MonitorId>,
     /// The window class
     pub class: String,
@@ -260,7 +260,7 @@ pub struct Client {
     /// The initial window title
     #[serde(rename = "initialTitle")]
     pub initial_title: String,
-    /// The process Id of the client
+    /// The process ID of the client
     pub pid: i32,
     /// Is this window running under XWayland?
     pub xwayland: bool,
@@ -271,7 +271,7 @@ pub struct Client {
     /// The client fullscreen mode
     #[serde(rename = "fullscreenClient")]
     pub fullscreen_client: FullscreenMode,
-    /// Whether the window was created over a fullscreen window.
+    /// Whether the window was created over a fullscreen window
     #[serde(rename = "overFullscreen")]
     pub over_fullscreen: bool,
     /// Group members
