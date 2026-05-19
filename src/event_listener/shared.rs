@@ -968,3 +968,38 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
 
     Ok(events)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Note: `event_parser` takes `&str` which is guaranteed valid UTF-8 in Rust.
+    // Non-UTF8 bytes are handled at the IPC reading level (stream.rs, async_im.rs, immutable.rs)
+    // via `String::from_utf8_lossy()`, which replaces invalid bytes with U+FFFD.
+
+    #[test]
+    fn test_unicode_in_event_args() -> crate::Result<()> {
+        // Test various Unicode characters in event arguments
+        // Emoji in workspace name
+        let events = event_parser("workspace>>rocket🚀space")?;
+        assert_eq!(events.len(), 1);
+
+        // Non-Latin scripts
+        let events = event_parser("workspace>>工作区")?;
+        assert_eq!(events.len(), 1);
+
+        // Mixed ASCII and Unicode
+        let events = event_parser("workspace>>my-über-workspace")?;
+        assert_eq!(events.len(), 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_replacement_char_handling() -> crate::Result<()> {
+        // Simulate what happens when from_utf8_lossy replaces invalid bytes with U+FFFD
+        let events = event_parser("workspace>>test�name")?;
+        assert_eq!(events.len(), 1);
+        Ok(())
+    }
+}

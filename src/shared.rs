@@ -271,3 +271,96 @@ pub enum Mod {
     #[display("")]
     NONE,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn test_address_new_and_display() {
+        let addr = Address::new("0x123abc");
+        assert_eq!(addr.to_string(), "0x123abc");
+    }
+
+    #[test]
+    fn test_address_from_string() {
+        let addr = Address("0x456def".to_string());
+        assert_eq!(addr.to_string(), "0x456def");
+    }
+
+    #[test]
+    fn test_workspace_type_regular() -> Result<(), Box<dyn std::error::Error>> {
+        let wt = WorkspaceType::Regular("myworkspace".to_string());
+        assert_eq!(wt.to_string(), "myworkspace");
+
+        // Test Serialize
+        let json = serde_json::to_string(&wt)?;
+        assert_eq!(json, "\"myworkspace\"");
+
+        // Test Deserialize
+        let wt2: WorkspaceType = serde_json::from_str("\"myworkspace\"")?;
+        assert_eq!(wt, wt2);
+        Ok(())
+    }
+
+    #[test]
+    fn test_workspace_type_special_with_name() {
+        let wt = WorkspaceType::Special(Some("scratchpad".to_string()));
+        assert_eq!(wt.to_string(), "special:scratchpad");
+    }
+
+    #[test]
+    fn test_workspace_type_special_without_name() {
+        let wt = WorkspaceType::Special(None);
+        assert_eq!(wt.to_string(), "special");
+    }
+
+    #[test]
+    fn test_workspace_type_try_from_int() -> Result<(), Box<dyn std::error::Error>> {
+        let wt: WorkspaceType = 42u32.try_into()?;
+        assert_eq!(wt.to_string(), "42");
+
+        let result: Result<WorkspaceType, _> = 0u32.try_into();
+        assert!(result.is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_command_content_as_bytes() {
+        let content = CommandContent {
+            flag: CommandFlag::JSON,
+            data: "test".to_string(),
+        };
+        assert_eq!(content.as_bytes(), b"j/test");
+
+        let content = CommandContent {
+            flag: CommandFlag::Empty,
+            data: "foo".to_string(),
+        };
+        assert_eq!(content.as_bytes(), b"/foo");
+    }
+
+    #[test]
+    fn test_mod_display() {
+        assert_eq!(Mod::SUPER.to_string(), "SUPER");
+        assert_eq!(Mod::SHIFT.to_string(), "SHIFT");
+        assert_eq!(Mod::ALT.to_string(), "ALT");
+        assert_eq!(Mod::CTRL.to_string(), "CTRL");
+        assert_eq!(Mod::NONE.to_string(), "");
+    }
+
+    #[test]
+    fn test_workspace_id_type() {
+        // WorkspaceId is i32
+        let id: WorkspaceId = 42;
+        assert_eq!(id, 42);
+    }
+
+    #[test]
+    fn test_monitor_id_type() {
+        // MonitorId is i128
+        let id: MonitorId = 12345678901234567890i128;
+        assert_eq!(id, 12345678901234567890i128);
+    }
+}
