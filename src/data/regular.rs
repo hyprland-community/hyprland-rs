@@ -763,8 +763,13 @@ impl HyprData for Animations {
     }
 }
 
-// HACK: shadow and decorate are actually missing from the hyprctl json output for some reason
-// HACK: gaps_in and gaps_out are returned as arrays with 4 integers, even though Hyprland doesn't support per-side gaps
+// NOTE: shadow and decorate fields may not appear in hyprctl workspacerules output
+// if not explicitly set in workspace rules (they are optional bool fields).
+// Hyprland supports these via: workspace=name:foo,shadow:false,decorate:false
+//
+// NOTE: gaps_in and gaps_out are arrays of 4 integers [top,right,bottom,left] since
+// Hyprland added CSS-style per-side gaps support (PR #4723). The gaps output format
+// changed from single integer to array of 4 integers.
 /// The rules of an individual workspace, as returned by hyprctl json.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceRuleset {
