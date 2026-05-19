@@ -173,6 +173,12 @@ pub struct Workspace {
     /// The last window's title
     #[serde(rename = "lastwindowtitle")]
     pub last_window_title: String,
+    /// Is this workspace persistent?
+    #[serde(rename = "ispersistent")]
+    pub persistent: bool,
+    /// The workspace's layout
+    #[serde(rename = "tiledLayout")]
+    pub tiled_layout: String,
 }
 
 impl HyprDataActive for Workspace {
@@ -225,6 +231,15 @@ pub enum FullscreenMode {
 pub struct Client {
     /// The client's [`Address`][crate::shared::Address]
     pub address: Address,
+    /// Is this window print on screen
+    pub mapped: bool,
+    /// Is this window hidden?
+    pub hidden: bool,
+    /// Is this window visible on screen
+    pub visible: bool,
+    #[serde(rename = "acceptsInput")]
+    /// Does this window accept input?
+    pub accepts_input: bool,
     /// The window location
     pub at: (i16, i16),
     /// The window size
@@ -233,40 +248,56 @@ pub struct Client {
     pub workspace: WorkspaceBasic,
     /// Is this window floating?
     pub floating: bool,
-    /// The internal fullscreen mode
-    pub fullscreen: FullscreenMode,
-    /// The client fullscreen mode
-    #[serde(rename = "fullscreenClient")]
-    pub fullscreen_client: FullscreenMode,
     /// The monitor id the window is on, can be None in some cases
     pub monitor: Option<MonitorId>,
+    /// The window class
+    pub class: String,
+    /// The window title
+    pub title: String,
     /// The initial window class
     #[serde(rename = "initialClass")]
     pub initial_class: String,
-    /// The window class
-    pub class: String,
     /// The initial window title
     #[serde(rename = "initialTitle")]
     pub initial_title: String,
-    /// The window title
-    pub title: String,
     /// The process Id of the client
     pub pid: i32,
     /// Is this window running under XWayland?
     pub xwayland: bool,
     /// Is this window pinned?
     pub pinned: bool,
+    /// The internal fullscreen mode
+    pub fullscreen: FullscreenMode,
+    /// The client fullscreen mode
+    #[serde(rename = "fullscreenClient")]
+    pub fullscreen_client: FullscreenMode,
+    /// Whether the window was created over a fullscreen window.
+    #[serde(rename = "overFullscreen")]
+    pub over_fullscreen: bool,
     /// Group members
     pub grouped: Vec<Box<Address>>,
-    /// Is this window print on screen
-    pub mapped: bool,
-    /// Is this window visible on screen
-    pub visible: bool,
+    /// Tags
+    pub tags: Vec<String>,
     /// The swallowed window
     pub swallowing: Option<Box<Address>>,
     /// When was this window last focused relatively to other windows? 0 for current, 1 previous, 2 previous before that, etc
     #[serde(rename = "focusHistoryID")]
     pub focus_history_id: i8,
+    /// Is the window inibiting idle
+    #[serde(rename = "inhibitingIdle")]
+    pub inhibiting_idle: bool,
+    /// The XDG tag for the Window
+    #[serde(rename = "xdgTag")]
+    pub xdg_tag: String,
+    /// The XDG description for the Window
+    #[serde(rename = "xdgDescription")]
+    pub xdg_description: String,
+    /// The content type of the window
+    #[serde(rename = "contentType")]
+    pub content_type: String,
+    /// The stable ID of the window for the `ext_foreign_toplevel_list_v1` protocol
+    #[serde(rename = "stableId")]
+    pub stable_id: String,
 }
 
 #[derive(Deserialize, Debug)]
