@@ -61,6 +61,8 @@ ahash = { version = "0.8.12", features = [
 ], optional = true, default-features = false }
 either = "1.15.0"
 async-stream = "0.3.6"
+chardetng = "0.1"
+encoding_rs = "0.8"
 
 [features]
 default = [

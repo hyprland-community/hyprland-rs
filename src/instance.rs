@@ -69,7 +69,7 @@ impl Instance {
         stream.write_all(&content.as_bytes())?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response)?;
-        Ok(String::from_utf8_lossy(&response).to_string())
+        Ok(crate::encoding::decode_ipc_response(&response))
     }
 
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
@@ -82,7 +82,7 @@ impl Instance {
         stream.write_all(&content.as_bytes()).await?;
         let mut response = Vec::new();
         stream.read_to_end(&mut response).await?;
-        Ok(String::from_utf8_lossy(&response).to_string())
+        Ok(crate::encoding::decode_ipc_response(&response))
     }
 
     #[cfg(feature = "hyprpaper")]
@@ -104,7 +104,7 @@ impl Instance {
                 break;
             }
         }
-        Ok(String::from_utf8_lossy(&response).to_string())
+        Ok(crate::encoding::decode_ipc_response(&response))
     }
 
     #[cfg(all(feature = "hyprpaper", any(feature = "async-lite", feature = "tokio")))]
@@ -126,7 +126,7 @@ impl Instance {
                 break;
             }
         }
-        Ok(String::from_utf8_lossy(&response).to_string())
+        Ok(crate::encoding::decode_ipc_response(&response))
     }
 
     #[cfg(feature = "listener")]

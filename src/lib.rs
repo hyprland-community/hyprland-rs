@@ -48,6 +48,10 @@ pub mod config;
 
 /// Holds the error type used throughout the crate
 pub mod error;
+
+/// Encoding helpers used internally by the crate
+mod encoding;
+
 /// Used to generate the Instances to interface with Hyprland
 pub mod instance;
 
