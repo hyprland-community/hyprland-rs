@@ -64,6 +64,13 @@ pub struct WorkspaceBasic {
     pub name: String,
 }
 
+impl WorkspaceBasic {
+    /// If this is a special workspace
+    pub fn is_special(&self) -> bool {
+        self.name.starts_with("special:")
+    }
+}
+
 /// This enum provides the different monitor transforms
 #[derive(Serialize_repr, Deserialize_repr, Debug, Clone, PartialEq, Eq, Copy)]
 #[repr(u8)]
@@ -179,6 +186,13 @@ pub struct Workspace {
     /// The last window's title
     #[serde(rename = "lastwindowtitle")]
     pub last_window_title: String,
+}
+
+impl Workspace {
+    /// If this is a special workspace
+    pub fn is_special(&self) -> bool {
+        self.name.starts_with("special:")
+    }
 }
 
 impl HyprDataActive for Workspace {
