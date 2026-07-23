@@ -280,14 +280,20 @@ pub struct Client {
     pub xwayland: bool,
     /// Is this window pinned?
     pub pinned: bool,
+    /// Is this window pinned fullscreen?
+    #[serde(rename = "pinFullscreened")]
+    pub pin_fullscreened: bool,
     /// The internal fullscreen mode
     pub fullscreen: FullscreenMode,
     /// The client fullscreen mode
     #[serde(rename = "fullscreenClient")]
     pub fullscreen_client: FullscreenMode,
-    /// Whether the window was created over a fullscreen window
-    #[serde(rename = "overFullscreen")]
-    pub over_fullscreen: bool,
+    /// The client fullscreen handler
+    #[serde(rename = "fullscreenHandler")]
+    fullscreen_handler: String,
+    /// Is the client allowed to be over fullscreen
+    #[serde(rename = "allowedOverFullscreen")]
+    allowed_over_fullscreen: bool,
     /// Group members
     pub grouped: Vec<Box<Address>>,
     /// Tags
@@ -309,6 +315,9 @@ pub struct Client {
     /// The content type of the window
     #[serde(rename = "contentType")]
     pub content_type: String,
+    /// Screen tearing is allowed for the client
+    #[serde(rename = "tearingHint")]
+    tearing_hint: bool,
     /// The stable ID of the window for the `ext_foreign_toplevel_list_v1` protocol
     #[serde(rename = "stableId")]
     pub stable_id: String,
