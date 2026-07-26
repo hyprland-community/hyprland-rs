@@ -181,10 +181,10 @@ pub struct Workspace {
     #[serde(rename = "lastwindowtitle")]
     pub last_window_title: String,
     /// Is this workspace persistent?
-    #[serde(rename = "ispersistent")]
+    #[serde(default, rename = "ispersistent")]
     pub persistent: bool,
     /// The workspace's layout
-    #[serde(rename = "tiledLayout")]
+    #[serde(default, rename = "tiledLayout")]
     pub tiled_layout: String,
 }
 
@@ -248,10 +248,11 @@ pub struct Client {
     /// Is this window printed on screen?
     pub mapped: bool,
     /// Is this window hidden?
+    #[serde(default)]
     pub hidden: bool,
     /// Is this window visible on screen?
     pub visible: bool,
-    #[serde(rename = "acceptsInput")]
+    #[serde(default, rename = "acceptsInput")]
     /// Does this window accept input?
     pub accepts_input: bool,
     /// The window location
@@ -286,11 +287,12 @@ pub struct Client {
     #[serde(rename = "fullscreenClient")]
     pub fullscreen_client: FullscreenMode,
     /// Whether the window was created over a fullscreen window
-    #[serde(rename = "overFullscreen")]
+    #[serde(default, rename = "overFullscreen")]
     pub over_fullscreen: bool,
     /// Group members
     pub grouped: Vec<Box<Address>>,
     /// Tags
+    #[serde(default)]
     pub tags: Vec<String>,
     /// The swallowed window
     pub swallowing: Option<Box<Address>>,
@@ -298,19 +300,19 @@ pub struct Client {
     #[serde(rename = "focusHistoryID")]
     pub focus_history_id: i8,
     /// Is the window inibiting idle
-    #[serde(rename = "inhibitingIdle")]
+    #[serde(default, rename = "inhibitingIdle")]
     pub inhibiting_idle: bool,
     /// The XDG tag for the Window
-    #[serde(rename = "xdgTag")]
+    #[serde(default, rename = "xdgTag")]
     pub xdg_tag: String,
     /// The XDG description for the Window
-    #[serde(rename = "xdgDescription")]
+    #[serde(default, rename = "xdgDescription")]
     pub xdg_description: String,
     /// The content type of the window
-    #[serde(rename = "contentType")]
+    #[serde(default, rename = "contentType")]
     pub content_type: String,
     /// The stable ID of the window for the `ext_foreign_toplevel_list_v1` protocol
-    #[serde(rename = "stableId")]
+    #[serde(default, rename = "stableId")]
     pub stable_id: String,
 }
 
