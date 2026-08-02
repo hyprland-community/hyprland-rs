@@ -3,7 +3,7 @@
 /// Usage: cargo run --example dispatch_async
 use hyprland::dispatch;
 use hyprland::dispatch::DispatchType::*;
-use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifierWithSpecial};
+use hyprland::dispatch::{Corner, Dispatch, FullscreenType, WorkspaceIdentifier, WorkspaceIdentifierWithSpecial};
 
 fn describe(desc: &str) {
     std::thread::sleep(std::time::Duration::from_secs(2));
@@ -30,10 +30,10 @@ async fn main() -> hyprland::Result<()> {
     dispatch!(async; MoveCursorToCorner, Corner::BottomLeft).await?;
 
     describe("Moving window to next workspace");
-    dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(1), None).await?;
+    dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Regular(WorkspaceIdentifier::Relative(1)), None).await?;
 
     describe("Moving window to previous workspace");
-    dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Relative(-1), None).await?;
+    dispatch!(async; MoveToWorkspace, WorkspaceIdentifierWithSpecial::Regular(WorkspaceIdentifier::Relative(-1)), None).await?;
 
     describe("Toggling fullscreen");
     dispatch!(async; ToggleFullscreen, FullscreenType::Maximize).await?;
