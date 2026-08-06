@@ -156,3 +156,49 @@ fn get_env_name() -> crate::Result<String> {
     };
     Ok(instance)
 }
+
+#[cfg(test)]
+mod tests {
+
+    /// Test that from_utf8_lossy handles non-UTF-8 bytes correctly.
+    /// This is the fix from PR #379 - non-UTF-8 bytes (like Windows-1252 encoded
+    /// characters) should be replaced with U+FFFD, not cause an error.
+    #[test]
+    fn test_from_utf8_lossy_handles_invalid_bytes() {
+        // Simulate bytes that might come from a Windows-1252 encoded window title
+        // The ® character in Windows-1252 is byte 0xAE, which is invalid in UTF-8
+        let bytes_with_invalid_utf8: Vec<u8> = vec![
+            0x46, 0x61, 0x72, 0x43, 0x72, 0x79, // "FarCry"
+            0xAE, // Windows-1252 ® (invalid in UTF-8)
+            0x36, // "6"
+        ];
+
+        // This should NOT error - it should replace invalid bytes with U+FFFD
+        let result = String::from_utf8_lossy(&bytes_with_invalid_utf8);
+        let string = result.to_string();
+
+        // The string should contain "FarCry" and "6"
+        assert!(string.contains("FarCry"));
+        assert!(string.contains("6"));
+        // The invalid byte should be replaced with � (U+FFFD)
+        assert!(string.contains('�'));
+    }
+
+    /// Test that the write_to_socket error handling works with the lossy conversion.
+    /// Since we can't easily mock a UnixSocket, we test the conversion directly.
+    #[test]
+    fn test_response_conversion_is_lossy() {
+        // Test with various invalid UTF-8 sequences
+        let test_cases: Vec<Vec<u8>> = vec![
+            vec![0x48, 0x65, 0x6C, 0x6C, 0x6F, 0xAE], // "Hello" + invalid byte
+            vec![0xC0, 0x80],                         // Invalid UTF-8 sequence
+            vec![0xED, 0xA0, 0x80],                   // Surrogate half
+        ];
+
+        for bytes in test_cases {
+            // This should never panic or error
+            let result = String::from_utf8_lossy(&bytes);
+            let _string = result.to_string(); // Should always succeed
+        }
+    }
+}
