@@ -446,6 +446,36 @@ pub mod binds {
             )
         };
     }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::shared::Mod;
+
+        #[test]
+        fn test_vec_mod_join() {
+            let mods = vec![Mod::SUPER, Mod::SHIFT, Mod::CTRL];
+            assert_eq!(mods.join(), "SUPERSHIFTCTRL");
+        }
+
+        #[test]
+        fn test_vec_flag_join() {
+            let flags = vec![Flag::l, Flag::r, Flag::m];
+            assert_eq!(flags.join(), "lrm");
+        }
+
+        #[test]
+        fn test_slice_flag_join() {
+            let flags: &[Flag] = &[Flag::n, Flag::t, Flag::i];
+            assert_eq!(flags.join(), "nti");
+        }
+
+        #[test]
+        fn test_vec_flag_join_empty() {
+            let flags: Vec<Flag> = vec![];
+            assert_eq!(flags.join(), "");
+        }
+    }
 }
 
 #[test]
@@ -462,4 +492,86 @@ fn test_binds() {
         Err(e) => panic!("Error occured: {e}"), // Note to greppers: this is in a test!
     };
     assert_eq!(built_bind, "SUPER,v,togglefloating");
+}
+
+#[test]
+fn test_key_mod_display() {
+    use binds::*;
+    let key = Key::Mod(&[Mod::SUPER, Mod::SHIFT], "V");
+    assert_eq!(key.to_string(), "SUPERSHIFT_V");
+}
+
+#[test]
+fn test_partial_bind() {
+    use binds::*;
+    let partial = PartialBind {
+        mods: &[Mod::SUPER],
+        key: Key::Key("v"),
+    };
+    let result = Binder::gen_str_partial(partial);
+    assert_eq!(result, "SUPER,v");
+}
+
+#[test]
+fn test_binding_with_flags() -> crate::Result<()> {
+    use binds::*;
+    let binding = Binding {
+        mods: &[Mod::SUPER, Mod::SHIFT],
+        key: Key::Key("v"),
+        flags: &[Flag::l, Flag::r],
+        dispatcher: DispatchType::ToggleFloating(None),
+    };
+    let result = Binder::gen_str(binding)?;
+    assert!(result.contains("SUPERSHIFT,v"));
+    assert!(result.contains("togglefloating"));
+    Ok(())
+}
+
+#[test]
+fn test_key_mod_with_multiple_mods() {
+    use binds::*;
+    let key = Key::Mod(&[Mod::SUPER, Mod::CTRL, Mod::ALT], "Return");
+    let result = key.to_string();
+    assert_eq!(result, "SUPERCTRLALT_Return");
+}
+
+#[test]
+fn test_flag_display() {
+    use binds::Flag;
+    assert_eq!(Flag::l.to_string(), "l");
+    assert_eq!(Flag::r.to_string(), "r");
+    assert_eq!(Flag::e.to_string(), "e");
+    assert_eq!(Flag::n.to_string(), "n");
+    assert_eq!(Flag::m.to_string(), "m");
+    assert_eq!(Flag::t.to_string(), "t");
+    assert_eq!(Flag::i.to_string(), "i");
+    assert_eq!(Flag::s.to_string(), "s");
+    assert_eq!(Flag::d.to_string(), "d");
+    assert_eq!(Flag::p.to_string(), "p");
+}
+
+#[test]
+fn test_binding_with_all_flag_types() -> crate::Result<()> {
+    use binds::*;
+    let binding = Binding {
+        mods: &[Mod::SUPER],
+        key: Key::Key("a"),
+        flags: &[
+            Flag::l,
+            Flag::r,
+            Flag::e,
+            Flag::n,
+            Flag::m,
+            Flag::t,
+            Flag::i,
+            Flag::s,
+            Flag::d,
+            Flag::p,
+        ],
+        dispatcher: DispatchType::ToggleFloating(None),
+    };
+    let result = Binder::gen_str(binding)?;
+    assert!(result.contains("SUPER,a"));
+    assert!(result.contains("togglefloating"));
+    Ok(())
 }

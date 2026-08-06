@@ -38,16 +38,17 @@ pub fn hyprpaper(keyword: Keyword) -> crate::Result<Response> {
 
 /// Send a keyword to hyprpaper using IPC.
 pub fn instance_hyprpaper(instance: &Instance, keyword: Keyword) -> crate::Result<Response> {
-    let expected_response = keyword.expected_response();
-
     let content = CommandContent {
         flag: crate::shared::CommandFlag::Empty,
         data: keyword.to_string(),
     };
-
     let response = instance.write_to_hyprpaper_socket(content)?;
+    process_hyprpaper_response(keyword, response)
+}
 
-    expected_response.is_expected(response)
+/// Process a hyprpaper response (testable without socket).
+fn process_hyprpaper_response(keyword: Keyword, response: String) -> crate::Result<Response> {
+    keyword.expected_response().is_expected(response)
 }
 
 /// Send a keyword to hyprpaper using IPC.
@@ -60,12 +61,47 @@ pub async fn instance_hyprpaper_async(
     instance: &Instance,
     keyword: Keyword,
 ) -> crate::Result<Response> {
-    let expected_response = keyword.expected_response();
-
     let content = CommandContent {
         flag: crate::shared::CommandFlag::Empty,
         data: keyword.to_string(),
     };
     let response = instance.write_to_hyprpaper_socket_async(content).await?;
-    expected_response.is_expected(response)
+    process_hyprpaper_response(keyword, response)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_process_hyprpaper_response_ok() {
+        let keyword = Keyword::Preload(Preload {
+            path: "/foo".into(),
+        });
+        let result = process_hyprpaper_response(keyword, "ok".into());
+        assert!(matches!(result, Ok(Response::Ok)));
+    }
+
+    #[test]
+    fn test_process_hyprpaper_response_active() {
+        let keyword = Keyword::ListActive;
+        let result = process_hyprpaper_response(keyword, "DP-1 = /wallpaper.png".into());
+        assert!(matches!(result, Ok(Response::ActiveWallpapers(_))));
+    }
+
+    #[test]
+    fn test_process_hyprpaper_response_loaded() {
+        let keyword = Keyword::ListLoaded;
+        let result = process_hyprpaper_response(keyword, "/wallpaper.png".into());
+        assert!(matches!(result, Ok(Response::LoadedWallpapers(_))));
+    }
+
+    #[test]
+    fn test_process_hyprpaper_response_not_ok() {
+        let keyword = Keyword::Preload(Preload {
+            path: "/foo".into(),
+        });
+        let result = process_hyprpaper_response(keyword, "error".into());
+        assert!(result.is_err());
+    }
 }
