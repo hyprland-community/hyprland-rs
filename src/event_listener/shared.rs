@@ -608,6 +608,8 @@ pub enum Event {
     LayerClosed(String),
     /// An event that emits when the floating state of a window changes,
     /// it is the equivelant of the `changefloatingmode` event
+    /// NOTE: As of Hyprland 0.54.0, the `changefloatingmode` IPC event is not being emitted
+    /// due to a known bug: https://github.com/hyprwm/Hyprland/discussions/13381
     FloatStateChanged(WindowFloatEventData),
     /// An event that emits when the a window requests the urgent state,
     /// it is the equivelant of the `urgent` event
@@ -748,26 +750,39 @@ type KnownEvent = (ParsedEventType, Vec<String>);
 type UnknownEvent = (String, String);
 
 fn new_event_parser(input: &str) -> crate::Result<Either<KnownEvent, UnknownEvent>> {
-    input
-        .to_string()
-        .split_once(">>")
-        .ok_or(HyprError::Other(
-            "could not get event name from Hyprland IPC data (not hyprland-rs)".to_string(),
-        ))
-        .map(|(name, x)| {
-            if let Some(event) = EVENTS
-                .iter()
-                .find(|(i_name, _)| *i_name == name)
-                .map(|(_, event)| event)
-            {
-                Either::Left((
-                    event.1,
-                    x.splitn(event.0, ",").map(|y| y.to_string()).collect(),
-                ))
-            } else {
-                Either::Right((name.to_string(), x.to_string()))
+    let (name, x) = input.trim().split_once(">>").ok_or(HyprError::Other(
+        "could not get event name from Hyprland IPC data (not hyprland-rs)".to_string(),
+    ))?;
+    let name = name.trim();
+    let x = x.trim();
+    if name.is_empty() {
+        return Err(HyprError::Internal(
+            "event name is empty after trimming".to_string(),
+        ));
+    }
+    let event = EVENTS
+        .iter()
+        .find(|(i_name, _)| *i_name == name)
+        .map(|(_, event)| event);
+    match event {
+        Some(event) => {
+            let expected_arg_count = event.0;
+            let args: Vec<String> = x
+                .splitn(expected_arg_count, ",")
+                .map(|arg| arg.trim().to_string())
+                .collect();
+            if args.len() < expected_arg_count {
+                return Err(HyprError::Internal(format!(
+                    "event '{}' expected {} args, got {}",
+                    name,
+                    expected_arg_count,
+                    args.len()
+                )));
             }
-        })
+            Ok(Either::Left((event.1, args)))
+        }
+        None => Ok(Either::Right((name.to_string(), x.to_string()))),
+    }
 }
 
 macro_rules! parse_int {
@@ -913,10 +928,10 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
             ParsedEventType::LayerOpened => Ok(Event::LayerOpened(get![args;0])),
             ParsedEventType::LayerClosed => Ok(Event::LayerClosed(get![args;0])),
             ParsedEventType::FloatStateChanged => {
-                let state = get![ref args;1] == "0"; // FIXME: does 0 mean it's floating?
+                let floating = get![ref args;1] == "1"; // "1" = floating, "0" = tiled
                 Ok(Event::FloatStateChanged(WindowFloatEventData {
                     address: Address::new(get![ref args;0]),
-                    floating: state,
+                    floating,
                 }))
             }
             ParsedEventType::Screencast => {
@@ -967,4 +982,66 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
     }
 
     Ok(events)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_float_state_changed_parsing() -> crate::Result<()> {
+        // Hyprland event format: "changefloatingmode>>address,floating_state"
+        // floating_state: "1" = floating, "0" = tiled
+
+        // Test floating = true (window becomes floating)
+        let events = event_parser("changefloatingmode>>0x123,1")?;
+        assert_eq!(events.len(), 1);
+        if let Event::FloatStateChanged(data) = &events[0] {
+            assert_eq!(data.address, Address::new("0x123"));
+            assert!(
+                data.floating,
+                "Expected floating to be true when arg is '1'"
+            );
+        } else {
+            panic!("Expected FloatStateChanged event");
+        }
+
+        // Test floating = false (window becomes tiled)
+        let events = event_parser("changefloatingmode>>0x456,0")?;
+        assert_eq!(events.len(), 1);
+        if let Event::FloatStateChanged(data) = &events[0] {
+            assert_eq!(data.address, Address::new("0x456"));
+            assert!(
+                !data.floating,
+                "Expected floating to be false when arg is '0'"
+            );
+        } else {
+            panic!("Expected FloatStateChanged event");
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_event_parser_with_whitespace() -> crate::Result<()> {
+        // Test that trimming works correctly
+        let events = event_parser("  changefloatingmode>>  0x789,1  ")?;
+        assert_eq!(events.len(), 1);
+        if let Event::FloatStateChanged(data) = &events[0] {
+            assert!(data.floating);
+        } else {
+            panic!("Expected FloatStateChanged event");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_event_parser_invalid_args() {
+        // Test with insufficient args
+        let result = event_parser("changefloatingmode>>0x123");
+        assert!(
+            result.is_err(),
+            "Should error on missing floating state arg"
+        );
+    }
 }
