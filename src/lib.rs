@@ -49,6 +49,9 @@ pub mod config;
 /// Holds the error type used throughout the crate
 pub mod error;
 
+/// This module provides helpers to escape strings for Hyprland's Lua config
+pub mod lua;
+
 /// Encoding helpers used internally by the crate
 mod encoding;
 
