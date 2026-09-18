@@ -36,12 +36,85 @@ pub(crate) enum DataCommands {
 }
 
 /// This struct holds a basic identifier for a workspace often used in other structs
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct WorkspaceBasic {
     /// The workspace Id
     pub id: WorkspaceId,
     /// The workspace's name
     pub name: String,
+}
+
+/// Derives a stable numeric workspace id from Hyprland's new workspace
+/// JSON fields (`address` + `type`) that replaced the removed `id` field.
+///
+/// Keeps backwards compatibility: when the legacy `id` field is present it is
+/// used as-is. Otherwise:
+/// - `numbered`: `address` is the numeric id
+/// - `special`: a deterministic negative id (keeps the `id < 0` special convention)
+/// - `named`: a deterministic positive id in a dedicated range
+fn workspace_id_from(type_: &str, address: &str) -> WorkspaceId {
+    if address.is_empty() {
+        return 0;
+    }
+
+    match type_ {
+        "numbered" => address.parse::<WorkspaceId>().unwrap_or(0),
+        "special" => -1 - (fnv1a(address) % SPECIAL_ID_RANGE) as WorkspaceId,
+        "named" => NAMED_ID_OFFSET as WorkspaceId
+            + (fnv1a(address) % NAMED_ID_OFFSET) as WorkspaceId,
+        _ => 0,
+    }
+}
+
+/// Range used by derived special workspace ids: `-1 ..= -SPECIAL_ID_RANGE`
+const SPECIAL_ID_RANGE: u32 = 1_000_000;
+/// Offset used by derived named workspace ids, high enough to not clash with
+/// real numbered workspace ids
+const NAMED_ID_OFFSET: u32 = 10_000_000;
+
+/// FNV-1a 32-bit hash, used to keep derived ids stable across calls
+fn fnv1a(s: &str) -> u32 {
+    let mut hash = 0x811C9DC5u32;
+    for byte in s.bytes() {
+        hash ^= byte as u32;
+        hash = hash.wrapping_mul(0x0100_0193);
+    }
+    hash
+}
+
+impl<'de> Deserialize<'de> for WorkspaceBasic {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Raw {
+            #[serde(default)]
+            id: Option<WorkspaceId>,
+            name: String,
+            #[serde(default)]
+            address: Option<String>,
+            #[serde(default, rename = "type")]
+            workspace_type: Option<String>,
+        }
+
+        let Raw {
+            id,
+            name,
+            address,
+            workspace_type,
+        } = Raw::deserialize(deserializer)?;
+
+        Ok(WorkspaceBasic {
+            id: id.unwrap_or_else(|| {
+                workspace_id_from(
+                    workspace_type.as_deref().unwrap_or(""),
+                    address.as_deref().unwrap_or(""),
+                )
+            }),
+            name,
+        })
+    }
 }
 
 impl WorkspaceBasic {
@@ -158,7 +231,7 @@ create_data_struct!(
 );
 
 /// This struct holds information for a workspace
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
 pub struct Workspace {
     /// The workspace Id
     pub id: WorkspaceId,
@@ -186,6 +259,71 @@ pub struct Workspace {
     /// The workspace's layout
     #[serde(default, rename = "tiledLayout")]
     pub tiled_layout: String,
+}
+
+impl<'de> Deserialize<'de> for Workspace {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Raw {
+            #[serde(default)]
+            id: Option<WorkspaceId>,
+            name: String,
+            monitor: String,
+            #[serde(rename = "monitorID")]
+            monitor_id: Option<MonitorId>,
+            windows: u16,
+            #[serde(rename = "hasfullscreen")]
+            fullscreen: bool,
+            #[serde(rename = "lastwindow")]
+            last_window: Address,
+            #[serde(rename = "lastwindowtitle")]
+            last_window_title: String,
+            #[serde(default, rename = "ispersistent")]
+            persistent: bool,
+            #[serde(default, rename = "tiledLayout")]
+            tiled_layout: String,
+            #[serde(default)]
+            address: Option<String>,
+            #[serde(default, rename = "type")]
+            workspace_type: Option<String>,
+        }
+
+        let Raw {
+            id,
+            name,
+            monitor,
+            monitor_id,
+            windows,
+            fullscreen,
+            last_window,
+            last_window_title,
+            persistent,
+            tiled_layout,
+            address,
+            workspace_type,
+        } = Raw::deserialize(deserializer)?;
+
+        Ok(Workspace {
+            id: id.unwrap_or_else(|| {
+                workspace_id_from(
+                    workspace_type.as_deref().unwrap_or(""),
+                    address.as_deref().unwrap_or(""),
+                )
+            }),
+            name,
+            monitor,
+            monitor_id,
+            windows,
+            fullscreen,
+            last_window,
+            last_window_title,
+            persistent,
+            tiled_layout,
+        })
+    }
 }
 
 impl Workspace {
