@@ -14,10 +14,16 @@ use std::{env, fmt};
 )]
 pub struct Address(String);
 impl Address {
+    /// Builds an address from a value that may or may not already carry the
+    /// `0x` prefix that Hyprland uses on the wire.
     #[inline(always)]
     pub(crate) fn fmt_new(address: &str) -> Self {
-        // this way is faster than std::fmt
-        Self("0x".to_owned() + address)
+        if address.starts_with("0x") {
+            Self(address.to_owned())
+        } else {
+            // this way is faster than std::fmt
+            Self("0x".to_owned() + address)
+        }
     }
     /// This creates a new address from a value that implements [ToString]
     pub fn new<T: ToString>(string: T) -> Self {
@@ -270,4 +276,30 @@ pub enum Mod {
     CTRL,
     #[display("")]
     NONE,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Address;
+
+    #[test]
+    fn fmt_new_prefixes_a_bare_address_once() {
+        assert_eq!(Address::fmt_new("1a2b3c4d").to_string(), "0x1a2b3c4d");
+    }
+
+    #[test]
+    fn fmt_new_keeps_an_already_prefixed_address_intact() {
+        assert_eq!(Address::fmt_new("0x1a2b3c4d").to_string(), "0x1a2b3c4d");
+    }
+
+    #[test]
+    fn new_keeps_an_already_prefixed_address_intact() {
+        assert_eq!(Address::new("0x1a2b3c4d").to_string(), "0x1a2b3c4d");
+        assert_eq!(Address::new("1a2b3c4d").to_string(), "0x1a2b3c4d");
+    }
+
+    #[test]
+    fn prefixed_and_bare_addresses_are_equal() {
+        assert_eq!(Address::fmt_new("0x1a2b3c4d"), Address::new("1a2b3c4d"));
+    }
 }
