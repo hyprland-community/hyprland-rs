@@ -5,7 +5,7 @@
 
 Steps (This order is recommended so lsp doesn't scream at you lol)
 1. Add the prelude! This new release includes traits! `use hyprland::prelude::*;`
-2. Switch to the `HResult` Result type (`hyprland::shared::HResult`)
+2. Switch to the `Result` type — it moved to the crate root: `use hyprland::Result;` (it was `hyprland::shared::HResult` in 0.2.5)
 3. [Update your data fetcher functions to structs](#update-data-fetchers)
 4. [Update your dispatch functions to structs](#update-dispatchers)
 5. Switch all `String`s to `&str`s in your dispatchers

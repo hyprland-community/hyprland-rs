@@ -12,7 +12,7 @@
 //!
 //!    Ok(())
 //! }
-//! ````
+//! ```
 
 use crate::default_instance;
 use crate::dispatch::fmt::*;
@@ -250,12 +250,11 @@ pub(super) mod fmt {
 
     #[inline(always)]
     pub(super) fn format_relative(int: i32, extra: &'_ str) -> String {
-        if int.is_positive() {
+        // `0` must keep the prefix (`m+0`), not collapse to a bare `+0`
+        if int >= 0 {
             format!("{extra}+{int}")
-        } else if int.is_negative() {
-            format!("{extra}-{}", int.abs())
         } else {
-            "+0".to_owned()
+            format!("{extra}-{}", int.abs())
         }
     }
 }
@@ -805,7 +804,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ),
         CenterWindow => "centerwindow".to_string(),
         ResizeActive(pos) => format!("resizeactive{sep}{pos}"),
-        MoveActive(pos) => format!("moveactive {pos}"),
+        MoveActive(pos) => format!("moveactive{sep}{pos}"),
         ResizeWindowPixel(pos, win) => format!("resizewindowpixel{sep}{pos},{win}"),
         MoveWindowPixel(pos, win) => format!("movewindowpixel{sep}{pos},{win}"),
         CycleWindow(dir) => format!("cyclenext{sep}{dir}"),
@@ -815,7 +814,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         TagWindow(act, tag, None) => format!("tagwindow{sep}{act}{tag}"),
         FocusWindow(win) => format!("focuswindow{sep}{win}"),
         FocusMonitor(mon) => format!("focusmonitor{sep}{mon}"),
-        ChangeSplitRatio(fv) => format!("splitratio {fv}"),
+        ChangeSplitRatio(fv) => format!("splitratio{sep}{fv}"),
         ToggleOpaque => "toggleopaque".to_string(),
         MoveCursorToCorner(corner) => format!("movecursortocorner{sep}{}", corner.clone() as u8),
         MoveCursor(x, y) => format!("movecursor{sep}{x} {y}"),
@@ -824,7 +823,7 @@ pub(crate) fn gen_dispatch_str(cmd: DispatchType, dispatch: bool) -> crate::Resu
         ForceRendererReload => "forcerendererreload".to_string(),
         MoveCurrentWorkspaceToMonitor(mon) => format!("movecurrentworkspacetomonitor{sep}{mon}"),
         MoveWorkspaceToMonitor(work, mon) => format!("moveworkspacetomonitor{sep}{work} {mon}"),
-        ToggleSpecialWorkspace(Some(name)) => format!("togglespecialworkspace {name}"),
+        ToggleSpecialWorkspace(Some(name)) => format!("togglespecialworkspace{sep}{name}"),
         ToggleSpecialWorkspace(None) => "togglespecialworkspace".to_string(),
         RenameWorkspace(id, name) => {
             format!(
@@ -1005,4 +1004,201 @@ macro_rules! dispatch {
     ($instance:expr; $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::{
+        DispatchType, FirstEmpty, FloatValue, Position, WindowIdentifier,
+        WorkspaceIdentifierWithSpecial, WorkspaceOptions, gen_dispatch_str,
+    };
+
+    /// Hyprland reads a bind line as `CVarList(value, 4)` — MODS,KEY,DISPATCHER,ARGS
+    /// (`ConfigManager.cpp`, `handleBind`) — so only the dispatcher name must be
+    /// followed by `,`; the args keep their normal space-separated syntax.
+    /// On the socket the separator is a space. Assert both.
+    #[test]
+    fn separators_follow_the_target_syntax() {
+        let cases = [
+            (
+                DispatchType::MoveActive(Position::Delta(0, 50)),
+                "dispatch moveactive 0 50",
+                "moveactive,0 50",
+            ),
+            (
+                DispatchType::ChangeSplitRatio(FloatValue::Relative(-0.05)),
+                "dispatch splitratio -0.05",
+                "splitratio,-0.05",
+            ),
+            (
+                DispatchType::ToggleSpecialWorkspace(Some("scratch".to_owned())),
+                "dispatch togglespecialworkspace scratch",
+                "togglespecialworkspace,scratch",
+            ),
+        ];
+
+        for (dispatcher, socket, bind) in cases {
+            assert_eq!(
+                gen_dispatch_str(dispatcher.clone(), true).unwrap().data,
+                socket
+            );
+            assert_eq!(gen_dispatch_str(dispatcher, false).unwrap().data, bind);
+        }
+    }
+
+    /// `RelativeMonitor(0)` used to collapse to a bare `+0`, dropping the `m`.
+    #[test]
+    fn relative_identifiers_keep_their_prefix_at_zero() {
+        // `RelativeMonitor` is the workspace-side variant and keeps its `m`.
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::RelativeMonitor(0).to_string(),
+            "m+0",
+            "a bare +0 makes Hyprland read it as a relative workspace"
+        );
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::RelativeMonitor(-2).to_string(),
+            "m-2"
+        );
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::RelativeMonitor(3).to_string(),
+            "m+3"
+        );
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::RelativeOpen(0).to_string(),
+            "e+0"
+        );
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::RelativeMonitorIncludingEmpty(0).to_string(),
+            "r+0"
+        );
+        assert_eq!(
+            WorkspaceIdentifierWithSpecial::Relative(0).to_string(),
+            "+0"
+        );
+    }
+
+    /// All four `FirstEmpty` combinations are accepted by Hyprland (`workspace
+    /// empty`, `empty m`, `empty n`, `empty mn` all return ok on 0.56.2).
+    #[test]
+    fn first_empty_combinations_are_all_valid() {
+        for (on_monitor, next, expected) in [
+            (false, false, ""),
+            (true, false, "m"),
+            (false, true, "n"),
+            (true, true, "mn"),
+        ] {
+            let fe = FirstEmpty { on_monitor, next };
+            assert_eq!(fe.to_string(), expected);
+            assert_eq!(
+                WorkspaceIdentifierWithSpecial::Empty(fe).to_string(),
+                format!("empty{expected}")
+            );
+        }
+    }
+
+    #[test]
+    fn toggle_special_without_a_name_has_no_arguments() {
+        assert_eq!(
+            gen_dispatch_str(DispatchType::ToggleSpecialWorkspace(None), true)
+                .unwrap()
+                .data,
+            "dispatch togglespecialworkspace"
+        );
+    }
+
+    #[test]
+    fn position_renders_both_axes() {
+        assert_eq!(Position::Delta(10, 20).to_string(), "10 20");
+        assert_eq!(Position::Delta(-10, 20).to_string(), "-10 20");
+        assert_eq!(Position::Delta(0, -50).to_string(), "0 -50");
+        assert_eq!(Position::Exact(300, 400).to_string(), "exact 300 400");
+        assert_eq!(Position::DeltaFraction(10, 20).to_string(), "10% 20%");
+        assert_eq!(Position::DeltaFraction(-5, 25).to_string(), "-5% 25%");
+        assert_eq!(Position::ExactFraction(10, 90).to_string(), "exact 10% 90%");
+    }
+
+    #[test]
+    fn move_and_resize_dispatchers_carry_both_axes() {
+        let cases = [
+            (
+                DispatchType::MoveActive(Position::Delta(0, 50)),
+                "dispatch moveactive 0 50",
+            ),
+            (
+                DispatchType::MoveActive(Position::Delta(30, -30)),
+                "dispatch moveactive 30 -30",
+            ),
+            (
+                DispatchType::MoveActive(Position::Exact(300, 400)),
+                "dispatch moveactive exact 300 400",
+            ),
+            (
+                DispatchType::MoveActive(Position::DeltaFraction(0, 50)),
+                "dispatch moveactive 0% 50%",
+            ),
+            (
+                DispatchType::MoveActive(Position::ExactFraction(25, 75)),
+                "dispatch moveactive exact 25% 75%",
+            ),
+            (
+                DispatchType::ResizeActive(Position::Delta(0, 50)),
+                "dispatch resizeactive 0 50",
+            ),
+            (
+                DispatchType::ResizeActive(Position::Exact(0, 400)),
+                "dispatch resizeactive exact 0 400",
+            ),
+            (
+                DispatchType::MoveWindowPixel(
+                    Position::Delta(5, -5),
+                    WindowIdentifier::ActiveWindow,
+                ),
+                "dispatch movewindowpixel 5 -5,activewindow",
+            ),
+            (
+                DispatchType::ResizeWindowPixel(
+                    Position::Exact(10, 20),
+                    WindowIdentifier::ActiveWindow,
+                ),
+                "dispatch resizewindowpixel exact 10 20,activewindow",
+            ),
+        ];
+
+        for (dispatcher, expected) in cases {
+            let label = format!("{dispatcher:?}");
+            let Ok(generated) = gen_dispatch_str(dispatcher, true) else {
+                panic!("failed to generate a dispatch string for {label}");
+            };
+            assert_eq!(generated.data, expected);
+        }
+    }
+
+    #[test]
+    fn workspace_options_match_their_variant() {
+        assert_eq!(WorkspaceOptions::AllPseudo.to_string(), "allpseudo");
+        assert_eq!(WorkspaceOptions::AllFloat.to_string(), "allfloat");
+    }
+
+    #[test]
+    fn workspace_option_dispatcher_uses_the_matching_label() {
+        let cases = [
+            (
+                DispatchType::WorkspaceOption(WorkspaceOptions::AllPseudo),
+                "dispatch workspaceopt allpseudo",
+            ),
+            (
+                DispatchType::WorkspaceOption(WorkspaceOptions::AllFloat),
+                "dispatch workspaceopt allfloat",
+            ),
+        ];
+
+        for (dispatcher, expected) in cases {
+            let label = format!("{dispatcher:?}");
+            let Ok(generated) = gen_dispatch_str(dispatcher, true) else {
+                panic!("failed to generate a dispatch string for {label}");
+            };
+            assert_eq!(generated.data, expected);
+        }
+    }
 }

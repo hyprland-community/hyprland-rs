@@ -47,7 +47,7 @@ hyprland = { git = "https://github.com/hyprland-community/hyprland-rs", branch =
 
 ### What this crate provides
 
-This crate provides 6 modules (+1 for shared things)
+This crate provides 8 modules (+1 for shared things)
 
 - `data` for getting information on the compositor
 - `event_listener` which provides the `EventListener` struct for listening for events
@@ -55,6 +55,8 @@ This crate provides 6 modules (+1 for shared things)
 - `keyword` for dealing with config option (aka keywords)
 - `config::binds` for changing binds (in future `config` might have config generation)
 - `ctl` for calling hyprctl commands
+- `hyprpaper` for talking to hyprpaper
+- `instance` for targeting a specific running Hyprland instance
 
 ## Example Usage
 

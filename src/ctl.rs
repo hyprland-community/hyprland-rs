@@ -142,7 +142,9 @@ pub mod output {
         backend: OutputBackends,
         name: Option<&str>,
     ) -> crate::Result<()> {
-        let name = name.unwrap_or_default();
+        // Hyprland's syntax is `output create <backend> name=<name>` - the
+        // `name=` prefix is part of the name, not a key we strip.
+        let name = name.map(|n| format!("name={n}")).unwrap_or_default();
         instance.write_to_socket(command!(Empty, "output create {backend} {name}"))?;
         Ok(())
     }
@@ -166,7 +168,9 @@ pub mod output {
         backend: OutputBackends,
         name: Option<&str>,
     ) -> crate::Result<()> {
-        let name = name.unwrap_or_default();
+        // Hyprland's syntax is `output create <backend> name=<name>` - the
+        // `name=` prefix is part of the name, not a key we strip.
+        let name = name.map(|n| format!("name={n}")).unwrap_or_default();
         instance
             .write_to_socket_async(command!(Empty, "output create {backend} {name}"))
             .await?;
@@ -249,28 +253,28 @@ pub mod switch_xkb_layout {
     }
 }
 
-/// Creates a error that Hyprland will display
+/// Stuff related to setting an error message Hyprland displays
 pub mod set_error {
     use super::*;
 
-    /// Creates a error that Hyprland will display
+    /// Creates an error that Hyprland will display
     pub fn call(color: Color, msg: String) -> crate::Result<()> {
         instance_call(default_instance()?, color, msg)
     }
 
-    /// Creates a error that Hyprland will display
+    /// Creates an error that Hyprland will display
     pub fn instance_call(instance: &Instance, color: Color, msg: String) -> crate::Result<()> {
         instance.write_to_socket(command!(Empty, "seterror {color} {msg}"))?;
         Ok(())
     }
 
-    /// Creates a error that Hyprland will display (async)
+    /// Creates an error that Hyprland will display (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn call_async(color: Color, msg: String) -> crate::Result<()> {
         instance_call_async(default_instance()?, color, msg).await
     }
 
-    /// Creates a error that Hyprland will display (async)
+    /// Creates an error that Hyprland will display (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn instance_call_async(
         instance: &Instance,
@@ -328,7 +332,7 @@ pub mod notify {
         Ok(())
     }
 
-    /// Creates a error that Hyprland will display (async)
+    /// Sends a notification to the user (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn call_async(
         icon: Icon,
@@ -339,7 +343,7 @@ pub mod notify {
         instance_call_async(default_instance()?, icon, time, color, msg).await
     }
 
-    /// Creates a error that Hyprland will display (async)
+    /// Sends a notification to the user (async)
     #[cfg(any(feature = "async-lite", feature = "tokio"))]
     pub async fn instance_call_async(
         instance: &Instance,
@@ -735,7 +739,7 @@ pub mod instance {
     pub struct Instance {
         /// instance name (9958d29...) in /run/user/$UID/hypr/$instance
         pub instance: String,
-        /// ???
+        /// unix timestamp of when the instance started
         pub time: u64,
         /// pid of hyprland process
         pub pid: u32,
@@ -744,6 +748,9 @@ pub mod instance {
     }
 
     /// Returns a list of running instances
+    ///
+    /// Named `instance_list` rather than `list` to avoid colliding with the
+    /// `list` functions in sibling modules when glob-imported.
     pub fn instance_list() -> crate::Result<Vec<Instance>> {
         let buf = get_hypr_path()?;
         let entries = std::fs::read_dir(buf)?;

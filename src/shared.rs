@@ -14,11 +14,6 @@ use std::{env, fmt};
 )]
 pub struct Address(String);
 impl Address {
-    #[inline(always)]
-    pub(crate) fn fmt_new(address: &str) -> Self {
-        // this way is faster than std::fmt
-        Self("0x".to_owned() + address)
-    }
     /// This creates a new address from a value that implements [ToString]
     pub fn new<T: ToString>(string: T) -> Self {
         let str = string.to_string();

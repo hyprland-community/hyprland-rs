@@ -177,16 +177,22 @@ impl HyprColor {
                     let u: u32 = (a << 24) | (r << 16) | (g << 8) | b;
                     Some(Self::from_argb_u32(u))
                 }
-                // b16 parse (e.g., "rgba(FF00AA7F)")
+                // b16 parse — Hyprland writes 8 hex digits, e.g. "rgba(FF00AA7F)".
+                // 6 digits is accepted too, and means opaque.
                 false => {
                     let s = s.trim();
-                    if s.len() != 6 {
+                    if s.len() != 6 && s.len() != 8 {
                         return None;
                     }
                     let i = u32::from_str_radix(s, 16).ok()?;
-                    let a = (i & 0xFF) << 24;
-                    let i = (i >> 8) | a;
-                    Some(Self::from_argb_u32(i))
+                    // 6 digits are rrggbb; Hyprland's own form is rrggbbaa.
+                    let u = if s.len() == 6 {
+                        (0xFFu32 << 24) | i
+                    } else {
+                        let a = (i & 0xFF) << 24;
+                        (i >> 8) | a
+                    };
+                    Some(Self::from_argb_u32(u))
                 }
             })
     }
@@ -411,6 +417,23 @@ impl TryFrom<&OptionRaw> for OptionValue {
                     }
                     OptionValue::Unknown(raw.json.to_string())
                 }
+                // `css` is a whitespace-separated gap string of 1, 2 or 4 ints
+                // (e.g. "3 3 3 3"), which is the same shape as `custom`
+                "css" => match_unknown!(
+                    raw.json,
+                    v.as_str().and_then(|s| Custom::try_from(s).ok()),
+                    Custom
+                ),
+                // `gradient` is "<color> <color> <angle>deg"
+                "gradient" => match_unknown!(
+                    raw.json,
+                    v.as_str()
+                        .and_then(|g| Custom::try_from(g).ok())
+                        .filter(|c| matches!(c, Custom::HyprGradient(_))),
+                    Custom
+                ),
+                // `font_weight` arrives as an int (100, 200, ...)
+                "font_weight" => match_unknown!(raw.json, v.as_i64(), Int),
                 _ => OptionValue::Unknown(raw.json.to_string()),
             },
             None => OptionValue::Unknown(raw.json.to_string()),
@@ -538,5 +561,95 @@ impl Keyword {
             set: deserialized.set,
         };
         Ok(keyword)
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    /// Hyprland writes colours as `rgba(FF00AA7F)` — 8 hex digits. The old
+    /// parser only accepted 6, so it rejected its own documented example.
+    #[test]
+    fn hypr_color_parses_eight_digit_rgba() {
+        // round-trips: Hyprland writes rrggbbaa and Display emits the same 8 digits
+        let c = HyprColor::try_from_rgba_str("rgba(ff00aa7f)").expect("8-digit rgba");
+        assert_eq!(c.to_string().to_lowercase(), "rgba(ff00aa7f)");
+        // the crate's own documented example
+        assert!(HyprColor::try_from_rgba_str("rgba(b3ff1aee)").is_some());
+    }
+
+    #[test]
+    fn hypr_color_still_parses_six_digit_rgba_as_opaque() {
+        assert!(HyprColor::try_from_rgba_str("rgba(ff00aa)").is_some());
+    }
+
+    #[test]
+    fn hypr_color_parses_decimal_rgba() {
+        assert!(HyprColor::try_from_rgba_str("rgba(255,0,170,0.5)").is_some());
+    }
+
+    fn raw(payload: &str) -> OptionRaw {
+        serde_json::from_str(payload).unwrap()
+    }
+
+    /// `bool` needs a new enum variant, which is a semver break, so it lands
+    /// in 0.5.0. Until then bool options stay `Unknown` rather than being
+    /// misrepresented as some other variant.
+    #[test]
+    fn option_value_still_reports_bool_as_unknown_in_0_4() {
+        assert!(matches!(
+            OptionValue::try_from(&raw(
+                r#"{"option":"misc:disable_hyprland_logo","set":true,"bool":true}"#
+            ))
+            .unwrap(),
+            OptionValue::Unknown(_)
+        ));
+    }
+
+    /// `general:gaps_in` used to come back `Unknown`.
+    #[test]
+    fn option_value_parses_css() {
+        let v = OptionValue::try_from(&raw(
+            r#"{"option":"general:gaps_in","set":true,"css":"3 3 3 3"}"#,
+        ))
+        .unwrap();
+        assert!(
+            matches!(v, OptionValue::Custom(Custom::HyprRect(_))),
+            "got {v:?}"
+        );
+    }
+
+    /// `decoration:shadow:color` used to come back `Unknown`.
+    #[test]
+    fn option_value_parses_gradient() {
+        let v = OptionValue::try_from(&raw(
+            r#"{"option":"decoration:shadow:color","set":true,"gradient":"rgba(ee1a1a1a) rgba(00ff00ff) 90deg"}"#,
+        ))
+        .unwrap();
+        assert!(
+            matches!(v, OptionValue::Custom(Custom::HyprGradient(_))),
+            "got {v:?}"
+        );
+    }
+
+    #[test]
+    fn option_value_still_parses_the_original_types() {
+        assert!(matches!(
+            OptionValue::try_from(&raw(
+                r#"{"option":"general:border_size","set":true,"int":2}"#
+            ))
+            .unwrap(),
+            OptionValue::Int(2)
+        ));
+    }
+
+    #[test]
+    fn unknown_type_stays_unknown() {
+        assert!(matches!(
+            OptionValue::try_from(&raw(r#"{"option":"x","set":true,"nonsense":1}"#)).unwrap(),
+            OptionValue::Unknown(_)
+        ));
     }
 }

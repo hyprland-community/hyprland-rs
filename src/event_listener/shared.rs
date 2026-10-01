@@ -523,6 +523,11 @@ pub struct UnknownEventData {
 impl UnknownEventData {
     /// Takes the amount of args, and splits the string correctly
     pub fn parse_args(self, count: usize) -> Vec<String> {
+        // splitn(0, ..) panics — a 0-arg event (e.g. `configreloaded`) must yield
+        // the whole arg string, not a panic.
+        if count == 0 {
+            return vec![self.args];
+        }
         self.args
             .splitn(count, ",")
             .map(|x| x.to_string())
@@ -889,7 +894,7 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
             })),
             ParsedEventType::WindowClosed => Ok(Event::WindowClosed(Address::new(get![args;0]))),
             ParsedEventType::WindowMovedV2 => Ok(Event::WindowMoved(WindowMoveEvent {
-                window_address: Address::fmt_new(get![ref args;0]),
+                window_address: Address::new(get![ref args;0]),
                 workspace_id: parse_int!(get![ref args;1], event: "WindowMoved"),
                 workspace_name: parse_string_as_work(get![args;2]),
             })),
@@ -913,15 +918,20 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
             ParsedEventType::LayerOpened => Ok(Event::LayerOpened(get![args;0])),
             ParsedEventType::LayerClosed => Ok(Event::LayerClosed(get![args;0])),
             ParsedEventType::FloatStateChanged => {
-                let state = get![ref args;1] == "0"; // FIXME: does 0 mean it's floating?
+                // Hyprland sends `changefloatingmode>>{addr},{0|1}` where the second
+                // field is `CWindowTarget::floating()` — a bool, so `1` is floating.
+                let state = get![ref args;1] == "1";
                 Ok(Event::FloatStateChanged(WindowFloatEventData {
                     address: Address::new(get![ref args;0]),
                     floating: state,
                 }))
             }
             ParsedEventType::Screencast => {
+                // The second field is a type formatted through a custom formatter that
+                // emits the strings "monitor" / "window" / "region" / "ERR NONE",
+                // never "1". It is compared as `== "1"`, so `monitor` was always false.
                 let state = get![ref args;0] == "1";
-                let owner = get![ref args;1] == "1";
+                let owner = get![ref args;1] == "monitor";
                 Ok(Event::Screencast(ScreencastEventData {
                     turning_on: state,
                     monitor: owner,
@@ -967,4 +977,51 @@ pub(crate) fn event_parser(event: &str) -> crate::Result<Vec<Event>> {
     }
 
     Ok(events)
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    /// `changefloatingmode>>{addr},{0|1}` — the second field is
+    /// `CWindowTarget::floating()`, so `1` is floating.
+    #[test]
+    fn float_state_changed_reports_the_true_state() {
+        for (payload, expected) in [
+            ("changefloatingmode>>55a,0", false),
+            ("changefloatingmode>>55a,1", true),
+        ] {
+            let events = event_parser(payload).unwrap();
+            let Event::FloatStateChanged(data) = &events[0] else {
+                panic!("expected FloatStateChanged, got {:?}", events[0]);
+            };
+            assert_eq!(data.floating, expected, "payload {payload}");
+        }
+    }
+
+    /// The screencast owner is formatted as a string, never "1".
+    #[test]
+    fn screencast_monitor_is_read_from_the_type_string() {
+        // `monitor` is the *type* of screencast, independent of on/off.
+        for (payload, expected) in [
+            ("screencast>>1,monitor", true),
+            ("screencast>>0,monitor", true),
+            ("screencast>>1,window", false),
+            ("screencast>>1,region", false),
+            ("screencast>>1,ERR NONE", false),
+        ] {
+            let events = event_parser(payload).unwrap();
+            let Event::Screencast(data) = &events[0] else {
+                panic!("expected Screencast, got {:?}", events[0]);
+            };
+            assert_eq!(data.monitor, expected, "payload {payload}");
+        }
+    }
+
+    /// A 0-arg event used to reach `splitn(0, ",")`, which panics.
+    #[test]
+    fn zero_arg_events_do_not_panic() {
+        let _ = event_parser("configreloaded>>").unwrap();
+    }
 }

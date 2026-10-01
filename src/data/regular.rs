@@ -622,12 +622,14 @@ impl From<String> for AnimationStyle {
         if value.starts_with("popin") {
             let mut iter = value.split(' ');
             iter.next();
-            AnimationStyle::PopIn({
-                let mut str = iter.next().unwrap_or("100%").to_string();
-                str.remove(str.len() - 1);
-
-                str.parse().unwrap_or(100_u8)
-            })
+            // Hyprland may emit a bare "popin " — an empty token here would make
+            // `remove(len - 1)` panic on an empty string.
+            let raw = iter.next().unwrap_or("100%");
+            let str = raw
+                .strip_suffix('%')
+                .filter(|s| !s.is_empty())
+                .unwrap_or("100");
+            AnimationStyle::PopIn(str.parse().unwrap_or(100_u8))
         } else {
             match value.as_str() {
                 "slide" => AnimationStyle::Slide,
@@ -819,3 +821,40 @@ create_data_struct!(
     holding_type: WorkspaceRuleset,
     doc: "This struct holds a vector of workspace rules per workspace"
 );
+
+#[cfg(test)]
+mod animation_tests {
+    use super::*;
+
+    /// `"popin "` used to panic: the second token is empty and the old code did
+    /// `str.remove(str.len() - 1)` on it.
+    #[test]
+    fn popin_with_trailing_space_does_not_panic() {
+        let style = AnimationStyle::from("popin ".to_string());
+        assert!(matches!(style, AnimationStyle::PopIn(100)), "got {style:?}");
+    }
+
+    #[test]
+    fn popin_bare_falls_back_to_full_scale() {
+        assert!(matches!(
+            AnimationStyle::from("popin".to_string()),
+            AnimationStyle::PopIn(100)
+        ));
+    }
+
+    #[test]
+    fn popin_parses_the_percentage() {
+        assert!(matches!(
+            AnimationStyle::from("popin 87%".to_string()),
+            AnimationStyle::PopIn(87)
+        ));
+    }
+
+    #[test]
+    fn empty_string_maps_to_none() {
+        assert!(matches!(
+            AnimationStyle::from("".to_string()),
+            AnimationStyle::None
+        ));
+    }
+}

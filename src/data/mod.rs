@@ -4,7 +4,7 @@
 //!
 //! ## Usage
 //!
-//! here is a example of every function in use! (blocking)
+//! here is an example of every function in use! (blocking)
 //! ```rust
 //! use hyprland::data::*;
 //! use hyprland::prelude::*;
