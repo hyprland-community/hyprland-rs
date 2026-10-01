@@ -99,16 +99,16 @@ pub enum Direction {
 #[derive(Debug, Clone, Display)]
 pub enum Position {
     /// A delta in pixels
-    #[display("{_0} {_0}")]
+    #[display("{_0} {_1}")]
     Delta(i16, i16),
     /// The exact size in pixels
-    #[display("exact {_0} {_0}")]
+    #[display("exact {_0} {_1}")]
     Exact(i16, i16),
     /// A delta in window fraction
-    #[display("{_0}% {_0}%")]
+    #[display("{_0}% {_1}%")]
     DeltaFraction(i16, i16),
     /// The exact size in screen fraction
-    #[display("exact {_0}% {_0}%")]
+    #[display("exact {_0}% {_1}%")]
     ExactFraction(i16, i16),
 }
 
@@ -1005,4 +1005,76 @@ macro_rules! dispatch {
     ($instance:expr; $dis:ident, $( $arg:expr ), *) => {
         $crate::dispatch::Dispatch::instance_call($instance, $crate::dispatch::DispatchType::$dis($($arg), *))
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{DispatchType, Position, WindowIdentifier, gen_dispatch_str};
+
+    #[test]
+    fn position_renders_both_axes() {
+        assert_eq!(Position::Delta(10, 20).to_string(), "10 20");
+        assert_eq!(Position::Delta(-10, 20).to_string(), "-10 20");
+        assert_eq!(Position::Delta(0, -50).to_string(), "0 -50");
+        assert_eq!(Position::Exact(300, 400).to_string(), "exact 300 400");
+        assert_eq!(Position::DeltaFraction(10, 20).to_string(), "10% 20%");
+        assert_eq!(Position::DeltaFraction(-5, 25).to_string(), "-5% 25%");
+        assert_eq!(Position::ExactFraction(10, 90).to_string(), "exact 10% 90%");
+    }
+
+    #[test]
+    fn move_and_resize_dispatchers_carry_both_axes() {
+        let cases = [
+            (
+                DispatchType::MoveActive(Position::Delta(0, 50)),
+                "dispatch moveactive 0 50",
+            ),
+            (
+                DispatchType::MoveActive(Position::Delta(30, -30)),
+                "dispatch moveactive 30 -30",
+            ),
+            (
+                DispatchType::MoveActive(Position::Exact(300, 400)),
+                "dispatch moveactive exact 300 400",
+            ),
+            (
+                DispatchType::MoveActive(Position::DeltaFraction(0, 50)),
+                "dispatch moveactive 0% 50%",
+            ),
+            (
+                DispatchType::MoveActive(Position::ExactFraction(25, 75)),
+                "dispatch moveactive exact 25% 75%",
+            ),
+            (
+                DispatchType::ResizeActive(Position::Delta(0, 50)),
+                "dispatch resizeactive 0 50",
+            ),
+            (
+                DispatchType::ResizeActive(Position::Exact(0, 400)),
+                "dispatch resizeactive exact 0 400",
+            ),
+            (
+                DispatchType::MoveWindowPixel(
+                    Position::Delta(5, -5),
+                    WindowIdentifier::ActiveWindow,
+                ),
+                "dispatch movewindowpixel 5 -5,activewindow",
+            ),
+            (
+                DispatchType::ResizeWindowPixel(
+                    Position::Exact(10, 20),
+                    WindowIdentifier::ActiveWindow,
+                ),
+                "dispatch resizewindowpixel exact 10 20,activewindow",
+            ),
+        ];
+
+        for (dispatcher, expected) in cases {
+            let label = format!("{dispatcher:?}");
+            let Ok(generated) = gen_dispatch_str(dispatcher, true) else {
+                panic!("failed to generate a dispatch string for {label}");
+            };
+            assert_eq!(generated.data, expected);
+        }
+    }
 }
